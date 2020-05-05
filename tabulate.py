@@ -9,6 +9,7 @@ A module to line up text tables
 
 import decimal
 import fileinput
+import random
 import re
 import statistics
 import string
@@ -69,6 +70,7 @@ class Table:
         '''Arrange the columns of the table
         '''
         identity = string.ascii_lowercase[:self.cols]
+        specials = '.?'
         # first expand any ~s
         perm = perm.replace("~", identity)
 
@@ -77,11 +79,21 @@ class Table:
             perm = identity[:-1]
         elif perm.startswith('-'):
             perm = ''.join(sorted(set(identity) - set(perm)))
+        else:
+            perm = ''.join(x for x in perm if x in identity + specials)
 
-        perm = list(ord(x) - ord('a') for x in perm)
+        def _get_value(c, line_number, row):
+            '''Find a suitable value given the perm character and a row of data
+            '''
+            if c == '.':
+                return line_number
 
-        for i, row in enumerate(self.data):
-            self.data[i] = list(row[j] for j in perm)
+            if c == '?':
+                return random.random()
+
+            return row[ord(c) - ord('a')]
+
+        self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
 
     def sort_rows_by_col(self, column):
         '''Sort the table
