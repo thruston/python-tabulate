@@ -9,6 +9,7 @@ A module to line up text tables
 
 import decimal
 import fileinput
+import math
 import random
 import re
 import statistics
@@ -30,6 +31,10 @@ class Table:
             'sort': self.sort_rows_by_col,
             'add': self.append_reduction,
             'arr': self.arrange_columns,
+            'wrap': self.rapper,
+            'unwrap': self.unrapper,
+            'zip': self.zipper,
+            'unzip': self.unzipper,
         }
 
     def append(self, row, filler='-'):
@@ -50,6 +55,93 @@ class Table:
         '''
         self.data = list(map(list, zip(*self.data)))
         self.rows, self.cols = self.cols, self.rows
+
+    def zipper(self, n):
+        '''Put n rows side by side
+        '''
+        try:
+            rows_to_zip = int(n)
+        except TypeError:
+            rows_to_zip = 2
+
+        if rows_to_zip < 2:
+            return
+
+        new_data = []
+        while self.data:
+            new_row = []
+            for _ in range(rows_to_zip):
+                if self.data:
+                    new_row.extend(self.data.pop(0))
+            new_data.append(new_row)
+
+        self.data = new_data[:]
+        self.rows = len(self.data)
+        self.cols = max(len(c) for c in self.data)
+
+    def unzipper(self, n):
+        '''The opposite of zip.  Split rows so that there are cols/n cols in each'''
+        try:
+            splits = int(n)
+        except TypeError:
+            splits = 2
+
+        desired_cols = math.ceil(self.cols / splits)
+
+        new_data = []
+        for r in self.data:
+            for i in range(splits):
+                start = i * desired_cols
+                stop = start + desired_cols
+                new_data.append(r[start:stop])
+        self.data = new_data[:]
+        self.rows = len(self.data)
+        self.cols = max(len(c) for c in self.data)
+
+    def rapper(self, n):
+        '''It's a wrap.'''
+        try:
+            groups = int(n)
+        except TypeError:
+            groups = 2
+
+        rows_per_group = math.ceil(self.rows / groups)
+
+        new_data = []
+        for i in range(rows_per_group):
+            new_row = []
+            for j in range(groups):
+                k = i + j * rows_per_group
+                if k < self.rows:
+                    new_row += self.data[k]
+            new_data.append(new_row)
+
+        self.data = new_data[:]
+        self.rows = len(self.data)
+        self.cols = max(len(c) for c in self.data)
+
+    def _splitme(self, seq, parts):
+        if parts > 0:
+            size = math.ceil(len(seq) / parts)
+            yield seq[:size]
+            if parts > 1:
+                yield from self._splitme(seq[size:], parts - 1)
+
+    def unrapper(self, n):
+        '''It's not a wrap'''
+        try:
+            groups = int(n)
+        except TypeError:
+            groups = 2
+
+        new_data = []
+        for col_list in self._splitme(range(self.cols), groups):
+            for r in self.data:
+                new_data.append(list(r[x] for x in col_list))
+
+        self.data = new_data[:]
+        self.rows = len(self.data)
+        self.cols = max(len(c) for c in self.data)
 
     def append_reduction(self, fun):
         '''Reduce column and append result to foot of table
