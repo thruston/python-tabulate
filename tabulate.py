@@ -27,14 +27,17 @@ class Table:
         self.rows = 0
         self.cols = 0
         self.operations = {
-            'xp': self.transpose,
-            'sort': self.sort_rows_by_col,
             'add': self.append_reduction,
             'arr': self.arrange_columns,
-            'wrap': self.rapper,
+            'dp': self.fix_decimal_places,
+            'sf': self.fix_sigfigs,
+            'shuffle': self.shuffle_rows,
+            'sort': self.sort_rows_by_col,
             'unwrap': self.unrapper,
-            'zip': self.zipper,
             'unzip': self.unzipper,
+            'wrap': self.rapper,
+            'xp': self.transpose,
+            'zip': self.zipper,
         }
 
     def append(self, row, filler='-'):
@@ -55,6 +58,35 @@ class Table:
         '''
         self.data = list(map(list, zip(*self.data)))
         self.rows, self.cols = self.cols, self.rows
+
+    def shuffle_rows(self, _):
+        '''Re-arrange the rows at random'''
+        random.shuffle(self.data)
+
+    def fix_decimal_places(self, dp_string):
+        "Round all the numerical fields in each row"
+        if dp_string is None:
+            return
+
+        if not dp_string.isdigit():
+            return 
+
+        # extend as needed (you could use zip_longest, but this just as simple)
+        dp_values = list(int(x) for x in dp_string) + [int(dp_string[-1])] * (self.cols - len(dp_string))
+
+        def _round(s, n):
+            try:
+                if decimal.Decimal(s).is_zero():
+                    return '0.' + '0' * n
+                return decimal.Decimal(s).quantize(decimal.Decimal(10) ** -n)
+            except decimalInvalidOperation:
+                return s
+
+        self.data = list(list(_round(c, dp) for c, dp in zip(r, dp_values)) for r in self.data)
+
+
+    def fix_sigfigs(self, sf_string):
+        pass
 
     def zipper(self, n):
         '''Put n rows side by side
