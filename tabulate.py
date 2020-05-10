@@ -29,7 +29,9 @@ class Table:
         self.operations = {
             'add': self.append_reduction,
             'arr': self.arrange_columns,
+            'ditto': self.copy_down,
             'dp': self.fix_decimal_places,
+            'gen': self.generate_new_rows,
             'sf': self.fix_sigfigs,
             'shuffle': self.shuffle_rows,
             'sort': self.sort_rows_by_col,
@@ -69,24 +71,67 @@ class Table:
             return
 
         if not dp_string.isdigit():
-            return 
+            return
 
         # extend as needed (you could use zip_longest, but this just as simple)
         dp_values = list(int(x) for x in dp_string) + [int(dp_string[-1])] * (self.cols - len(dp_string))
 
         def _round(s, n):
             try:
-                if decimal.Decimal(s).is_zero():
-                    return '0.' + '0' * n
-                return decimal.Decimal(s).quantize(decimal.Decimal(10) ** -n)
-            except decimalInvalidOperation:
+                return '{:.{n}f}'.format(decimal.Decimal(s), n=n)
+            except ValueError:
                 return s
 
         self.data = list(list(_round(c, dp) for c, dp in zip(r, dp_values)) for r in self.data)
 
 
     def fix_sigfigs(self, sf_string):
-        pass
+        "Round to n sig figs all the numeric fields in each row"
+        if sf_string is None:
+            return
+
+        if not sf_string.isdigit():
+            return
+
+        # extend as needed (you could use zip_longest, but this just as simple)
+        sf_values = list(int(x) for x in sf_string) + [int(sf_string[-1])] * (self.cols - len(sf_string))
+
+        def _siggy(s, n):
+            try:
+                x = decimal.Decimal(s)
+            except decimal.InvalidOperation:
+                return s
+
+            if x.is_zero():
+                return 0
+
+            return '{:f}'.format(round(x, n - int(math.floor(math.log10(abs(x)))) - 1))
+
+        self.data = list(list(_siggy(c, sf) for c, sf in zip(r, sf_values)) for r in self.data)
+
+    def generate_new_rows(self, count_or_range):
+        "Add some more data on the bottom"
+        alpha = 1
+        try:
+            omega = int(count_or_range)
+        except ValueError:
+            m = re.match(r'(-?\d+)\D(-?\d+)$', count_or_range)
+            if m is None:
+                omega = 10
+            else:
+                alpha, omega = (int(x) for x in m.groups())
+        if alpha > omega:
+            (alpha, omega) = (omega, alpha)
+
+        for i in range(alpha, omega+1):
+            self.append([i])
+
+    def copy_down(self, _):
+        '''Fix up ditto marks'''
+        for r in range(1, self.rows):
+            for c in range(self.cols):
+                if self.data[r][c] == '"':
+                    self.data[r][c] = self.data[r-1][c]
 
     def zipper(self, n):
         '''Put n rows side by side
