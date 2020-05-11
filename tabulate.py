@@ -26,12 +26,15 @@ class Table:
         self.data = []
         self.rows = 0
         self.cols = 0
+        self.separator = '  ' # two spaces
+        self.eol_marker = ''
         self.operations = {
             'add': self.append_reduction,
             'arr': self.arrange_columns,
             'ditto': self.copy_down,
             'dp': self.fix_decimal_places,
             'gen': self.generate_new_rows,
+            'make': self.set_output_form,
             'sf': self.fix_sigfigs,
             'shuffle': self.shuffle_rows,
             'sort': self.sort_rows_by_col,
@@ -54,6 +57,24 @@ class Table:
 
         self.data.append(row)
         self.rows += 1
+
+    def set_output_form(self, form_name):
+        "Set the seps"
+        form = form_name.lower()
+        if form == 'plain':
+            self.separator = '  '
+        elif form == 'tex':
+            self.separator = ' & '
+            self.eol_marker = ' \\cr'
+        elif form == 'latex':
+            self.separator = ' & '
+            self.eol_marker = ' \\\\'
+        elif form == 'tsv':
+            self.separator = '\t'
+        elif form == 'single':
+            self.separator = ' '
+        else:
+            pass
 
     def transpose(self, _):
         '''Swap rows and columns
@@ -83,7 +104,6 @@ class Table:
                 return s
 
         self.data = list(list(_round(c, dp) for c, dp in zip(r, dp_values)) for r in self.data)
-
 
     def fix_sigfigs(self, sf_string):
         "Round to n sig figs all the numeric fields in each row"
@@ -239,30 +259,43 @@ class Table:
         '''Arrange the columns of the table
         '''
         identity = string.ascii_lowercase[:self.cols]
-        specials = '.?'
+        specials = '.?;'
         # first expand any ~s
         perm = perm.replace("~", identity)
 
         # deal with deletions
-        if perm == '-z': # special case
+        if perm == '-z' and self.cols < 26: # special case
             perm = identity[:-1]
         elif perm.startswith('-'):
             perm = ''.join(sorted(set(identity) - set(perm)))
-        else:
-            perm = ''.join(x for x in perm if x in identity + specials)
+        
+        if all(x in identity + specials for x in perm):
 
-        def _get_value(c, line_number, row):
-            '''Find a suitable value given the perm character and a row of data
-            '''
-            if c == '.':
-                return line_number
+            def _get_value(c, line_number, row):
+                '''Find a suitable value given the perm character and a row of data
+                '''
+                if c == '.':
+                    return line_number
 
-            if c == '?':
-                return random.random()
+                if c == '?':
+                    return random.random()
 
-            return row[ord(c) - ord('a')]
+                if c == ';':
+                    return self.rows
 
-        self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
+                return row[ord(c) - ord('a')]
+
+            self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
+
+        #else:
+            # ok so now it is complicated.
+         #   cumulative_values = [] * self.cols
+         #   for i, r in self.data:
+         #       row_values :
+         #       for j, c in r:
+         #           try:
+         #               values[i][j] = decimal.Decimal(c)
+
 
     def sort_rows_by_col(self, column):
         '''Sort the table
@@ -340,8 +373,7 @@ def tabulate(data, cell_separator='  ', line_end=''):
         for i, cell in enumerate(row):
             out.append(f'{cell:{col_types[i]}{col_widths[i]}}')
 
-        out.append(line_end)
-        yield cell_separator.join(out).rstrip() # no trailing blanks
+        yield cell_separator.join(out).rstrip() + line_end # no trailing blanks
 
 def as_number(x, backwards=False):
     '''return something for sort to work with'''
@@ -409,14 +441,11 @@ if __name__ == "__main__":
 
     if delim.isdigit():
         in_sep = re.compile(rf'\s{{{delim},}}')
-        out_sep = ' ' * int(delim)
     else:
         in_sep = re.compile(re.escape(delim))
-        out_sep = delim
-
-    eol = ''
 
     table = Table()
+
     for line in fileinput.input([]):
         cells = re.split(in_sep, line.strip(), maxsplit=cell_limit)
         table.append(cells)
@@ -436,4 +465,4 @@ if __name__ == "__main__":
 
         table.operations[op](argument)
 
-    print("\n".join(tabulate(table.data, cell_separator=out_sep, line_end=eol)))
+    print("\n".join(tabulate(table.data, cell_separator=table.separator, line_end=table.eol_marker)))
