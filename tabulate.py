@@ -18,6 +18,16 @@ import sys
 
 import dateutil.parser as dup
 
+# Functions for column maths
+def exp(d):
+    return d.exp()
+def sqrt(d):
+    return d.sqrt()
+def log(d):
+    return d.log10()
+def ln(d):
+    return d.ln()
+
 class Table:
     '''A class to hold a table -- and some functions thereon'''
 
@@ -268,34 +278,92 @@ class Table:
             perm = identity[:-1]
         elif perm.startswith('-'):
             perm = ''.join(sorted(set(identity) - set(perm)))
-        
+
+        def _get_value(c, line_number, row):
+            '''Find a suitable value given the perm character and a row of data
+            '''
+            if c == '.':
+                return line_number
+
+            if c == '?':
+                return random.random()
+
+            if c == ';':
+                return self.rows
+
+            return row[ord(c) - ord('a')]
+
+        def _decimalize(expr):
+            '''borrowed from the example decistmt
+            '''
+            import tokenize
+            import io
+
+            out = []
+            for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(expr).readline):
+                if tn == tokenize.NUMBER and '.' in tv:
+                    out.append((tokenize.NAME, 'Decimal'))
+                    out.append((tokenize.OP, '('))
+                    out.append((tokenize.STRING, repr(tv)))
+                    out.append((tokenize.OP, ')'))
+                else:
+                    out.append((tn, tv))
+            return tokenize.untokenize(out)
+
+        def _get_expressions(perm):
+            in_parens = 0
+            token = ''
+            for c in perm:
+                if c not in identity + specials + '(){}' and in_parens == 0:
+                    continue
+
+                if c == '{':
+                    c = '('
+                elif c == '}':
+                    c = ')'
+
+                token += c
+
+                if c == '(':
+                    in_parens += 1
+                    continue
+
+                if c == ')':
+                    in_parens -= 1
+
+                if in_parens == 0:
+                    yield token
+                    token = ''
+
+            if token:
+                yield token + ')' * in_parens
+
+        def _as_decimal_if_possible(ss):
+            try:
+                return decimal.Decimal(ss)
+            except decimal.InvalidOperation:
+                return ss
+
         if all(x in identity + specials for x in perm):
-
-            def _get_value(c, line_number, row):
-                '''Find a suitable value given the perm character and a row of data
-                '''
-                if c == '.':
-                    return line_number
-
-                if c == '?':
-                    return random.random()
-
-                if c == ';':
-                    return self.rows
-
-                return row[ord(c) - ord('a')]
-
             self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
 
-        #else:
-            # ok so now it is complicated.
-         #   cumulative_values = [] * self.cols
-         #   for i, r in self.data:
-         #       row_values :
-         #       for j, c in r:
-         #           try:
-         #               values[i][j] = decimal.Decimal(c)
+        else:
+            desiderata = list(_get_expressions(perm))
+            old_data = self.data[:]
+            self.data = []
+            self.rows = self.cols = 0
+            for r in old_data:
+                value_dict = {'Decimal': decimal.Decimal}
+                for k, v in zip(identity, r):
+                    value_dict[k] = _as_decimal_if_possible(v)
 
+                new_row = []
+                for dd in desiderata:
+                    try:
+                        new_row.append(str(eval(_decimalize(dd), globals(), value_dict)))
+                    except (TypeError, NameError, AttributeError):
+                        new_row.append(dd)
+                self.append(new_row)
 
     def sort_rows_by_col(self, column):
         '''Sort the table
@@ -328,7 +396,6 @@ class Table:
         self.data = list(row for _, _, row in sorted(((as_number(r[c], reverse_sort),
                                                        as_seminumeric_string(r[c]), r)
                                                       for r in self.data), reverse=reverse_sort))
-
 
 def _check_type(cell):
     '''is this a number? (or something similar)
