@@ -7,6 +7,7 @@ A module to line up text tables
 
 # pylint: disable=C0103, C0301
 
+import collections
 import decimal
 import fileinput
 import math
@@ -36,6 +37,7 @@ class Table:
         self.data = []
         self.rows = 0
         self.cols = 0
+        self.extras = collections.defaultdict(str)
         self.separator = '  ' # two spaces
         self.eol_marker = ''
         self.operations = {
@@ -68,6 +70,14 @@ class Table:
         self.data.append(row)
         self.rows += 1
 
+    def add_blank(self):
+        "flag a blank"
+        self.extras[self.rows - 1] = "blank"
+
+    def add_rule(self):
+        "mark a rule"
+        self.extras[self.rows - 1] = "rule"
+
     def set_output_form(self, form_name):
         "Set the seps"
         form = form_name.lower()
@@ -91,10 +101,12 @@ class Table:
         '''
         self.data = list(map(list, zip(*self.data)))
         self.rows, self.cols = self.cols, self.rows
+        self.extras.clear()
 
     def shuffle_rows(self, _):
         '''Re-arrange the rows at random'''
         random.shuffle(self.data)
+        self.extras.clear()
 
     def fix_decimal_places(self, dp_string):
         "Round all the numerical fields in each row"
@@ -185,6 +197,7 @@ class Table:
         self.data = new_data[:]
         self.rows = len(self.data)
         self.cols = max(len(c) for c in self.data)
+        self.extras.clear()
 
     def unzipper(self, n):
         '''The opposite of zip.  Split rows so that there are cols/n cols in each'''
@@ -204,6 +217,7 @@ class Table:
         self.data = new_data[:]
         self.rows = len(self.data)
         self.cols = max(len(c) for c in self.data)
+        self.extras.clear()
 
     def rapper(self, n):
         '''It's a wrap.'''
@@ -226,6 +240,7 @@ class Table:
         self.data = new_data[:]
         self.rows = len(self.data)
         self.cols = max(len(c) for c in self.data)
+        self.extras.clear()
 
     def _splitme(self, seq, parts):
         if parts > 0:
@@ -249,6 +264,7 @@ class Table:
         self.data = new_data[:]
         self.rows = len(self.data)
         self.cols = max(len(c) for c in self.data)
+        self.extras.clear()
 
     def append_reduction(self, fun):
         '''Reduce column and append result to foot of table
@@ -263,6 +279,8 @@ class Table:
         footer = []
         for c in range(self.cols):
             footer.append(fun(as_decimal(r[c]) for r in self.data))
+
+        self.add_rule()
         self.append(footer)
 
     def arrange_columns(self, perm):
@@ -306,6 +324,11 @@ class Table:
                     out.append((tokenize.OP, '('))
                     out.append((tokenize.STRING, repr(tv)))
                     out.append((tokenize.OP, ')'))
+                elif tv == '?':
+                    out.append((tokenize.NAME, 'Decimal'))
+                    out.append((tokenize.OP, '('))
+                    out.append((tokenize.STRING, repr(random.random())))
+                    out.append((tokenize.OP, ')'))
                 else:
                     out.append((tn, tv))
             return tokenize.untokenize(out)
@@ -346,24 +369,24 @@ class Table:
 
         if all(x in identity + specials for x in perm):
             self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
+            return
 
-        else:
-            desiderata = list(_get_expressions(perm))
-            old_data = self.data[:]
-            self.data = []
-            self.rows = self.cols = 0
-            for r in old_data:
-                value_dict = {'Decimal': decimal.Decimal}
-                for k, v in zip(identity, r):
-                    value_dict[k] = _as_decimal_if_possible(v)
+        desiderata = list(_get_expressions(perm))
+        old_data = self.data[:]
+        self.data = []
+        self.rows = self.cols = 0
+        for r in old_data:
+            value_dict = {'Decimal': decimal.Decimal}
+            for k, v in zip(identity, r):
+                value_dict[k] = _as_decimal_if_possible(v)
 
-                new_row = []
-                for dd in desiderata:
-                    try:
-                        new_row.append(str(eval(_decimalize(dd), globals(), value_dict)))
-                    except (TypeError, NameError, AttributeError):
-                        new_row.append(dd)
-                self.append(new_row)
+            new_row = []
+            for dd in desiderata:
+                try:
+                    new_row.append(str(eval(_decimalize(dd), globals(), value_dict)))
+                except (TypeError, NameError, AttributeError):
+                    new_row.append(dd)
+            self.append(new_row)
 
     def sort_rows_by_col(self, column):
         '''Sort the table
@@ -411,7 +434,7 @@ def _check_type(cell):
 
     return 0
 
-def tabulate(data, cell_separator='  ', line_end=''):
+def tabulate(data, indent=0, cell_separator='  ', line_end='', special_dict=collections.defaultdict(str)):
     '''Render the table neatly
     '''
 
@@ -435,12 +458,17 @@ def tabulate(data, cell_separator='  ', line_end=''):
         col_types[i] = '>' if sum(col_types[i])/len(col_types[i]) >= 0.8 else '<'
 
     # generate nicely lined up rows
-    for row in data:
+    for r, row in enumerate(data):
         out = []
-        for i, cell in enumerate(row):
-            out.append(f'{cell:{col_types[i]}{col_widths[i]}}')
-
-        yield cell_separator.join(out).rstrip() + line_end # no trailing blanks
+        for c, cell in enumerate(row):
+            out.append(f'{cell:{col_types[c]}{col_widths[c]}}')
+        
+        out = cell_separator.join(out).rstrip() + line_end # no trailing blanks
+        yield ' ' * indent + out
+        if special_dict[r] == 'rule':
+            yield ' ' * indent + '-' * len(out)
+        elif special_dict[r] == 'blank':
+            yield ' ' * len(indent + out)
 
 def as_number(x, backwards=False):
     '''return something for sort to work with'''
@@ -513,9 +541,16 @@ if __name__ == "__main__":
 
     table = Table()
 
-    for line in fileinput.input([]):
-        cells = re.split(in_sep, line.strip(), maxsplit=cell_limit)
-        table.append(cells)
+    table.indent = 999
+    for raw_line in fileinput.input([]):
+        stripped_line = raw_line.strip()
+        if not stripped_line:
+            table.add_blank()
+        elif set(stripped_line) == {'-'}:
+            table.add_rule()
+        else:
+            table.append(re.split(in_sep, stripped_line, maxsplit=cell_limit))
+            table.indent = min(table.indent, len(raw_line) - len(raw_line.lstrip()))
 
     while agenda:
         op = agenda.pop(0)
@@ -532,4 +567,7 @@ if __name__ == "__main__":
 
         table.operations[op](argument)
 
-    print("\n".join(tabulate(table.data, cell_separator=table.separator, line_end=table.eol_marker)))
+    print("\n".join(tabulate(table.data, indent=table.indent, 
+                             special_dict=table.extras,
+                             cell_separator=table.separator, 
+                             line_end=table.eol_marker)))

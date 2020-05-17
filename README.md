@@ -10,39 +10,43 @@ make and manipulate tables in editors that support external filters, as Vim does
 
 Toby Thurston -- 28 Apr 2020
 
+Verbs in the DSL
 
+    xp              transpose rows and cells
+    sort [col]      sort by value of columns in the order given, use UPPERCASE to reverse
+    add [function]  add sum, mean, var, sd etc to foot of column
+    arr col-list    rearrange/insert/delete cols and/or do calculations on column values.
+    dp dp-list      round numbers in each col to specified decimal places
+    sf sf-list      round numbers in each col to specified significant figures
+    make tex | latex | plain | csv | tsv | md   output in tex etc form
+    wrap n          wrap columns in long table n times (default=2)
+    unwrap n        unwrap cols in wide table (default=half number of cols)
+    zip n           zip n rows together
+    unzip n         unzip into n * the current number of rows & 1/n columns.
 
- Verbs: xp              transpose rows and cells
-        sort col-list   sort by value of columns in the order given, use UPPERCASE to reverse
-        add <function>  add sum, mean, var, sd etc to foot of column
-        arr col-list    rearrange/insert/delete cols and/or do calculations on column values.
-        dp dp-list      round numbers in each col to specified decimal places
-        sf sf-list      round numbers in each col to specified significant figures
-        make tex | latex | plain | csv | tsv | md   output in tex etc form
-        wrap n          wrap columns in long table n times (default=2)
-        unwrap n        unwrap cols in wide table (default=half number of cols)
-        zip n           zip n rows together
-        unzip n         unzip into n * the current number of rows & 1/n columns.
+This filter is primarily intended to be used as an assitant for an editor that
+allows you to filter a file, or a buffer, or a group of lines through an
+external program.  Such as Vim.  The idea is that you create a Vim command that
+calls this filter on a marked area in your file which is then replaced with the
+(improved) output. It also works as a simple command line filter.  The details
+of setting up Vim are explained below.  
 
-This filter is primarily intended to be used as an assitant for the Vim editor.
-The idea is that you create a Vim command that calls this filter on a marked
-area in your file which is then replaced with the (improved) output. It also
-works as a simple command line filter.  The details of setting up Vim are
-explained below.
+This Python version can also be used as an external module so that you can line
+up any table of text data.
 
 ## Motivation
 
-If your work involves editing lots of plain text you will get familiar with a plain
-text editor such as Vim or Emacs or similar. You will get familiar with the
-facilities for arranging code and paragraphs of plain text.  Eventually you will
-need to create a table of data or other information, something like this
+If your work involves editing lots of plain text you will get familiar with a
+plain text editor such as Vim or Emacs or similar. You will get familiar with
+the facilities for arranging code and paragraphs of plain text.  Eventually you
+will need to create a table of data or other information, something like this
 
-      event  eruption  waiting
-          1     3.600       79
-          2     1.800       54
-          3     3.333       74
-          4     2.283       62
-          5     4.533       85
+    event  eruption  waiting
+        1     3.600       79
+        2     1.800       54
+        3     3.333       74
+        4     2.283       62
+        5     4.533       85
 
 and you may find that your editor has some useful facilities for working in "block"
 mode that help to manage the table.  But you might also find that the facilities are
@@ -51,15 +55,16 @@ really didn't want to load the data into a spreadsheet or a statistics system li
 R; you just want the simple totals.   That's what tabulate is for.  Calling ":Table add"
 creates this:
 
-      event  eruption  waiting
-          1     3.600       79
-          2     1.800       54
-          3     3.333       74
-          4     2.283       62
-          5     4.533       85
-         15    15.549      354
+   event  eruption  waiting
+       1     3.600       79
+       2     1.800       54
+       3     3.333       74
+       4     2.283       62
+       5     4.533       85
+   ------------------------
+      15    15.549      354
 
-OK, that's not perfect, but all you have to do now is change that 15 to "Sum" (or just
+OK, that's not perfect, but all you have to do now is change that 15 to "Total" (or just
 undo the last change to get rid of the new line or whatever).
 
 Tabulate also lets you transpose a table (to get this...)
@@ -68,7 +73,7 @@ Tabulate also lets you transpose a table (to get this...)
     eruption  3.600  1.800  3.333  2.283  4.533
     waiting      79     54     74     62     85
 
-as well as sort by any column in the table, rearrange the columns, delete columns,
+as well as, sort by any column in the table, rearrange the columns, delete columns,
 or add new columns computed from the others.  It can't do everything you can do in a
 spreadsheet but it can do most of the simple things, and you can use it right in the
 middle of your favourite editor.
@@ -87,9 +92,9 @@ The overall flow is as follows
 
 5. Print the table neatly to <STDOUT>
 
-Steps 4 and 5 tend to be the slowest.  Note that you don't have to supply any verbs;
-so in this case step 3 takes no time at all, and the default action is therefore just
-to line up your table neatly.  Text columns are aligned left, numeric columns aligned right.
+Note that you don't have to supply any verbs; so in this case step 3 takes no
+time at all, and the default action is therefore just to line up your table
+neatly.  Text columns are aligned left, numeric columns aligned right.
 
 USAGE
 -----
@@ -106,9 +111,10 @@ Add a line like the following to your ".vimrc" file.
 
     :command! -nargs=* -range=% Table <line1>,<line2>!python3 ~/python-tabulate/tabulate.py <q-args>
 
-which you should adjust appropriately so your python can find where you put tabulate.
-You can of course use some word other than "Table" as the command name. Take your pick,
-except that Vim insists on the name starting with an uppercase letter.
+which you should adjust appropriately so your python can find where you put
+tabulate.  You can of course use some word other than "Table" as the command
+name. Perhaps "Tbl" ?  Take your pick, you can choose anything, except that Vim
+insists on the name starting with an uppercase letter.
 
 With this definition, when you type ":Table" in normal mode in Vim, it will call tabulate
 on the current area and replace it with the output.  If you are in Visual Line mode then
@@ -142,11 +148,13 @@ of two or more blanks.  This is generally what you want.  Consider this example.
 In most circumstances you can just leave the delimiter out and let it default to two or more spaces.
 Incidentally, any tab characters in your input are silently converted to double spaces before parsing.
 
-After the optional delimiter you should specify a sequence of verbs.  If the verb needs an option then
-that goes right after the verb.  Verbs and options are separated by blanks.  The parsing is very simple.
-If it looks like a verb it's treated as one.  If it doesn't, it's assumed to be an option.  Anything
-coming after an option, but not recognized as a verb, causes an error.  A message will be written back in the file.
-You will probably want to use the "undo" function after reading it.
+After the optional delimiter you should specify a sequence of verbs.  If the
+verb needs an option then that goes right after the verb.  Verbs and options
+are separated by blanks.  The parsing is very simple.  If it looks like a verb
+it's treated as one.  If it doesn't, it's assumed to be an option.  Anything
+coming after an option, but not recognized as a verb, causes an error.  A
+message will be written back in the file.  You will probably want to use the
+"undo" function after reading it.
 
 DESCRIPTION
 -----------
@@ -167,19 +175,24 @@ together as many verbs (plus optional arguments) as you like.
 becomes
 
     First  Second  Third
-      100     200    300
+    100    200     300
 
 It's often useful in combination with verbs that operate on columns like `sort` or `add`.
 So the sequence `xp add xp` will give you row totals, for example.
 
-### add [sum|mean|sd|var|...] - insert the sum|mean|etc at the bottom of a column
+### add [sum|mean|median|stdev|variance|...] - insert the sum|mean|etc at the bottom of a column
 
-`add` adds the total to the foot of a column.  Or the mean, standard deviation, variance, etc.
-The optional argument can be any valid method for a Statistics::Descriptive::Full object.  If you omit
-the optional argument it defaults to "sum".   If you put "sd" it will be expanded to "standard_deviation",
-similarly "var" is expanded to "variance".
+`add` adds the total to the foot of a column.  The default option is `sum`, but
+it can be any method from the Python3 `statistics` library: `mean`, `median`,
+`mode`, `stdev`, `variance`, and so on.  Non-numerical entries in a column count 
+as zeros.  A rule is added before the total row.  Given the simple table above `add` produces:
 
-Non-numerical entries in a column are simply ignored.
+    First   100
+    Second  200
+    Third   300
+    -----------
+    0       600
+
 
 ### sort [a|b|c|...] - sort on column a|b|etc
 
@@ -188,12 +201,8 @@ If you use upper case letters, "A", "B", etc the sort direction is reversed.
 An index beyond the last column is automatically adjusted so "sort z" sorts on the last column
 assuming you have fewer than 26 columns).
 
-You can also use numbers, so "sort 2" sorts on the second column, while
-like perl index addressing, "sort -1" means sort on the last column, "sort -2" last but one etc.
-NB *unlike* perl index addressing, "sort 1" sorts the first column not the second.
-(but "sort 0" also sorts on the first column...).  Because sorting is stable in perl, then
-if you want to sort on column b then column a, you can do "sort a sort b" to get the desired
-effect.
+You can only sort on one column at a time, but if you want to sort on column b
+then column a, you can do "sort a sort b" to get the desired effect.
 
 ### uniq [a|b|c|...] - filter out duplicated rows
 
@@ -207,34 +216,19 @@ duplicate values in column "a" and so on...
 At it simplest `arr` lets you rearrange, duplicate, or delete columns.  So if you have a
 four column table then:
 
-=over
-
-### *
-
-`arr dabc` puts the fourth column first
-
-### *
-
-`arr aabcd` duplicates the first column
-
-### *
-
-`arr cd` deletes the first two columns
-
-### *
-
-`arr abc` keeps only the first three columns
-
-=back
+- `arr dabc` puts the fourth column first
+- `arr aabcd` duplicates the first column
+- `arr cd` deletes the first two columns
+- `arr abc` keeps only the first three columns
 
 and so on.  If you want to keep everything and simply add an extra column at
 the end, there's a shortcut to save you typing lots of column letters: `arr
-~aa` will keep *all* the columns and then add two more copies of the first one
+~a` will keep *all* the columns and then add a copy of the first one
 on the end.  If you want to do more complicated things with lots of columns,
 you might find it easier to transpose the table first with "xp" and then use
 the regular line editing facilities in Vim to rearrange the rows, before
 transposing them back to columns.   You might also use the `label` verb to add
-alphabetic labels to the top of all the columns before you start.
+alphabetic labels to the bottom of all the columns before you start.
 
 Note: Astute readers may spot a problem here.  The sequence "arr add" meaning
 "delete cols b and c and duplicate col d" won't work because "add" is a
@@ -242,32 +236,19 @@ valid verb.  In this case (as similar ones) just put a pair of empty braces
 on the end, like so "arr add{}".
 
 Besides letters to identify column values you can use "?" to insert a random number,
-and "." to insert the current row number and "$" to insert the total number of rows.
+and "." to insert the current row number and ";" to insert the total number of rows.
 
-You can also insert arbitrary calculated columns by putting an expression in curly braces.
+You can also insert arbitrary calculated columns by putting an expression in curly braces or parentheses
 
-=over
+- `arr ab(a+b)` adds a new column that contains the sum of the values in the first two
 
-### *
+- `arr a(a**2)(sqrt(a))` adds two new cols with square and square root of the value in col 1.
 
-`arr ab{a+b}` adds a new column that contains the sum of the values in the first two
-
-### *
-
-`arr a{a**2}{sqrt(a)}` adds two new cols with square and square root of the value in col 1.
-
-### *
-
-`arr ~{sqrt(a)}` keeps all existing cols and adds a new col with the square root of the value in col 1.
-
-=back
+- `arr ~{sqrt(a)}` keeps all existing cols and adds a new col with the square root of the value in col 1.
 
 and so on.  Each single letter "a", "b", etc is changed into the corresponding
-cell value and then the resulting expression is evaluated. You can use any
-normal Perl function: sin, cos, atan2, sqrt, log, exp, int, abs, and so on.
-You can also use min, max (from List::Util) and floor and ceil from POSIX, as
-well as a `round()` function that works like Excel, and the `nearest()` function
-from Math::Round.
+cell value and then the resulting expression is evaluated. You can use most
+normal built-in or `math` function: sin, cos, atan2, sqrt, log, exp, int, abs, and so on.
 
 You can use operators like "." to concatenate values, but you can't include a
 space in your formula because this confuses the command line processing
