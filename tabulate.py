@@ -302,13 +302,10 @@ class Table:
             '''
             if c == '.':
                 return line_number
-
             if c == '?':
                 return random.random()
-
             if c == ';':
                 return self.rows
-
             return row[ord(c) - ord('a')]
 
         def _decimalize(expr):
@@ -331,13 +328,14 @@ class Table:
                     out.append((tokenize.OP, ')'))
                 else:
                     out.append((tn, tv))
+
             return tokenize.untokenize(out)
 
         def _get_expressions(perm):
             in_parens = 0
             token = ''
             for c in perm:
-                if c not in identity + specials + '(){}' and in_parens == 0:
+                if c.lower() not in identity + specials + '(){}' and in_parens == 0:
                     continue
 
                 if c == '{':
@@ -361,12 +359,6 @@ class Table:
             if token:
                 yield token + ')' * in_parens
 
-        def _as_decimal_if_possible(ss):
-            try:
-                return decimal.Decimal(ss)
-            except decimal.InvalidOperation:
-                return ss
-
         if all(x in identity + specials for x in perm):
             self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
             return
@@ -375,10 +367,16 @@ class Table:
         old_data = self.data[:]
         self.data = []
         self.rows = self.cols = 0
+        value_dict = {'Decimal': decimal.Decimal}
+        for k in identity:
+            value_dict[k.upper()] = 0 # accumulators
         for r in old_data:
-            value_dict = {'Decimal': decimal.Decimal}
             for k, v in zip(identity, r):
-                value_dict[k] = _as_decimal_if_possible(v)
+                try:
+                    value_dict[k] = decimal.Decimal(v)
+                    value_dict[k.upper()] += value_dict[k]
+                except decimal.InvalidOperation:
+                    value_dict[k] = v
 
             new_row = []
             for dd in desiderata:
@@ -551,6 +549,8 @@ if __name__ == "__main__":
         else:
             table.append(re.split(in_sep, stripped_line, maxsplit=cell_limit))
             table.indent = min(table.indent, len(raw_line) - len(raw_line.lstrip()))
+    if table.rows == 0:
+        table.indent = 0
 
     while agenda:
         op = agenda.pop(0)
