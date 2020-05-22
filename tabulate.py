@@ -298,8 +298,19 @@ class Table:
         if shape is None:
             return
 
-        if "wide".startswith(shape.lower()) and self.cols >= 3:
+        if self.cols < 3:
+            return
+
+        if "wide".startswith(shape.lower()):
             self._wrangle_wide()
+            return
+
+        if "count".startswith(shape.lower()):
+            self._wrangle_wide(len)
+            return
+
+        if "any".startswith(shape.lower()):
+            self._wrangle_wide(any)
             return
 
         m = re.match(r'long([1-9a-o])?', shape)
@@ -317,9 +328,26 @@ class Table:
         if self.cols - last_key_col > 1:
             self._wrangle_long(last_key_col)
             
-    def _wrangle_wide(self):
+    def _wrangle_wide(self, fun=sum):
         '''Reflow wide'''
-        print('wide')
+        bags = collections.defaultdict(list)
+        names_seen = dict()
+        keys_seen = dict()
+        header = self.data[0][:-2]
+        for r in self.data[1:]:
+            *key, name, value = r
+            key = tuple(key)
+            names_seen[name] = True
+            keys_seen[key] = True
+            bags[(key, name)].append(as_decimal(value))
+
+        self.data = []
+        self.rows = self.cols = 0
+        names = sorted(names_seen)
+        self.append(header + names)
+        for k in keys_seen:
+            self.append(list(k) + [fun(bags[(k, n)]) for n in names])
+
 
     def _wrangle_long(self, keystop):
         '''Reflow long'''
