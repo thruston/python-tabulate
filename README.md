@@ -53,19 +53,19 @@ and you may find that your editor has some useful facilities for working in "blo
 mode that help to manage the table.  But you might also find that the facilities are
 just a little bit limited.   You want to know the totals of each column, but you
 really didn't want to load the data into a spreadsheet or a statistics system like
-R; you just want the simple totals.   That's what tabulate is for.  Calling ":Table add"
+R; you just want the simple totals.   That's what tabulate is for.  Calling `:Table add`
 creates this:
 
-   event  eruption  waiting
-       1     3.600       79
-       2     1.800       54
-       3     3.333       74
-       4     2.283       62
-       5     4.533       85
-   ------------------------
-      15    15.549      354
+    event  eruption  waiting
+        1     3.600       79
+        2     1.800       54
+        3     3.333       74
+        4     2.283       62
+        5     4.533       85
+    ------------------------
+       15    15.549      354
 
-OK, that's not perfect, but all you have to do now is change that 15 to "Total" (or just
+OK, that's not perfect, but all you have to do now is change that 15 to `Total` (or just
 undo the last change to get rid of the new line or whatever).
 
 Tabulate also lets you transpose a table (to get this...)
@@ -108,16 +108,16 @@ You are unlikely to want to do this much, but try something like this
 
 ## Setting up a Table command in Vim
 
-Add a line like the following to your ".vimrc" file
+Add a line like the following to your `.vimrc` file
 
     :command! -nargs=* -range=% Table <line1>,<line2>!python3 ~/python-tabulate/tabulate.py <q-args>
 
 which you should adjust appropriately so your python can find where you put
-tabulate.  You can of course use some word other than "Table" as the command
-name. Perhaps "Tbl" ?  Take your pick, you can choose anything, except that Vim
+tabulate.  You can of course use some word other than `Table` as the command
+name. Perhaps `Tbl` ?  Take your pick, you can choose anything, except that Vim
 insists on the name starting with an uppercase letter.
 
-With this definition, when you type ":Table" in normal mode in Vim, it will call tabulate
+With this definition, when you type `:Table` in normal mode in Vim, it will call tabulate
 on the current area and replace it with the output.  If you are in Visual Line mode then
 the current area will just be the marked lines.  If you are in Normal mode then the current
 area will be the whole file.
@@ -136,8 +136,8 @@ The delimiter is used to split up each input line into cells.  It can be any
 string or regular expression that's a valid argument to the `re.split`
 function.  Except one containing blanks or a whole number between 0 and 9.  You
 can't use blanks (even inside quotes) because of the simple way that I split up
-the command line, and so I use whole numbers to mean "split on at least that
-many consecutive blanks" so if you use 1 as an argument the line will be split
+the command line, and so I use whole numbers to mean `split on at least that
+many consecutive blanks` so if you use 1 as an argument the line will be split
 on every blank space, and so on. The default argument is 2.  This means the
 line will be split at every occurrence of two or more blanks.  This is
 generally what you want.  Consider this example.
@@ -158,14 +158,14 @@ are separated by blanks.  The parsing is very simple.  If it looks like a verb
 it's treated as one.  If it doesn't, it's assumed to be an option.  Anything
 coming after an option, but not recognized as a verb, causes an error.  A
 message will be written back in the file.  You will probably want to use the
-"undo" function after reading it.
+`undo` function after reading it.
 
 DESCRIPTION
 -----------
 
 ## Verbs
 
-In all the examples below you need to prefix the command with ":Table".  You can string
+In all the examples below you need to prefix the command with `:Table`.  You can string
 together as many verbs (plus optional arguments) as you like.
 
 ### xp - transpose the table
@@ -184,7 +184,7 @@ becomes
 It's often useful in combination with verbs that operate on columns like `sort` or `add`.
 So the sequence `xp add xp` will give you row totals, for example.
 
-### add [sum|mean|median|stdev|variance|...] - insert the sum|mean|etc at the bottom of a column
+### add [sum|mean|...] - insert the sum|mean|etc at the bottom of a column
 
 `add` adds the total to the foot of a column.  The default option is `sum`, but
 it can be any method from the Python3 `statistics` library: `mean`, `median`,
@@ -200,20 +200,20 @@ as zeros.  A rule is added before the total row.  Given the simple table above `
 
 ### sort [a|b|c|...] - sort on column a|b|etc
 
-`sort` sorts the table on the given column.  "a" is the first, "b" the second, etc.
-If you use upper case letters, "A", "B", etc the sort direction is reversed.
-An index beyond the last column is automatically adjusted so "sort z" sorts on the last column
+`sort` sorts the table on the given column.  `a` is the first, `b` the second, etc.
+If you use upper case letters, `A`, `B`, etc the sort direction is reversed.
+An index beyond the last column is automatically adjusted so `sort z` sorts on the last column
 assuming you have fewer than 26 columns).
 
 You can only sort on one column at a time, but if you want to sort on column b
-then column a, you can do "sort a sort b" to get the desired effect.
+then column a, you can do `sort a sort b` to get the desired effect.
 
 ### uniq [a|b|c|...] - filter out duplicated rows
 
 `uniq` removes duplicate rows from the table.  With no argument the whole
 row is used as the key.  But if you provide a list of columns the key will
-consist of the values in those columns.  So "uniq a" will remove all rows with
-duplicate values in column "a" and so on...
+consist of the values in those columns.  So `uniq a` will remove all rows with
+duplicate values in column `a` and so on...
 
 ### arr [arrange-expression] - rearrange the columns
 
@@ -229,18 +229,18 @@ and so on.  If you want to keep everything and simply add an extra column at
 the end, there's a shortcut to save you typing lots of column letters: `arr
 ~a` will keep *all* the columns and then add a copy of the first one
 on the end.  If you want to do more complicated things with lots of columns,
-you might find it easier to transpose the table first with "xp" and then use
+you might find it easier to transpose the table first with `xp` and then use
 the regular line editing facilities in Vim to rearrange the rows, before
 transposing them back to columns.   You might also use the `label` verb to add
 alphabetic labels to the bottom of all the columns before you start.
 
-Note: Astute readers may spot a problem here.  The sequence "arr add" meaning
-"delete cols b and c and duplicate col d" won't work because "add" is a
+Note: Astute readers may spot a problem here.  The sequence `arr add` meaning
+`delete cols b and c and duplicate col d` won't work because `add` is a
 valid verb.  In this case (as similar ones) just put a pair of empty braces
-on the end, like so "arr add{}".
+on the end, like so `arr add{}`.
 
-Besides letters to identify column values you can use "?" to insert a random number,
-and "." to insert the current row number and ";" to insert the total number of rows.
+Besides letters to identify column values you can use `?` to insert a random number,
+and `.` to insert the current row number and `;` to insert the total number of rows.
 
 You can also insert arbitrary calculated columns by putting an expression in curly braces or parentheses
 
@@ -250,19 +250,19 @@ You can also insert arbitrary calculated columns by putting an expression in cur
 
 - `arr ~{sqrt(a)}` keeps all existing cols and adds a new col with the square root of the value in col 1.
 
-and so on.  Each single letter "a", "b", etc is changed into the corresponding
+and so on.  Each single letter `a`, `b`, etc is changed into the corresponding
 cell value and then the resulting expression is evaluated. You can use most
 normal built-in or `math` function: sin, cos, atan2, sqrt, log, exp, int, abs, and so on.
 
-You can use operators like "." to concatenate values, but you can't include a
+You can use operators like `.` to concatenate values, but you can't include a
 space in your formula because this confuses the command line processing
-earlier.  So an extra operator is included: the operator "_" will concatenate
-with a space.  Any sequence of more than one letter (like "bad") or any letter
-that does not refer to a letter in your table (possibly like "z") will be
+earlier.  So an extra operator is included: the operator `_` will concatenate
+with a space.  Any sequence of more than one letter (like `bad`) or any letter
+that does not refer to a letter in your table (possibly like `z`) will be
 treated as a plain string.
 
 Note that you should use lower case letters only to refer to each column value.
-If you use an upper case letter, "A", "B", etc, it will be replaced by the
+If you use an upper case letter, `A`, `B`, etc, it will be replaced by the
 cumulative sum of the corresponding column, in other words the sum of the
 values in the column from the top of the table to the current row. So given
 
@@ -278,8 +278,8 @@ values in the column from the top of the table to the current row. So given
 
 There are also some very simple date routines included.  `base` returns the number of days
 since 1 Jan in the year 1 (assuming the Gregorian calendar extended backwards).  The argument
-should be blank for today, or in the form "yyyy-mm-dd".  `date` does the opposite: given
-a number that represents the number of days since the year dot, it returns the date in "yyyy-mm-dd" form.
+should be blank for today, or in the form `yyyy-mm-dd`.  `date` does the opposite: given
+a number that represents the number of days since the year dot, it returns the date in `yyyy-mm-dd` form.
 There's also `dow` which takes a date and returns the day of the week, as a three letter string.
 
 So given a table with a column of dates, like this
@@ -289,31 +289,31 @@ So given a table with a column of dates, like this
     2011-03-19
     2011-07-05
 
-The command "arr a{dow(a)}" creates this
+The command `arr a{dow(a)}` creates this
 
     2011-01-17  Mon
     2011-02-23  Wed
     2011-03-19  Sat
     2011-07-05  Tue
 
-Alternatively "arr a{base()-base(a)}" will produce the days from each date to today.
+Alternatively `arr a{base()-base(a)}` will produce the days from each date to today.
 
     2011-01-17  3413
     2011-02-23  3376
     2011-03-19  3352
     2011-07-05  3244
 
-And "arr a{date(base(a)+140)}" will add 20 weeks to each date
+And `arr a{date(base(a)+140)}` will add 20 weeks to each date
 
     2011-01-17  2011-06-06
     2011-02-23  2011-07-13
     2011-03-19  2011-08-06
     2011-07-05  2011-11-22
 
-As a convenience is the number given to "date()" is less than 1000, then it's
+As a convenience is the number given to `date()` is less than 1000, then it's
 assumed that you mean a delta on today rather than a day in the pre-Christian
-era.  So "date(70)" will produce the date in 10 weeks time, and "date(-91)"
-will give you the date three months ago, and so on.  "date()" produces today's
+era.  So `date(70)` will produce the date in 10 weeks time, and `date(-91)`
+will give you the date three months ago, and so on.  `date()` produces today's
 date.  Note: dates will also be recognized in the form yyyymmdd or yyyy/mm/dd,
 etc, or anything that dateutil.parser can read.
 
@@ -324,19 +324,19 @@ As delivered tabulate calculates with 12 decimal places, so you might need to ro
 This is what `dp` does.  The required argument is a string of digits indicating how many decimal places
 between 0 and 9 you want for each column.  There's no default, it just does nothing with no argument, but
 if your string is too short the last digit is repeated as necessary.  So to round everything to a whole number
-do "dp 0".  To round the first col to 0, the second to 3 and the rest to 4 do "dp 034", and so on.
+do `dp 0`.  To round the first col to 0, the second to 3 and the rest to 4 do `dp 034`, and so on.
 
 ### make [plain|tex|latex|csv|tsv] - set the output format
 
 `make` sets the output format.   Normally this happens automagically, but if, for example, you want to separate
-your input data by single spaces, you might find it helpful to do ":Table 1 make plain" to line everything up
+your input data by single spaces, you might find it helpful to do `:Table 1 make plain` to line everything up
 with the default two spaces.   Or you might want explicitly to make a plain table into TeX format.
 
 Note that this only affects the rows, it won't magically generate the TeX or LaTeX table preamble.
 
 The CSV option should produce something that you can easily import into Excel
 or similar spreadsheets.  However beware that it's not very clever: fields with
-commas in will be enclosed with "double quotes", but my routines are designed
+commas in will be enclosed with `double quotes`, but my routines are designed
 to be simple rather than fool proof.  To get back from CSV form to plain form
 do `Table , make plain`, (or just the undo command in Vi).
 
@@ -364,7 +364,7 @@ them to look like this, where each column is a variable and each row is an obser
     No asbestos exposure  Lung cancer        52
     No asbestos exposure  No lung cancer    941
 
-And that's what "pivot long" does.  Here's another example.
+And that's what `pivot long` does.  Here's another example.
 
     Region  Quarter  Sales
     ----------------------
@@ -377,7 +377,7 @@ And that's what "pivot long" does.  Here's another example.
     West    Q3        1990
     West    Q4        2600
 
-With this input, "pivot wide" gives you this
+With this input, `pivot wide` gives you this
 
     Region    Q1    Q2    Q3    Q4
     ------------------------------
@@ -399,20 +399,20 @@ Another way to reshape a table.  Given
     West  Q3  1990
     West  Q4  2600
 
-as input, "wrap" gives you
+as input, `wrap` gives you
 
     East  Q1  1200  West  Q1  2200
     East  Q2  1100  West  Q2  2500
     East  Q3  1500  West  Q3  1990
     East  Q4  2200  West  Q4  2600
 
-while "wrap 3" gives
+while `wrap 3` gives
 
     East  Q1  1200  East  Q4  2200  West  Q3  1990
     East  Q2  1100  West  Q1  2200  West  Q4  2600
     East  Q3  1500  West  Q2  2500
 
-"unwrap" does the opposite - the option is the number of columns you want in the new output, and defaults
+`unwrap` does the opposite - the option is the number of columns you want in the new output, and defaults
 to half the number of columns in the input.
 
 ### zip [n] | unzip [n]
@@ -428,14 +428,14 @@ Re-shape a table row by row.  Given
     Q4  East  2200
     Q4  West  2600
 
-as input, "zip" gives you
+as input, `zip` gives you
 
     Q1  East  1200  Q1  West  2200
     Q2  East  1100  Q2  West  2500
     Q3  East  1500  Q3  West  1990
     Q4  East  2200  Q4  West  2600
 
-"unzip" does the opposite.  The option is the number of rows to combine.  The default is 2, so that
+`unzip` does the opposite.  The option is the number of rows to combine.  The default is 2, so that
 you zip every other row, and unzip the table in half (as it were).
 
 ### label - add alphabetic labels to all the columns
@@ -450,7 +450,7 @@ will generate a table with a single column of integers running from `a` to `b`. 
 interpreted as `gen 1..10`.
 
 If the table already has some data, then the single column will be appended as new rows at the bottom
-of the existing column "a".
+of the existing column `a`.
 
 ### shuffle - rearrange the rows with a Fisher-Yates shuffle.
 
@@ -474,16 +474,16 @@ produces (for example):
 
 Any blank lines in your table are saved as special lines and reinserted at the
 appropriate place on output. So if you have a long table you can use blanks
-to separate blocks of data.  Similarly any lines consisting entirely of "-" characters
+to separate blocks of data.  Similarly any lines consisting entirely of `-` characters
 are treated as horizontal rules and reinserted (appropriately sized) on output.
-Any lines starting with "#" are treated as comment lines, and again reinserted in the
+Any lines starting with `#` are treated as comment lines, and again reinserted in the
 right places on output.
 
 ## Support for TeX and LaTeX
 
 `tabulate` also supports tables neatly in TeX and LaTeX documents.  To convert
-a plain table to TeX format use "make tex".  If you already have a TeX table
-then `tabulate` automatically spots the TeX delimiters "&" and "\cr", and puts
+a plain table to TeX format use `make tex`.  If you already have a TeX table
+then `tabulate` automatically spots the TeX delimiters `&` and `\cr`, and puts
 them back in when it formats the output. Everything else works as described
 above.  If you convert from plain to TeX format, then any horizontal rules will
 be converted to the appropriate bit of TeX input to get a neat output rule.
