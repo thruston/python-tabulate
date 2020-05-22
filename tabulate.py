@@ -82,6 +82,7 @@ class Table:
             'make': self.set_output_form,
             'label': self.label_columns,
             'pivot': self.wrangle,
+            'roll': self.roll_by_col,
             'sf': self.fix_sigfigs,
             'shuffle': self.shuffle_rows,
             'sort': self.sort_rows_by_col,
@@ -516,24 +517,27 @@ class Table:
                     new_row.append(dd)
             self.append(new_row)
 
-    def sort_rows_by_col(self, column):
-        '''Sort the table
+    def fancy_col_index(self, col_spec):
+        '''Find me an index, returns index + T/F to say if letter was upper case
         '''
-        if column is None:
-            column = 'a'
 
-        reverse_sort = False
-        if column in string.ascii_uppercase:
-            reverse_sort = True
-            column = column.lower()
+        if col_spec is None:
+            col = 0
+        else:
+            col = col_spec
 
-        if column in string.ascii_lowercase:
-            column = ord(column) - ord('a')
+        flag = False
+        if col in string.ascii_uppercase:
+            flag = True
+            col = col.lower()
+
+        if col in string.ascii_lowercase:
+            col = ord(col) - ord('a')
 
         try:
-            c = int(column)
+            c = int(col)
         except ValueError:
-            print('?! sort', column)
+            print('?! sort', col_spec)
             return
 
         if c < 0:
@@ -543,10 +547,27 @@ class Table:
         elif c >= self.cols:
             c = self.cols - 1
         assert 0 <= c < self.cols
+        return (c, flag)
+
+
+    def sort_rows_by_col(self, column):
+        '''Sort the table
+        '''
+        c, reverse_sort = self.fancy_col_index(column)
 
         self.data = list(row for _, _, row in sorted(((as_number(r[c], reverse_sort),
                                                        as_seminumeric_string(r[c]), r)
                                                       for r in self.data), reverse=reverse_sort))
+
+    def roll_by_col(self, column):
+        '''Roll one column
+        '''
+        c, up = self.fancy_col_index(column)
+        self.data = list(map(list, zip(*self.data)))
+        t = collections.deque(self.data[c])
+        t.rotate(-1 if up else 1)
+        self.data[c] = list(t)
+        self.data = list(map(list, zip(*self.data)))
 
 def _check_type(cell):
     '''is this a number? (or something similar)
