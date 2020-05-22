@@ -47,6 +47,7 @@ class Table:
             'dp': self.fix_decimal_places,
             'gen': self.generate_new_rows,
             'make': self.set_output_form,
+            'pivot': self.wrangle,
             'sf': self.fix_sigfigs,
             'shuffle': self.shuffle_rows,
             'sort': self.sort_rows_by_col,
@@ -283,6 +284,56 @@ class Table:
         self.add_rule()
         self.append(footer)
 
+    def wrangle(self, shape):
+        '''Reflow / pivot / reshape from wide to long or long to wide
+
+        pivot wide assumes that col -1 has values and -2 has col head values
+        and everything else are key. Does nothing if there are less than 3 cols.
+
+        pivot long assumes only key is col A but you can add a letter or number
+        to show where the keys stop -- so if the first three are keys then use "longc"
+        or "long3" -- numbering from a=1
+
+        '''
+        if shape is None:
+            return
+
+        if "wide".startswith(shape.lower()) and self.cols >= 3:
+            self._wrangle_wide()
+            return
+
+        m = re.match(r'long([1-9a-o])?', shape)
+        if m is None:
+            return
+
+        if m.group(1) is None:
+            last_key_col = 1
+        else:
+            try:
+                last_key_col = int(m.group(1))
+            except ValueError:
+                last_key_col = ord(m.group(1)) - ord('a') + 1
+
+        if self.cols - last_key_col > 1:
+            self._wrangle_long(last_key_col)
+            
+    def _wrangle_wide(self):
+        '''Reflow wide'''
+        print('wide')
+
+    def _wrangle_long(self, keystop):
+        '''Reflow long'''
+        header = self.data[0][:keystop] + ['Name', 'Value']
+        names = self.data[0][keystop:]
+        wide_data = self.data[1:]
+        self.data = []
+        self.rows = self.cols = 0
+       
+        self.append(header)
+        for r in wide_data:
+            for n, v in zip(names, r[keystop:]):
+                self.append(r[:keystop] + [n, v])
+
     def arrange_columns(self, perm):
         '''Arrange the columns of the table
         '''
@@ -466,7 +517,7 @@ def tabulate(data, indent=0, cell_separator='  ', line_end='', special_dict=coll
         if special_dict[r] == 'rule':
             yield ' ' * indent + '-' * len(out)
         elif special_dict[r] == 'blank':
-            yield ' ' * len(indent + out)
+            yield ' ' * (indent + len(out))
 
 def as_number(x, backwards=False):
     '''return something for sort to work with'''
@@ -541,6 +592,7 @@ if __name__ == "__main__":
 
     table.indent = 999
     for raw_line in fileinput.input([]):
+        raw_line = raw_line.replace("\t", "    ")
         stripped_line = raw_line.strip()
         if not stripped_line:
             table.add_blank()
