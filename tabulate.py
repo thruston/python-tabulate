@@ -8,6 +8,7 @@ A module to line up text tables
 # pylint: disable=C0103, C0301
 
 import collections
+import datetime
 import decimal
 import fileinput
 import math
@@ -19,6 +20,8 @@ import sys
 
 import dateutil.parser as dup
 
+# decimal.getcontext().prec = 12
+
 # Functions for column maths
 def exp(d):
     return d.exp()
@@ -29,6 +32,35 @@ def log(d):
 def ln(d):
     return d.ln()
 
+def dow(sss):
+    try:
+        return dup.parse(sss).strftime("%a")
+    except (TypeError, ValueError):
+        return sss
+
+def base(sss=None):
+    try:
+        dt = dup.parse(sss)
+    except (TypeError, ValueError):
+        dt = datetime.date.today()
+    return dt.toordinal()
+
+def date(ordinal=0):
+    try:
+        ordinal = int(ordinal)
+    except (TypeError, ValueError):
+        ordinal = 0
+
+    if abs(ordinal) < 1000:
+        dt = datetime.date.today() + datetime.timedelta(days=ordinal)
+    else:
+        try:
+            dt = datetime.date.fromordinal(ordinal)
+        except (TypeError, ValueError):
+            dt = datetime.date.today()
+
+    return dt.isoformat()
+
 class Table:
     '''A class to hold a table -- and some functions thereon'''
 
@@ -37,6 +69,7 @@ class Table:
         self.data = []
         self.rows = 0
         self.cols = 0
+        self.indent = 999
         self.extras = collections.defaultdict(str)
         self.separator = '  ' # two spaces
         self.eol_marker = ''
@@ -47,6 +80,7 @@ class Table:
             'dp': self.fix_decimal_places,
             'gen': self.generate_new_rows,
             'make': self.set_output_form,
+            'label': self.label_columns,
             'pivot': self.wrangle,
             'sf': self.fix_sigfigs,
             'shuffle': self.shuffle_rows,
@@ -70,6 +104,18 @@ class Table:
 
         self.data.append(row)
         self.rows += 1
+
+    def label_columns(self, _):
+        "add some labels in alphabetical order"
+        self.data.insert(0, string.ascii_lowercase[:self.cols])
+        self.rows +=1
+
+    def column(self, i):
+        "get a column from the table - zero indexed"
+        try:
+            return [(is_decimal(r[i]), as_decimal(r[i])) for r in self.data]
+        except IndexError:
+            return []
 
     def add_blank(self):
         "flag a blank"
@@ -271,15 +317,20 @@ class Table:
         '''Reduce column and append result to foot of table
         '''
         if isinstance(fun, str) and hasattr(statistics, fun):
-            fun = getattr(statistics, fun)
+            func = getattr(statistics, fun)
         elif callable(fun):
-            pass
+            func = fun
         else:
-            fun = sum
+            func = sum
+            fun = "Total"
 
         footer = []
         for c in range(self.cols):
-            footer.append(fun(as_decimal(r[c]) for r in self.data))
+            booleans, decimals = zip(*self.column(c))
+            if not any(booleans):
+                footer.append(fun)
+            else:
+                footer.append(func(decimals))
 
         self.add_rule()
         self.append(footer)
@@ -327,7 +378,7 @@ class Table:
 
         if self.cols - last_key_col > 1:
             self._wrangle_long(last_key_col)
-            
+
     def _wrangle_wide(self, fun=sum):
         '''Reflow wide'''
         bags = collections.defaultdict(list)
@@ -356,7 +407,7 @@ class Table:
         wide_data = self.data[1:]
         self.data = []
         self.rows = self.cols = 0
-       
+
         self.append(header)
         for r in wide_data:
             for n, v in zip(names, r[keystop:]):
@@ -532,14 +583,14 @@ def tabulate(data, indent=0, cell_separator='  ', line_end='', special_dict=coll
     # decide how to align them
     for i in range(cols):
         col_widths[i] = max(col_widths[i])
-        col_types[i] = '>' if sum(col_types[i])/len(col_types[i]) >= 0.8 else '<'
+        col_types[i] = '>' if sum(col_types[i])/len(col_types[i]) >= 1/2 else '<'
 
     # generate nicely lined up rows
     for r, row in enumerate(data):
         out = []
         for c, cell in enumerate(row):
             out.append(f'{cell:{col_types[c]}{col_widths[c]}}')
-        
+
         out = cell_separator.join(out).rstrip() + line_end # no trailing blanks
         yield ' ' * indent + out
         if special_dict[r] == 'rule':
@@ -589,6 +640,13 @@ def as_decimal(n, na_value=decimal.Decimal('0')):
     except decimal.InvalidOperation:
         return na_value
 
+def is_decimal(n):
+    "Is this a decimal"
+    try:
+        _ = decimal.Decimal(n)
+        return True
+    except decimal.InvalidOperation:
+        return False
 
 if __name__ == "__main__":
 
@@ -618,7 +676,6 @@ if __name__ == "__main__":
 
     table = Table()
 
-    table.indent = 999
     for raw_line in fileinput.input([]):
         raw_line = raw_line.replace("\t", "    ")
         stripped_line = raw_line.strip()
@@ -647,7 +704,7 @@ if __name__ == "__main__":
 
         table.operations[op](argument)
 
-    print("\n".join(tabulate(table.data, indent=table.indent, 
+    print("\n".join(tabulate(table.data, indent=table.indent,
                              special_dict=table.extras,
-                             cell_separator=table.separator, 
+                             cell_separator=table.separator,
                              line_end=table.eol_marker)))

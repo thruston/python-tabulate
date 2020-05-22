@@ -8,23 +8,24 @@ saving you hours of time faffing about with format and alignment.
 As a script it provides a filter with a simple DSL that can be used to 
 make and manipulate tables in editors that support external filters, as Vim does.
 
-Toby Thurston -- 28 Apr 2020
+Toby Thurston -- 22 May 2020
 
-Verbs in the DSL
+## Verbs in the DSL
 
-    xp              transpose rows and cells
-    sort [col]      sort by value of columns in the order given, use UPPERCASE to reverse
-    add [function]  add sum, mean, var, sd etc to foot of column
-    arr col-list    rearrange/insert/delete cols and/or do calculations on column values.
-    dp dp-list      round numbers in each col to specified decimal places
-    sf sf-list      round numbers in each col to specified significant figures
+    xp               transpose rows and cells
+    sort [col]       sort by value of columns in the order given, use UPPERCASE to reverse
+    add [function]   add sum, mean, var, sd etc to foot of column
+    arr col-list     rearrange/insert/delete cols and/or do calculations on column values.
+    dp dp-list       round numbers in each col to specified decimal places
+    sf sf-list       round numbers in each col to specified significant figures
     make tex | latex | plain | csv | tsv | md   output in tex etc form
-    wrap n          wrap columns in long table n times (default=2)
-    unwrap n        unwrap cols in wide table (default=half number of cols)
-    zip n           zip n rows together
-    unzip n         unzip into n * the current number of rows & 1/n columns.
+    wrap n           wrap columns in long table n times (default=2)
+    unwrap n         unwrap cols in wide table (default=half number of cols)
+    zip n            zip n rows together
+    unzip n          unzip into n * the current number of rows & 1/n columns.
+    pivot wide|long  reshape, tidyr, melt/cast, simple tables
 
-This filter is primarily intended to be used as an assitant for an editor that
+This filter is primarily intended to be used as an assistant for an editor that
 allows you to filter a file, or a buffer, or a group of lines through an
 external program.  Such as Vim.  The idea is that you create a Vim command that
 calls this filter on a marked area in your file which is then replaced with the
@@ -107,7 +108,7 @@ You are unlikely to want to do this much, but try something like this
 
 ## Setting up a Table command in Vim
 
-Add a line like the following to your ".vimrc" file.
+Add a line like the following to your ".vimrc" file
 
     :command! -nargs=* -range=% Table <line1>,<line2>!python3 ~/python-tabulate/tabulate.py <q-args>
 
@@ -131,13 +132,15 @@ Use blank to separate the command line: the delimiter argument and any verbs or 
 single blank-separated words.  Any word that looks like a verb will be treated as a verb, even
 if you meant it to be an option.  See below for details.
 
-The delimiter is used to split up each input line into cells.  It can be any string or regular
-expression that's a valid argument to the perl `split` function.  Except one containing blanks
-or a whole number between 0 and 9.  You can't use blanks (even inside quotes) because of the
-simple way that I split up the command line, and so I use whole numbers to mean "split on at least
-that many consecutive blanks" so if you use 1 as an argument the line will be split on every
-blank space, and so on. The default argument is 2.  This means the line will be split at every occurrence
-of two or more blanks.  This is generally what you want.  Consider this example.
+The delimiter is used to split up each input line into cells.  It can be any
+string or regular expression that's a valid argument to the `re.split`
+function.  Except one containing blanks or a whole number between 0 and 9.  You
+can't use blanks (even inside quotes) because of the simple way that I split up
+the command line, and so I use whole numbers to mean "split on at least that
+many consecutive blanks" so if you use 1 as an argument the line will be split
+on every blank space, and so on. The default argument is 2.  This means the
+line will be split at every occurrence of two or more blanks.  This is
+generally what you want.  Consider this example.
 
     Item          Amount
     First label       23
@@ -145,8 +148,9 @@ of two or more blanks.  This is generally what you want.  Consider this example.
     Third one         55
     Total            123
 
-In most circumstances you can just leave the delimiter out and let it default to two or more spaces.
-Incidentally, any tab characters in your input are silently converted to double spaces before parsing.
+In most circumstances you can just leave the delimiter out and let it default
+to two or more spaces.  Incidentally, any tab characters in your input are
+silently converted to double spaces before parsing.
 
 After the optional delimiter you should specify a sequence of verbs.  If the
 verb needs an option then that goes right after the verb.  Verbs and options
@@ -191,7 +195,7 @@ as zeros.  A rule is added before the total row.  Given the simple table above `
     Second  200
     Third   300
     -----------
-    0       600
+    Total   600
 
 
 ### sort [a|b|c|...] - sort on column a|b|etc
@@ -272,17 +276,6 @@ values in the column from the top of the table to the current row. So given
     Second  2  3
     Third   3  6
 
-You can also refer to the "previous" value of a column, so if you prefix a column
-letter with ^ it will pick up the value for that column in the row above.  So `arr ab{^b}`
-with the table above gives you
-
-    First   1  1
-    Second  2  1
-    Third   3  2
-
-Note that the upper case letters also work inside a {curly brace} expression, so you can include them
-and the ^-prefix in normal expressions.
-
 There are also some very simple date routines included.  `base` returns the number of days
 since 1 Jan in the year 1 (assuming the Gregorian calendar extended backwards).  The argument
 should be blank for today, or in the form "yyyy-mm-dd".  `date` does the opposite: given
@@ -296,43 +289,33 @@ So given a table with a column of dates, like this
     2011-03-19
     2011-07-05
 
-the command "arr a{dow(a)}" creates this
+The command "arr a{dow(a)}" creates this
 
     2011-01-17  Mon
     2011-02-23  Wed
     2011-03-19  Sat
     2011-07-05  Tue
 
-alternatively "arr a{base()-base(a)}" will produce the days from each date to today.
+Alternatively "arr a{base()-base(a)}" will produce the days from each date to today.
 
-    2011-01-17  1681
-    2011-02-23  1644
-    2011-03-19  1620
-    2011-07-05  1512
+    2011-01-17  3413
+    2011-02-23  3376
+    2011-03-19  3352
+    2011-07-05  3244
 
-and "arr a{date(base(a)+140)}" will add 20 weeks to each date
+And "arr a{date(base(a)+140)}" will add 20 weeks to each date
 
     2011-01-17  2011-06-06
     2011-02-23  2011-07-13
     2011-03-19  2011-08-06
     2011-07-05  2011-11-22
 
-As a convenience is the number given to "date()" is less than 1000, then it's assumed that you mean
-a delta on today rather than a day in the pre-Christian era.  So "date(70)" will produce the date in 10 weeks time,
-and "date(-91)" will give you the date three months ago, and so on.  "date()" produces today's date.
-
-Note: dates will also be recognized in the form yyyymmdd or yyyy/mm/dd, etc.  The exact matching expression is
-
-    \A([12]\d\d\d)\D?([01]\d)\D?([0123]\d)\Z
-
-so you must use 4 digit years, but you can use any non-digit as a separator.  It also means
-that you can use dates like 2011-12-32.  You'll find that date(base('2011-12-32')) returns '2012-01-01'.
-
-To get dates in this sorted format (which is the ISO standard by the way), you can use `etos` and `utos`.
-`etos` takes European dates in the form dd/mm/yyyy and returns yyyy-mm-dd; `utos` takes US dates in the form mm/dd/yyyy.
-Note that they still both expect full year numbers.  There's only so much automation that's worth while.
-
-There's also a `month_number` function that takes a string that looks like a month and returns an appropriate number.
+As a convenience is the number given to "date()" is less than 1000, then it's
+assumed that you mean a delta on today rather than a day in the pre-Christian
+era.  So "date(70)" will produce the date in 10 weeks time, and "date(-91)"
+will give you the date three months ago, and so on.  "date()" produces today's
+date.  Note: dates will also be recognized in the form yyyymmdd or yyyy/mm/dd,
+etc, or anything that dateutil.parser can read.
 
 
 ### dp [nnnnn...] - round numbers to n decimal places
@@ -360,40 +343,44 @@ do `Table , make plain`, (or just the undo command in Vi).
 The TSV option can be used when you want to import into Word -- you can use Table.. Convert Text to Table...
 using tabs as the column separator
 
-### reshape [long|wide] - expand or condense data tables for R
+### pivot [long|wide] - expand or condense data tables for R
 
 This is used to take a square table and make it a long one.  It's best explained with an example.
 
 Consider the following table.
 
     Exposure category     Lung cancer  No lung cancer
+    -------------------------------------------------
     Asbestos exposure               6              51
     No asbestos exposure           52             941
 
 Nice and compact, but the values are in a 2x2 matrix rather than a useful column.  Sometimes you want
-them to look like this.
+them to look like this, where each column is a variable and each row is an observation.
 
-    Exposure category     Key             Value
+    Exposure category     Name            Value
+    -------------------------------------------
     Asbestos exposure     Lung cancer         6
     Asbestos exposure     No lung cancer     51
     No asbestos exposure  Lung cancer        52
     No asbestos exposure  No lung cancer    941
 
-And that's what "reshape long" does.  Here's another example.
+And that's what "pivot long" does.  Here's another example.
 
-    Region      Quarter     Sales
-    East        Q1          1200
-    East        Q2          1100
-    East        Q3          1500
-    East        Q4          2200
-    West        Q1          2200
-    West        Q2          2500
-    West        Q3          1990
-    West        Q4          2600
+    Region  Quarter  Sales
+    ----------------------
+    East    Q1        1200
+    East    Q2        1100
+    East    Q3        1500
+    East    Q4        2200
+    West    Q1        2200
+    West    Q2        2500
+    West    Q3        1990
+    West    Q4        2600
 
-With this input, "reshape wide" gives you this
+With this input, "pivot wide" gives you this
 
     Region    Q1    Q2    Q3    Q4
+    ------------------------------
     East    1200  1100  1500  2200
     West    2200  2500  1990  2600
 
@@ -502,3 +489,6 @@ above.  If you convert from plain to TeX format, then any horizontal rules will
 be converted to the appropriate bit of TeX input to get a neat output rule.
 No attempt is made to create a preamble for you.
 
+## Warning
+
+Not all of this is true (yet).
