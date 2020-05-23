@@ -451,6 +451,11 @@ class Table:
                 return self.rows
             return row[ord(c) - ord('a')]
 
+        if all(x in identity + specials for x in perm):
+            self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
+            self.cols = len(perm) # perm can delete and/or add columns
+            return
+
         def _decimalize(expr):
             '''borrowed from the example decistmt
             '''
@@ -501,11 +506,6 @@ class Table:
 
             if token:
                 yield token + ')' * in_parens
-
-        if all(x in identity + specials for x in perm):
-            self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
-            self.cols = len(perm)
-            return
 
         desiderata = list(_get_expressions(perm))
         old_data = self.data[:]
@@ -586,7 +586,7 @@ class Table:
                 previous_t = this_t
 
         for i in reversed(rows_to_delete):
-            self.data.pop(i)
+            del self.data[i]
             self.rows -= 1
 
     def roll_by_col(self, col_spec):
