@@ -53,6 +53,10 @@ def date(ordinal=0):
 
     if abs(ordinal) < 1000:
         dt = datetime.date.today() + datetime.timedelta(days=ordinal)
+    elif ordinal > 1000000000000:
+        dt = datetime.datetime.utcfromtimestamp(ordinal / 1000)
+    elif ordinal > 1000000000:
+        dt = datetime.datetime.utcfromtimestamp(ordinal)
     else:
         try:
             dt = datetime.date.fromordinal(ordinal)
@@ -86,6 +90,7 @@ class Table:
             'sf': self.fix_sigfigs,
             'shuffle': self.shuffle_rows,
             'sort': self.sort_rows_by_col,
+            'uniq': self.remove_duplicates_by_col,
             'unwrap': self.unrapper,
             'unzip': self.unzipper,
             'wrap': self.rapper,
@@ -115,6 +120,13 @@ class Table:
         "get a column from the table - zero indexed"
         try:
             return [(is_decimal(r[i]), as_decimal(r[i])) for r in self.data]
+        except IndexError:
+            return []
+
+    def row(self, i):
+        "get a row - zero indexed"
+        try:
+            return [(is_decimal(c), as_decimal(c)) for c in self.data[i]]
         except IndexError:
             return []
 
@@ -492,6 +504,7 @@ class Table:
 
         if all(x in identity + specials for x in perm):
             self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
+            self.cols = len(perm)
             return
 
         desiderata = list(_get_expressions(perm))
@@ -522,22 +535,20 @@ class Table:
         '''
 
         if col_spec is None:
-            col = 0
-        else:
-            col = col_spec
+            col_spec = 'a'
 
         flag = False
-        if col in string.ascii_uppercase:
+        if col_spec in string.ascii_uppercase:
             flag = True
-            col = col.lower()
+            col_spec = col_spec.lower()
 
-        if col in string.ascii_lowercase:
-            col = ord(col) - ord('a')
+        if col_spec in string.ascii_lowercase:
+            col_spec = ord(col_spec) - ord('a')
 
         try:
-            c = int(col)
+            c = int(col_spec)
         except ValueError:
-            print('?! sort', col_spec)
+            print('?! colspec', col_spec)
             return
 
         if c < 0:
@@ -549,24 +560,45 @@ class Table:
         assert 0 <= c < self.cols
         return (c, flag)
 
-
-    def sort_rows_by_col(self, column):
+    def sort_rows_by_col(self, col_spec):
         '''Sort the table
         '''
-        c, reverse_sort = self.fancy_col_index(column)
+        for col in col_spec:
+            c, want_reverse = self.fancy_col_index(col)
+            def make_key(row):
+                return (as_number(row[c], want_reverse), as_seminumeric_string(row[c]), row[c])
+            self.data.sort(key=make_key, reverse=want_reverse)
 
-        self.data = list(row for _, _, row in sorted(((as_number(r[c], reverse_sort),
-                                                       as_seminumeric_string(r[c]), r)
-                                                      for r in self.data), reverse=reverse_sort))
-
-    def roll_by_col(self, column):
-        '''Roll one column
+    def remove_duplicates_by_col(self, col_spec):
+        '''like uniq, remove row if key cols match the row above
         '''
-        c, up = self.fancy_col_index(column)
+        cols_to_check = []
+        for c in col_spec:
+            i, _ = self.fancy_col_index(c)
+            cols_to_check.append(i)
+        rows_to_delete = []
+        previous_t = ''.join(self.data[0][j] for j in cols_to_check)
+        for i in range(1, self.rows):
+            this_t = ' '.join(self.data[i][j] for j in cols_to_check)
+            if previous_t == this_t:
+                rows_to_delete.append(i)
+            else:
+                previous_t = this_t
+
+        for i in reversed(rows_to_delete):
+            self.data.pop(i)
+            self.rows -= 1
+
+    def roll_by_col(self, col_spec):
+        '''Roll columns, up, or down
+        '''
         self.data = list(map(list, zip(*self.data)))
-        t = collections.deque(self.data[c])
-        t.rotate(-1 if up else 1)
-        self.data[c] = list(t)
+        for c in col_spec:
+            i, up = self.fancy_col_index(c)
+            if up:
+                self.data[i].append(self.data[i].pop(0))
+            else:
+                self.data[i].insert(0, self.data[i].pop())
         self.data = list(map(list, zip(*self.data)))
 
 def _check_type(cell):

@@ -8,12 +8,13 @@ saving you hours of time faffing about with format and alignment.
 As a script it provides a filter with a simple DSL that can be used to 
 make and manipulate tables in editors that support external filters, as Vim does.
 
-Toby Thurston -- 22 May 2020
+Toby Thurston -- 23 May 2020
 
 ## Verbs in the DSL
 
     xp               transpose rows and cells
     sort [col]       sort by value of columns in the order given, use UPPERCASE to reverse
+    uniq [col]
     add [function]   add sum, mean, var, sd etc to foot of column
     arr col-list     rearrange/insert/delete cols and/or do calculations on column values.
     dp dp-list       round numbers in each col to specified decimal places
@@ -205,15 +206,16 @@ If you use upper case letters, `A`, `B`, etc the sort direction is reversed.
 An index beyond the last column is automatically adjusted so `sort z` sorts on the last column
 assuming you have fewer than 26 columns).
 
-You can only sort on one column at a time, but if you want to sort on column b
-then column a, you can do `sort a sort b` to get the desired effect.
+You can sort on a sequence of columns by just giving a longer string.
+So `sort abc` is the same as `sort a sort b sort c` (but slightly quicker).
 
 ### uniq [a|b|c|...] - filter out duplicated rows
 
-`uniq` removes duplicate rows from the table.  With no argument the whole
-row is used as the key.  But if you provide a list of columns the key will
-consist of the values in those columns.  So `uniq a` will remove all rows with
-duplicate values in column `a` and so on...
+`uniq` removes duplicate rows from the table.  With no argument the first
+column is used as the key.  But if you provide a list of columns the key will
+consist of the values in those columns.  So `uniq af` will remove all rows with
+duplicate values in column `a` and `f`, so that you are left with just the rows
+where the values in these columns are distinct.
 
 ### arr [arrange-expression] - rearrange the columns
 
@@ -314,9 +316,11 @@ As a convenience is the number given to `date()` is less than 1000, then it's
 assumed that you mean a delta on today rather than a day in the pre-Christian
 era.  So `date(70)` will produce the date in 10 weeks time, and `date(-91)`
 will give you the date three months ago, and so on.  `date()` produces today's
-date.  Note: dates will also be recognized in the form yyyymmdd or yyyy/mm/dd,
-etc, or anything that dateutil.parser can read.
+date.  If the number you give date is large, it will be interpreted as epoch 
+seconds, and if it is very large, epoch milliseconds.
 
+Note: `base()` will recognize dates in the form yyyymmdd or yyyy/mm/dd,
+etc, or anything that dateutil.parser can read.
 
 ### dp [nnnnn...] - round numbers to n decimal places
 
@@ -468,7 +472,47 @@ produces (for example):
     15   1   6  16
     12  11  10  14
 
-=back
+
+### roll [col-list] - roll the values in one or more colum
+
+Roll like the stack on an HP RPN calculator.  So with the shuffled table above, `roll b`
+would produce this:
+
+     5  11   4   9
+    13   7   3   8
+    15   2   6  16
+    12   1  10  14
+
+Upper case letters roll up, so `roll B` would have produced
+
+     5   2   4   9
+    13   1   3   8
+    15  11   6  16
+    12   7  10  14
+        
+As with `sort` you can string column letters together.  
+
+One use of this is to calculate the differences between a series of timestamps,
+so for example with a list of epoch milliseconds like this, how long was the
+gap between each one?
+
+    10099  1534951868290
+    10070  1534951868808
+    10091  1534951869177
+    10085  1534951870335
+    10085  1534951873005
+
+You can find that with `arr abb roll c arr ab(b-c)` to get:
+
+    10099  1534951868290  -4715
+    10070  1534951868808    518
+    10091  1534951869177    369
+    10085  1534951870335   1158
+    10085  1534951873005   2670
+
+The negative number at the top shows you the difference between 
+the last and the first.
+
 
 ## Special rows
 
