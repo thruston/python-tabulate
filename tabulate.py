@@ -20,7 +20,7 @@ import sys
 
 import dateutil.parser as dup
 
-# decimal.getcontext().prec = 12
+decimal.getcontext().prec = 12
 
 # Functions for column maths
 def exp(d):
@@ -114,7 +114,7 @@ class Table:
     def label_columns(self, _):
         "add some labels in alphabetical order"
         self.data.insert(0, string.ascii_lowercase[:self.cols])
-        self.rows +=1
+        self.rows += 1
 
     def column(self, i):
         "get a column from the table - zero indexed"
@@ -132,11 +132,15 @@ class Table:
 
     def add_blank(self):
         "flag a blank"
-        self.extras[self.rows - 1] = "blank"
+        self.extras[self.rows] = "blank"
 
     def add_rule(self):
         "mark a rule"
-        self.extras[self.rows - 1] = "rule"
+        self.extras[self.rows] = "rule"
+
+    def add_comment(self, contents):
+        "stash a comment line"
+        self.extras[self.rows] = '#' + contents.lstrip('#')
 
     def set_output_form(self, form_name):
         "Set the seps"
@@ -412,7 +416,6 @@ class Table:
         for k in keys_seen:
             self.append(list(k) + [fun(bags[(k, n)]) for n in names])
 
-
     def _wrangle_long(self, keystop):
         '''Reflow long'''
         header = self.data[0][:keystop] + ['Name', 'Value']
@@ -549,7 +552,7 @@ class Table:
             c = int(col_spec)
         except ValueError:
             print('?! colspec', col_spec)
-            return
+            return (None, flag)
 
         if c < 0:
             c += self.cols
@@ -565,9 +568,9 @@ class Table:
         '''
         for col in col_spec:
             c, want_reverse = self.fancy_col_index(col)
-            def make_key(row):
-                return (as_number(row[c], want_reverse), as_seminumeric_string(row[c]), row[c])
-            self.data.sort(key=make_key, reverse=want_reverse)
+            if c is None:
+                continue
+            self.data.sort(key=lambda row: (as_number(row[c], want_reverse), as_seminumeric_string(row[c]), row[c]), reverse=want_reverse)
 
     def remove_duplicates_by_col(self, col_spec):
         '''like uniq, remove row if key cols match the row above
@@ -575,6 +578,8 @@ class Table:
         cols_to_check = []
         for c in col_spec:
             i, _ = self.fancy_col_index(c)
+            if i is None:
+                continue
             cols_to_check.append(i)
         rows_to_delete = []
         previous_t = ''.join(self.data[0][j] for j in cols_to_check)
@@ -595,6 +600,8 @@ class Table:
         self.data = list(map(list, zip(*self.data)))
         for c in col_spec:
             i, up = self.fancy_col_index(c)
+            if i is None:
+                continue
             if up:
                 self.data[i].append(self.data[i].pop(0))
             else:
@@ -640,16 +647,19 @@ def tabulate(data, indent=0, cell_separator='  ', line_end='', special_dict=coll
 
     # generate nicely lined up rows
     for r, row in enumerate(data):
+        if special_dict[r] == 'rule':
+            yield ' ' * indent + '-' * len(out)
+        elif special_dict[r] == 'blank':
+            yield ' ' * (indent + len(out))
+        elif special_dict[r].startswith('#'):
+            yield special_dict[r]
+
         out = []
         for c, cell in enumerate(row):
             out.append(f'{cell:{col_types[c]}{col_widths[c]}}')
 
         out = cell_separator.join(out).rstrip() + line_end # no trailing blanks
         yield ' ' * indent + out
-        if special_dict[r] == 'rule':
-            yield ' ' * indent + '-' * len(out)
-        elif special_dict[r] == 'blank':
-            yield ' ' * (indent + len(out))
 
 def as_number(x, backwards=False):
     '''return something for sort to work with'''
@@ -736,6 +746,8 @@ if __name__ == "__main__":
             table.add_blank()
         elif set(stripped_line) == {'-'}:
             table.add_rule()
+        elif stripped_line.startswith('#'):
+            table.add_comment(stripped_line)
         else:
             table.append(re.split(in_sep, stripped_line, maxsplit=cell_limit))
             table.indent = min(table.indent, len(raw_line) - len(raw_line.lstrip()))
