@@ -566,11 +566,14 @@ class Table:
     def sort_rows_by_col(self, col_spec):
         '''Sort the table
         '''
-        for col in col_spec:
-            c, want_reverse = self.fancy_col_index(col)
-            if c is None:
-                continue
-            self.data.sort(key=lambda row: (as_number(row[c], want_reverse), as_seminumeric_string(row[c]), row[c]), reverse=want_reverse)
+        if col_spec is None:
+            self.data.sort(key=lambda row: as_numeric_tuple(row[0], False))
+        else:
+            for col in col_spec:
+                c, want_reverse = self.fancy_col_index(col)
+                if c is None:
+                    continue
+                self.data.sort(key=lambda row: as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
 
     def remove_duplicates_by_col(self, col_spec):
         '''like uniq, remove row if key cols match the row above
@@ -661,40 +664,56 @@ def tabulate(data, indent=0, cell_separator='  ', line_end='', special_dict=coll
         out = cell_separator.join(out).rstrip() + line_end # no trailing blanks
         yield ' ' * indent + out
 
-def as_number(x, backwards=False):
-    '''return something for sort to work with'''
+def as_numeric_tuple(x, backwards=False):
+    '''return something for sort to work with
+    >>> as_numeric_tuple("a")
+    (-1000000000000.0, 'A')
+
+    >>> as_numeric_tuple("a", True)
+    (1000000000000.0, 'A')
+
+    >>> as_numeric_tuple(None)
+    (1000000000000.0, '')
+
+    >>> as_numeric_tuple("3.14")
+    (3.14, '3.14')
+
+    >>> as_numeric_tuple("2020-05-01")
+    (1588287600, '2020-05-01')
+
+    >>> as_numeric_tuple("2 May 2020")
+    (1588374000, '2 MAY 2020')
+
+    >>> as_numeric_tuple("A19")
+    (-1000000000000.0, 'A000000000000019')
+    '''
+
     alpha, omega = -1e12, 1e12
     if backwards:
         alpha, omega = omega, alpha
 
     if x is None:
-        return omega # put it at the bottom
+        return (omega, '') # put it at the bottom
+
+    x = x.upper()
 
     try:
-        return float(x)
+        return (float(x), x)
     except ValueError:
         pass
 
     try:
-        dt = dup.parse(x)
-        return int(dt.strftime("%s"))
+        return (int(dup.parse(x).strftime("%s")), x)
     except ValueError:
         pass
-
-    return alpha # put strings at the top
-
-def as_seminumeric_string(x):
-    "Make A1, A2, A10 etc sortable..."
-    # treat null as blank
-    if x is None:
-        return ''
 
     # pad trailing numbers with zeros
+    # Make A1, A2, A10 etc sortable...
     m = re.match(r'(.*\D)(\d+)\Z', x)
     if m is not None:
-        return "{}{:012d}".format(m.group(1), int(m.group(2)))
+        return (alpha, m.group(1) + m.group(2).zfill(15))
 
-    return x.upper()
+    return (alpha, x)
 
 def as_decimal(n, na_value=decimal.Decimal('0')):
     "Make this a decimal"
