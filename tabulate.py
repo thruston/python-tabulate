@@ -11,6 +11,7 @@ import collections
 import datetime
 import decimal
 import fileinput
+import itertools
 import math
 import random
 import re
@@ -565,15 +566,26 @@ class Table:
 
     def sort_rows_by_col(self, col_spec):
         '''Sort the table
+        By default sort by all columns left to right.
+
+        If the arg is a single number and abs(arg) < self.cols then sort on that column
+
+        Otherwise sort in groups where the col spec indicates the groups of cols
+
+        abc means use the concatenation of row[0] + row[1] + row[2]
+        upper case groups mean reverse sort
+
+        groups are done right to left...
+
         '''
         if col_spec is None:
-            self.data.sort(key=lambda row: as_numeric_tuple(row[0], False))
-        else:
-            for col in col_spec:
-                c, want_reverse = self.fancy_col_index(col)
-                if c is None:
-                    continue
-                self.data.sort(key=lambda row: as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
+            col_spec = string.ascii_lowercase[:self.cols]
+
+        for col in col_spec:
+            c, want_reverse = self.fancy_col_index(col)
+            if c is None:
+                continue
+            self.data.sort(key=lambda row: as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
 
     def remove_duplicates_by_col(self, col_spec):
         '''like uniq, remove row if key cols match the row above
