@@ -23,7 +23,7 @@ import dateutil.parser as dup
 
 decimal.getcontext().prec = 12
 
-# Functions for column maths
+# Functions for column maths, using the Decimal versions
 def exp(d):
     return d.exp()
 def sqrt(d):
@@ -33,13 +33,28 @@ def log(d):
 def ln(d):
     return d.ln()
 
-def dow(sss):
+# Calendar functions for column arrangements
+def dow(sss, date_format="%a"):
+    '''Is it Friday yet?
+    >>> dow("1 January 2001")
+    'Mon'
+    >>> dow("1 January 2001", "%A")
+    'Monday'
+    '''
     try:
-        return dup.parse(sss).strftime("%a")
+        return dup.parse(sss).strftime(date_format)
     except (TypeError, ValueError):
         return sss
 
 def base(sss=None):
+    '''Get today's date as "base" number, or whatever date you give
+    >>> base("1 January 2001")
+    730486
+    >>> base("1 January 1901")
+    693961
+    >>> base("31 Dec 2000")-base("1 Jan 1901")
+    36524
+    '''
     try:
         dt = dup.parse(sss)
     except (TypeError, ValueError):
@@ -47,6 +62,18 @@ def base(sss=None):
     return dt.toordinal()
 
 def date(ordinal=0):
+    '''Turn a base number (or an epoch time or a millisecond epoch time) into a date
+    >>> date(716257)
+    '1962-01-17'
+    >>> date(3652059)
+    '9999-12-31'
+    >>> date(3652060)
+    '1970-02-12T06:27:40'
+    >>> date(100000000000)
+    '5138-11-16T09:46:40'
+    >>> date(100000000001)
+    '1973-03-03T09:46:40.001000'
+    '''
     try:
         ordinal = int(ordinal)
     except (TypeError, ValueError):
@@ -54,9 +81,9 @@ def date(ordinal=0):
 
     if abs(ordinal) < 1000:
         dt = datetime.date.today() + datetime.timedelta(days=ordinal)
-    elif ordinal > 1000000000000:
+    elif ordinal > 100000000000: # about 5000 AD as an epoch
         dt = datetime.datetime.utcfromtimestamp(ordinal / 1000)
-    elif ordinal > 1000000000:
+    elif ordinal > 3652059:  # max date
         dt = datetime.datetime.utcfromtimestamp(ordinal)
     else:
         try:
@@ -109,7 +136,7 @@ class Table:
                 r.extend([filler] * (n - self.cols))
             self.cols = n
 
-        self.data.append(row)
+        self.data.append([str(x) for x in row])
         self.rows += 1
 
     def label_columns(self, _):
@@ -120,14 +147,14 @@ class Table:
     def column(self, i):
         "get a column from the table - zero indexed"
         try:
-            return [(is_decimal(r[i]), as_decimal(r[i])) for r in self.data]
+            return [is_as_decimal(r[i]) for r in self.data]
         except IndexError:
             return []
 
     def row(self, i):
         "get a row - zero indexed"
         try:
-            return [(is_decimal(c), as_decimal(c)) for c in self.data[i]]
+            return [is_as_decimal(c) for c in self.data[i]]
         except IndexError:
             return []
 
@@ -348,7 +375,7 @@ class Table:
             if not any(booleans):
                 footer.append(fun)
             else:
-                footer.append(func(decimals))
+                footer.append(func(itertools.compress(decimals, booleans)))
 
         self.add_rule()
         self.append(footer)
@@ -529,7 +556,7 @@ class Table:
             new_row = []
             for dd in desiderata:
                 try:
-                    new_row.append(str(eval(_decimalize(dd), globals(), value_dict)))
+                    new_row.append(eval(_decimalize(dd), globals(), value_dict))
                 except (TypeError, NameError, AttributeError):
                     new_row.append(dd)
             self.append(new_row)
@@ -578,10 +605,21 @@ class Table:
         groups are done right to left...
 
         '''
+        identity = string.ascii_lowercase[:self.cols]
         if col_spec is None:
-            col_spec = string.ascii_lowercase[:self.cols]
+            col_spec = identity
 
-        for col in col_spec:
+        try:
+            i = int(col_spec)
+        except ValueError:
+            i = None
+
+        if i is not None:
+            if -self.cols <= i < self.cols:
+                self.data.sort(key=lambda row: as_numeric_tuple(row[i], False))
+            return
+
+        for col in col_spec[::-1]:
             c, want_reverse = self.fancy_col_index(col)
             if c is None:
                 continue
@@ -623,58 +661,30 @@ class Table:
                 self.data[i].insert(0, self.data[i].pop())
         self.data = list(map(list, zip(*self.data)))
 
-def _check_type(cell):
-    '''is this a number? (or something similar)
-    '''
-    try:
-        float(cell)
-        return 1
-    except ValueError:
-        pass
+    def tabulate(self):
+        '''Generate nicely lined up rows
+        '''
+        widths = [max(len(row[i]) for row in self.data) for i in range(self.cols)]
+        aligns = []
+        for i in range(self.cols):
+            booleans, _ = zip(*self.column(i))
+            aligns.append('>' if sum(booleans)/self.rows > 1/2 else '<')
 
-    if cell == '-':
-        return 1
+        # generate nicely lined up rows
+        for i in range(self.rows):
+            if self.extras[i] == 'rule':
+                yield ' ' * self.indent + '-' * (sum(widths) + self.cols * len(self.separator) - len(self.separator) + len(self.eol_marker))
+            elif self.extras[i] == 'blank':
+                yield ''
+            elif self.extras[i].startswith('#'):
+                yield self.extras[i]
 
-    return 0
+            out = []
+            for j in range(self.cols):
+                out.append(f'{self.data[i][j]:{aligns[j]}{widths[j]}}')
 
-def tabulate(data, indent=0, cell_separator='  ', line_end='', special_dict=collections.defaultdict(str)):
-    '''Render the table neatly
-    '''
+            yield ' ' * self.indent + self.separator.join(out).rstrip() + self.eol_marker # no trailing blanks
 
-    # first count the cols and measure them
-    col_widths = []
-    col_types = []
-    cols = 0
-    for row in data:
-        for i, cell in enumerate(row):
-            if i >= cols:
-                cols += 1
-                col_widths.append([])
-                col_types.append([])
-
-            col_widths[i].append(len(str(cell)))
-            col_types[i].append(_check_type(cell))
-
-    # decide how to align them
-    for i in range(cols):
-        col_widths[i] = max(col_widths[i])
-        col_types[i] = '>' if sum(col_types[i])/len(col_types[i]) >= 1/2 else '<'
-
-    # generate nicely lined up rows
-    for r, row in enumerate(data):
-        if special_dict[r] == 'rule':
-            yield ' ' * indent + '-' * len(out)
-        elif special_dict[r] == 'blank':
-            yield ' ' * (indent + len(out))
-        elif special_dict[r].startswith('#'):
-            yield special_dict[r]
-
-        out = []
-        for c, cell in enumerate(row):
-            out.append(f'{cell:{col_types[c]}{col_widths[c]}}')
-
-        out = cell_separator.join(out).rstrip() + line_end # no trailing blanks
-        yield ' ' * indent + out
 
 def as_numeric_tuple(x, backwards=False):
     '''return something for sort to work with
@@ -734,13 +744,12 @@ def as_decimal(n, na_value=decimal.Decimal('0')):
     except decimal.InvalidOperation:
         return na_value
 
-def is_decimal(n):
+def is_as_decimal(n):
     "Is this a decimal"
     try:
-        _ = decimal.Decimal(n)
-        return True
+        return (True, decimal.Decimal(n))
     except decimal.InvalidOperation:
-        return False
+        return (False, n)
 
 if __name__ == "__main__":
 
@@ -800,7 +809,5 @@ if __name__ == "__main__":
 
         table.operations[op](argument)
 
-    print("\n".join(tabulate(table.data, indent=table.indent,
-                             special_dict=table.extras,
-                             cell_separator=table.separator,
-                             line_end=table.eol_marker)))
+    for neat_line in table.tabulate():
+        print(neat_line)
