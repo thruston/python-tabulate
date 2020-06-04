@@ -3,12 +3,12 @@ Tabulate
 
 Line up tabular material neatly.
 
-An exportable module that will line up tabular material automatically 
-saving you hours of time faffing about with format and alignment. 
-As a script it provides a filter with a simple DSL that can be used to 
-make and manipulate tables in editors that support external filters, as Vim does.
+An exportable module that will line up tabular material automatically saving
+you hours of time faffing about with format and alignment.  As a script it
+provides a filter with a simple DSL that can be used to make and manipulate
+tables in editors that support external filters, as Vim does.
 
-Toby Thurston -- 23 May 2020
+Toby Thurston -- 04 Jun 2020
 
 ## Verbs in the DSL
 
@@ -25,6 +25,7 @@ Toby Thurston -- 23 May 2020
     zip n            zip n rows together
     unzip n          unzip into n * the current number of rows & 1/n columns.
     pivot wide|long  reshape, tidyr, melt/cast, simple tables
+    roll [col]
 
 This filter is primarily intended to be used as an assistant for an editor that
 allows you to filter a file, or a buffer, or a group of lines through an
@@ -118,30 +119,30 @@ tabulate.  You can of course use some word other than `Table` as the command
 name. Perhaps `Tbl` ?  Take your pick, you can choose anything, except that Vim
 insists on the name starting with an uppercase letter.
 
-With this definition, when you type `:Table` in normal mode in Vim, it will call tabulate
-on the current area and replace it with the output.  If you are in Visual Line mode then
-the current area will just be the marked lines.  If you are in Normal mode then the current
-area will be the whole file.
+With a definition like this, when you type `:Table` in normal mode in Vim, it
+will call tabulate on the current area and replace it with the output.  If you
+are in Visual Line mode then the current area will just be the marked lines.
+If you are in Normal mode then the current area will be the whole file.
 
-From now on, I'm assuming you are using a Vim :Table command to access tabulate
+From now on, I'm assuming you are using a Vim `:Table` command to access tabulate
 
 ## Use from within Vim or GVim or MacVim, etc
 
     :Table [delimiter] [verb [option]]...
 
-Use blank to separate the command line: the delimiter argument and any verbs or options must be
-single blank-separated words.  Any word that looks like a verb will be treated as a verb, even
-if you meant it to be an option.  See below for details.
+Use blank to separate the command line: the delimiter argument and any verbs or
+options must be single blank-separated words.  Any word that looks like a verb
+will be treated as a verb, even if you meant it to be an option.  See below for
+details.
 
 The delimiter is used to split up each input line into cells.  It can be any
-string or regular expression that's a valid argument to the `re.split`
-function.  Except one containing blanks or a whole number between 0 and 9.  You
-can't use blanks (even inside quotes) because of the simple way that I split up
-the command line, and so I use whole numbers to mean `split on at least that
-many consecutive blanks` so if you use 1 as an argument the line will be split
-on every blank space, and so on. The default argument is 2.  This means the
-line will be split at every occurrence of two or more blanks.  This is
-generally what you want.  Consider this example.
+single punctuation character or a whole number between 0 and 9.  You can't use
+blanks (even inside quotes) because of the simple way that I split up the
+command line, and so I use whole numbers to mean `split on at least that many
+consecutive blanks` so if you use 1 as an argument the line will be split on
+every blank space, and so on. The default argument is 2.  This means the line
+will be split at every occurrence of two or more blanks.  This is generally
+what you want.  Consider this example.
 
     Item          Amount
     First label       23
@@ -254,14 +255,9 @@ You can also insert arbitrary calculated columns by putting an expression in cur
 
 and so on.  Each single letter `a`, `b`, etc is changed into the corresponding
 cell value and then the resulting expression is evaluated. You can use most
-normal built-in or `math` function: sin, cos, atan2, sqrt, log, exp, int, abs, and so on.
-
-You can use operators like `.` to concatenate values, but you can't include a
-space in your formula because this confuses the command line processing
-earlier.  So an extra operator is included: the operator `_` will concatenate
-with a space.  Any sequence of more than one letter (like `bad`) or any letter
-that does not refer to a letter in your table (possibly like `z`) will be
-treated as a plain string.
+normal built-in or `math` functions; besides all the BIFs you get `log`, `log10`, `exp`
+and `sqrt`, as shown above. If you want any others from `math`, you need to prefix them
+with `math`, so use `math.sin`, `math.cos`, etc...
 
 Note that you should use lower case letters only to refer to each column value.
 If you use an upper case letter, `A`, `B`, etc, it will be replaced by the
@@ -310,7 +306,6 @@ And `arr a{date(base(a)+140)}` will add 20 weeks to each date
     2011-01-17  2011-06-06
     2011-02-23  2011-07-13
     2011-03-19  2011-08-06
-    2011-07-05  2011-11-22
 
 As a convenience is the number given to `date()` is less than 1000, then it's
 assumed that you mean a delta on today rather than a day in the pre-Christian

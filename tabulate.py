@@ -28,9 +28,9 @@ def exp(d):
     return d.exp()
 def sqrt(d):
     return d.sqrt()
-def log(d):
+def log10(d):
     return d.log10()
-def ln(d):
+def log(d):
     return d.ln()
 
 # Calendar functions for column arrangements
@@ -139,6 +139,23 @@ class Table:
         self.data.append([str(x) for x in row])
         self.rows += 1
 
+    def do(self, agenda):
+        "Do what we've been asked..."
+        while agenda:
+            op = agenda.pop(0)
+            if op not in self.operations:
+                print(f'{op} ??')
+                continue
+
+            # get an argument if there is one
+            argument = agenda.pop(0) if agenda else None
+            # put it back if it is really the next op
+            if argument in self.operations:
+                agenda.insert(0, argument)
+                argument = None
+
+            self.operations[op](argument)
+
     def label_columns(self, _):
         "add some labels in alphabetical order"
         self.data.insert(0, string.ascii_lowercase[:self.cols])
@@ -191,7 +208,7 @@ class Table:
     def transpose(self, _):
         '''Swap rows and columns
         '''
-        self.data = list(map(list, zip(*self.data)))
+        self.data = list(list(r) for r in zip(*self.data))
         self.rows, self.cols = self.cols, self.rows
         self.extras.clear()
 
@@ -360,6 +377,9 @@ class Table:
 
     def append_reduction(self, fun):
         '''Reduce column and append result to foot of table
+        fun is the name, func is the callable.
+        first see if this is the name of something in stats
+        or something else callable, if none of those then use "sum"
         '''
         if isinstance(fun, str) and hasattr(statistics, fun):
             func = getattr(statistics, fun)
@@ -384,7 +404,7 @@ class Table:
         '''Reflow / pivot / reshape from wide to long or long to wide
 
         pivot wide assumes that col -1 has values and -2 has col head values
-        and everything else are key. Does nothing if there are less than 3 cols.
+        and everything else are keys. Does nothing if there are less than 3 cols.
 
         pivot long assumes only key is col A but you can add a letter or number
         to show where the keys stop -- so if the first three are keys then use "longc"
@@ -460,9 +480,16 @@ class Table:
     def arrange_columns(self, perm):
         '''Arrange the columns of the table
         '''
+        if perm is None:
+            return
+
+        perm = perm.replace('()', '') # get right of empty parens
+        perm = perm.replace('{}', '') # get right of empty braces
+
         identity = string.ascii_lowercase[:self.cols]
         specials = '.?;'
-        # first expand any ~s
+
+        # expand any ~s
         perm = perm.replace("~", identity)
 
         # deal with deletions
@@ -475,11 +502,11 @@ class Table:
             '''Find a suitable value given the perm character and a row of data
             '''
             if c == '.':
-                return line_number
+                return str(line_number)
             if c == '?':
-                return random.random()
+                return str(random.random())
             if c == ';':
-                return self.rows
+                return str(self.rows)
             return row[ord(c) - ord('a')]
 
         if all(x in identity + specials for x in perm):
@@ -650,16 +677,19 @@ class Table:
     def roll_by_col(self, col_spec):
         '''Roll columns, up, or down
         '''
-        self.data = list(map(list, zip(*self.data)))
-        for c in col_spec:
-            i, up = self.fancy_col_index(c)
-            if i is None:
-                continue
-            if up:
-                self.data[i].append(self.data[i].pop(0))
-            else:
-                self.data[i].insert(0, self.data[i].pop())
-        self.data = list(map(list, zip(*self.data)))
+        if col_spec is None:
+            self.data.insert(0, self.data.pop())
+        else:
+            self.data = list(map(list, zip(*self.data)))
+            for c in col_spec:
+                i, up = self.fancy_col_index(c)
+                if i is None:
+                    continue
+                if up:
+                    self.data[i].append(self.data[i].pop(0))
+                else:
+                    self.data[i].insert(0, self.data[i].pop())
+            self.data = list(map(list, zip(*self.data)))
 
     def tabulate(self):
         '''Generate nicely lined up rows
@@ -765,12 +795,12 @@ if __name__ == "__main__":
         delim = '2'
 
     cell_limit = 0
-    m = re.match(r'(\d*)\.(\d+)', delim)
-    if m is not None:
-        delim = m.group(1)
+    mm = re.match(r'(\d*)\.(\d+)', delim)
+    if mm is not None:
+        delim = mm.group(1)
         if delim == '':
             delim = '2'
-        cell_limit = int(m.group(2))
+        cell_limit = int(mm.group(2))
 
     if delim.isdigit():
         in_sep = re.compile(rf'\s{{{delim},}}')
@@ -793,21 +823,11 @@ if __name__ == "__main__":
             table.indent = min(table.indent, len(raw_line) - len(raw_line.lstrip()))
     if table.rows == 0:
         table.indent = 0
+    
+    # fix up some crap from Vim
+    agenda = ' '.join(agenda).replace('\\', '').split()
 
-    while agenda:
-        op = agenda.pop(0)
-        if op not in table.operations:
-            print(f'{op} ??')
-            continue
-
-        # get an argument if there is one
-        argument = agenda.pop(0) if agenda else None
-        # put it back if it is really the next op
-        if argument in table.operations:
-            agenda.insert(0, argument)
-            argument = None
-
-        table.operations[op](argument)
+    table.do(agenda)
 
     for neat_line in table.tabulate():
         print(neat_line)
