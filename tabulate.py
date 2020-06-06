@@ -10,7 +10,6 @@ A module to line up text tables
 import collections
 import datetime
 import decimal
-import fileinput
 import itertools
 import math
 import random
@@ -126,6 +125,35 @@ class Table:
             'zip': self.zipper,
         }
 
+    def __str__(self):
+        "Print neatly"
+        return "\n".join(self.tabulate())
+
+    def parse_lines(self, lines_thing, splitter=re.compile(r'\s\s+'), splits=0):
+        "Read lines from an iterable thing, and append to self"
+
+        for raw_line in lines_thing:
+            raw_line = raw_line.replace("\t", "    ")
+            stripped_line = raw_line.strip()
+            if not stripped_line:
+                self.add_blank()
+            elif set(stripped_line) == {'-'}:
+                self.add_rule()
+            elif stripped_line.startswith('#'):
+                self.add_comment(stripped_line)
+            else:
+                self.append(splitter.split(stripped_line, maxsplit=splits))
+                self.indent = min(self.indent, len(raw_line) - len(raw_line.lstrip()))
+        # catch empty tables
+        if self.rows == 0:
+            self.indent = 0
+
+    def parse_lol(self, list_of_iterables):
+        "pass lol into self.data"
+        self.indent = 0
+        for r in list_of_iterables:
+            self.append(r)
+    
     def append(self, row, filler='-'):
         "add a row, maintaining rows and cols"
         n = len(row)
@@ -136,11 +164,14 @@ class Table:
                 r.extend([filler] * (n - self.cols))
             self.cols = n
 
-        self.data.append([str(x) for x in row])
+        # they should all be strings, and normalize space in last row...
+        self.data.append([str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
         self.rows += 1
 
     def do(self, agenda):
         "Do what we've been asked..."
+        if agenda and isinstance(agenda, str):
+            agenda = agenda.split()
         while agenda:
             op = agenda.pop(0)
             if op not in self.operations:
@@ -783,7 +814,7 @@ def is_as_decimal(n):
 
 if __name__ == "__main__":
 
-    agenda = (' '.join(sys.argv[1:])).split(None)
+    agenda = ' '.join(sys.argv[1:]).replace('\\', '').split(None)
 
     try:
         delim = agenda.pop(0)
@@ -808,26 +839,6 @@ if __name__ == "__main__":
         in_sep = re.compile(re.escape(delim))
 
     table = Table()
-
-    for raw_line in fileinput.input([]):
-        raw_line = raw_line.replace("\t", "    ")
-        stripped_line = raw_line.strip()
-        if not stripped_line:
-            table.add_blank()
-        elif set(stripped_line) == {'-'}:
-            table.add_rule()
-        elif stripped_line.startswith('#'):
-            table.add_comment(stripped_line)
-        else:
-            table.append(re.split(in_sep, stripped_line, maxsplit=cell_limit))
-            table.indent = min(table.indent, len(raw_line) - len(raw_line.lstrip()))
-    if table.rows == 0:
-        table.indent = 0
-    
-    # fix up some crap from Vim
-    agenda = ' '.join(agenda).replace('\\', '').split()
-
+    table.parse_lines(sys.stdin, splitter=in_sep, splits=cell_limit)
     table.do(agenda)
-
-    for neat_line in table.tabulate():
-        print(neat_line)
+    print(table)
