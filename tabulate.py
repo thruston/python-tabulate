@@ -166,7 +166,7 @@ class Table:
 
         # they should all be strings, and normalize space in last row...
         self.data.append([str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
-        self.rows += 1
+        self.rows = len(self.data)
 
     def do(self, agenda):
         "Do what we've been asked..."
@@ -368,18 +368,18 @@ class Table:
 
         rows_per_group = math.ceil(self.rows / groups)
 
-        new_data = []
+        old_data = self.data[:]
+        self.data = []
         for i in range(rows_per_group):
             new_row = []
             for j in range(groups):
                 k = i + j * rows_per_group
-                if k < self.rows:
-                    new_row += self.data[k]
-            new_data.append(new_row)
+                try:
+                    new_row += old_data[k]
+                except IndexError:
+                    pass
+            self.append(new_row)
 
-        self.data = new_data[:]
-        self.rows = len(self.data)
-        self.cols = max(len(c) for c in self.data)
         self.extras.clear()
 
     def _splitme(self, seq, parts):
