@@ -528,6 +528,29 @@ above.  If you convert from plain to TeX format, then any horizontal rules will
 be converted to the appropriate bit of TeX input to get a neat output rule.
 No attempt is made to create a preamble for you.
 
-## Warning
+Usage as an importable module
+-----------------------------
 
-Not all of this is true (yet).
+Tabulate can also be used from your own Python scripts.  If you have 
+data as a list of lists, or a  list of strings, then you can use `tabulate` to format
+them neatly.  Something like this
+
+```python
+import tabulate
+data = [('Item', 'Amount'), ('First label', 23), ('Second thing', 45), ('Third one', 55)]
+tt = tabulate.Table()
+tt.parse_lol(data)
+tt.do("add")
+print(tt)
+```
+
+which should produce 
+
+```
+Item          Amount
+First label       23
+Second thing      45
+Third one         55
+--------------------
+Total            123
+```
