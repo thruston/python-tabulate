@@ -2,7 +2,8 @@
 '''
 Tabulate
 
-A module to line up text tables
+A module to line up text tables.
+Toby Thurston -- June 2020
 '''
 
 # pylint: disable=C0103, C0301
@@ -139,7 +140,6 @@ def as_decimal(n, na_value=decimal.Decimal('0')):
         return decimal.Decimal(n)
     except decimal.InvalidOperation:
         return na_value
-
 
 
 class Table:
