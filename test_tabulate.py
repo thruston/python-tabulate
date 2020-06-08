@@ -8,7 +8,6 @@ class TestTable(unittest.TestCase):
 
     def test_ab_ovo_creation(self):
         self.assertFalse(self.tab.data)
-        self.assertTrue(self.tab.rows == 0)
         self.assertTrue(self.tab.cols == 0)
 
     def test_append_lines(self):
@@ -17,7 +16,7 @@ class TestTable(unittest.TestCase):
         self.tab.append("78 90 120".split())
         
         self.assertTrue(self.tab.data)
-        self.assertTrue(self.tab.rows == 3)
+        self.assertTrue(len(self.tab.data) == 3)
         self.assertTrue(self.tab.cols == 3)
 
     def test_tabulate(self):
@@ -81,7 +80,7 @@ mean     51  144  195
     2020-05-19  09:20:30  28.3  28.2  29.1  25.3  22.9  24.4  24.3  18.1  1375  48.6
     2020-05-19  09:20:40  28.3  28.6  22.5  22.3  24.1  23.7  19.7  23.0  1428  50.5'''.splitlines())
         self.assertEqual(self.tab.cols, 12)
-        self.assertEqual(self.tab.rows, 17)
+        self.assertEqual(len(self.tab.data), 17)
         self.assertEqual(self.tab.indent, 4)
 
     def test_arrange(self):
@@ -105,7 +104,19 @@ mean     51  144  195
     2020-05-19  09:20:40  28.3  22.5  28.6
 ''')
 
-        self.tab.do("arr ~(d/e)")
+        self.tab.do("arr abcdeE")
+        self.assertEqual(str(self.tab) + "\n", 
+'''
+    2020-05-19  09:18:00  30.3  30.1  30.2   30.2
+    2020-05-19  09:18:10  29.2  29.4  29.1   59.3
+    2020-05-19  09:18:20  29.2  28.6  28.8   88.1
+    2020-05-19  09:18:30  31.2  31.2  31.6  119.7
+    2020-05-19  09:18:40  33.1  31.9  32.9  152.6
+    2020-05-19  09:20:30  28.3  29.1  28.2  180.8
+    2020-05-19  09:20:40  28.3  22.5  28.6  209.4
+''')
+
+        self.tab.do("arr -z arr ~(d/e)")
         self.assertEqual(str(self.tab) + "\n", 
 '''
     2020-05-19  09:18:00  30.3  30.1  30.2  0.996688741722

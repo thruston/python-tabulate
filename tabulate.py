@@ -24,12 +24,36 @@ decimal.getcontext().prec = 12
 
 # Functions for column maths, using the Decimal versions
 def exp(d):
+    '''exp for Decimals
+    >>> exp(decimal.Decimal('0'))
+    Decimal('1')
+    >>> exp(decimal.Decimal('1'))
+    Decimal('2.71828182846')
+    '''
     return d.exp()
 def sqrt(d):
+    '''sqrt for decimals
+    >>> sqrt(decimal.Decimal('0'))
+    Decimal('0')
+    >>> sqrt(decimal.Decimal('1'))
+    Decimal('1')
+    >>> sqrt(decimal.Decimal('2'))
+    Decimal('1.41421356237')
+    '''
     return d.sqrt()
 def log10(d):
+    '''log base 10 for decimals
+    >>> log10(decimal.Decimal('10'))
+    Decimal('1')
+    >>> log10(decimal.Decimal('100'))
+    Decimal('2')
+    '''
     return d.log10()
 def log(d):
+    '''natural log for decimals (following math.log name...)
+    >>> log(exp(decimal.Decimal('1')))
+    Decimal('1.00000000000')
+    '''
     return d.ln()
 
 # Calendar functions for column arrangements
@@ -124,7 +148,6 @@ class Table:
     def __init__(self):
         " empty data and no rows or cols "
         self.data = []
-        self.rows = 0
         self.cols = 0
         self.indent = 0
         self.extras = collections.defaultdict(str)
@@ -158,7 +181,7 @@ class Table:
 
     def parse_lines(self, lines_thing, splitter=re.compile(r'\s\s+'), splits=0):
         "Read lines from an iterable thing, and append to self"
-    
+
         self.indent = 99
         for raw_line in lines_thing:
             raw_line = raw_line.replace("\t", "    ")
@@ -173,7 +196,7 @@ class Table:
                 self.append(splitter.split(stripped_line, maxsplit=splits))
                 self.indent = min(self.indent, len(raw_line) - len(raw_line.lstrip()))
         # catch empty tables
-        if self.rows == 0:
+        if not self.data:
             self.indent = 0
 
     def parse_lol(self, list_of_iterables):
@@ -187,17 +210,15 @@ class Table:
 
         if n is None:
             self.data.pop()
-            self.rows -= 1
             return
 
         try:
             self.data.pop(int(n))
-            self.rows -= 1
         except (IndexError, ValueError):
             return
-    
+
     def append(self, row, filler='-'):
-        "add a row, maintaining rows and cols"
+        "add a row, maintaining cols"
         n = len(row)
         if n < self.cols:
             row.extend([filler] * (self.cols - n))
@@ -208,7 +229,6 @@ class Table:
 
         # they should all be strings, and normalize space in last column...
         self.data.append([str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
-        self.rows = len(self.data)
 
     def do(self, agenda):
         "Do what we've been asked..."
@@ -232,7 +252,6 @@ class Table:
     def _label_columns(self, _):
         "add some labels in alphabetical order"
         self.data.insert(0, string.ascii_lowercase[:self.cols])
-        self.rows += 1
 
     def column(self, i):
         "get a column from the table - zero indexed"
@@ -250,15 +269,15 @@ class Table:
 
     def add_blank(self):
         "flag a blank"
-        self.extras[self.rows] = "blank"
+        self.extras[len(self.data)] = "blank"
 
     def add_rule(self):
         "mark a rule"
-        self.extras[self.rows] = "rule"
+        self.extras[len(self.data)] = "rule"
 
     def add_comment(self, contents):
         "stash a comment line"
-        self.extras[self.rows] = '#' + contents.lstrip('#')
+        self.extras[len(self.data)] = '#' + contents.lstrip('#')
 
     def _set_output_form(self, form_name):
         "Set the seps"
@@ -281,12 +300,12 @@ class Table:
     def _transpose(self, _):
         '''Swap rows and columns
         '''
+        self.cols = len(self.data)
         self.data = list(list(r) for r in zip(*self.data))
-        self.rows, self.cols = self.cols, self.rows
         self.extras.clear()
 
     def _shuffle_rows(self, _):
-        '''Re-arrange the rows at random'''
+        '''Re-arrange the data at random'''
         random.shuffle(self.data)
         self.extras.clear()
 
@@ -352,10 +371,10 @@ class Table:
 
     def _copy_down(self, _):
         '''Fix up ditto marks'''
-        for r in range(1, self.rows):
-            for c in range(self.cols):
-                if self.data[r][c] == '"':
-                    self.data[r][c] = self.data[r-1][c]
+        for i, row in enumerate(self.data):
+            for j, cell in enumerate(row):
+                if cell == '"' and i > 0:
+                    self.data[i][j] = self.data[i-1][j]
 
     def _zipper(self, n):
         '''Put n rows side by side
@@ -368,17 +387,16 @@ class Table:
         if rows_to_zip < 2:
             return
 
-        new_data = []
-        while self.data:
+        old_data = self.data.copy()
+        self.data.clear()
+        self.cols = 0
+        while old_data:
             new_row = []
             for _ in range(rows_to_zip):
-                if self.data:
-                    new_row.extend(self.data.pop(0))
-            new_data.append(new_row)
+                if old_data:
+                    new_row.extend(old_data.pop(0))
+            self.append(new_row)
 
-        self.data = new_data[:]
-        self.rows = len(self.data)
-        self.cols = max(len(c) for c in self.data)
         self.extras.clear()
 
     def _unzipper(self, n):
@@ -390,15 +408,15 @@ class Table:
 
         desired_cols = math.ceil(self.cols / splits)
 
-        new_data = []
-        for r in self.data:
+        old_data = self.data.copy()
+        self.data.clear()
+        self.cols = 0
+        for r in old_data:
             for i in range(splits):
                 start = i * desired_cols
                 stop = start + desired_cols
-                new_data.append(r[start:stop])
-        self.data = new_data[:]
-        self.rows = len(self.data)
-        self.cols = max(len(c) for c in self.data)
+                self.append(r[start:stop])
+
         self.extras.clear()
 
     def _rapper(self, n):
@@ -408,10 +426,11 @@ class Table:
         except TypeError:
             groups = 2
 
-        rows_per_group = math.ceil(self.rows / groups)
+        rows_per_group = math.ceil(len(self.data) / groups)
 
-        old_data = self.data[:]
-        self.data = []
+        old_data = self.data.copy()
+        self.data.clear()
+
         for i in range(rows_per_group):
             new_row = []
             for j in range(groups):
@@ -438,15 +457,17 @@ class Table:
         except TypeError:
             groups = 2
 
-        new_data = []
-        for col_list in self._splitme(range(self.cols), groups):
-            for r in self.data:
-                new_data.append(list(r[x] for x in col_list))
+        old_data = self.data.copy()
+        old_cols = self.cols
 
-        self.data = new_data[:]
-        self.rows = len(self.data)
-        self.cols = max(len(c) for c in self.data)
+        self.data.clear()
+        self.cols = 0
         self.extras.clear()
+
+        for col_list in self._splitme(range(old_cols), groups):
+            for r in old_data:
+                self.append([r[x] for x in col_list])
+
 
     def _append_reduction(self, fun):
         '''Reduce column and append result to foot of table
@@ -531,7 +552,7 @@ class Table:
             bags[(key, name)].append(as_decimal(value))
 
         self.data = []
-        self.rows = self.cols = 0
+        self.cols = 0
         names = sorted(names_seen)
         self.append(header + names)
         for k in keys_seen:
@@ -543,7 +564,7 @@ class Table:
         names = self.data[0][keystop:]
         wide_data = self.data[1:]
         self.data = []
-        self.rows = self.cols = 0
+        self.cols = 0
 
         self.append(header)
         for r in wide_data:
@@ -572,6 +593,13 @@ class Table:
         elif perm.startswith('-'):
             perm = ''.join(sorted(set(identity) - set(perm)))
 
+        if all(x in identity + specials for x in perm):
+            self._simple_rearrangement(perm)
+        else:
+            self._general_recalculation(perm)
+
+    def _simple_rearrangement(self, perm):
+        '''Just rearrange the columns... '''
         def _get_value(c, line_number, row):
             '''Find a suitable value given the perm character and a row of data
             '''
@@ -580,14 +608,15 @@ class Table:
             if c == '?':
                 return str(random.random())
             if c == ';':
-                return str(self.rows)
+                return str(len(self.data))
             return row[ord(c) - ord('a')]
 
-        if all(x in identity + specials for x in perm):
-            self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
-            self.cols = len(perm) # perm can delete and/or add columns
-            return
+        self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
+        self.cols = len(perm) # perm can delete and/or add columns
 
+    def _general_recalculation(self, perm):
+        '''Do some (decimal) arithmetic on each row...
+        '''
         def _decimalize(expr):
             '''borrowed from the example decistmt
             '''
@@ -611,38 +640,29 @@ class Table:
 
             return tokenize.untokenize(out)
 
-        def _get_expressions(perm):
-            in_parens = 0
-            token = ''
-            for c in perm:
-                if c.lower() not in identity + specials + '(){}' and in_parens == 0:
-                    continue
+        identity = string.ascii_lowercase[:self.cols]
+        desiderata = []
+        in_parens = 0
+        expr = ''
+        for c in perm.replace('{', '(').replace('}', ')'):
+            if c.lower() not in identity + '?()' and in_parens == 0:
+                continue
+            expr += c
+            if c == '(':
+                in_parens += 1
+                continue
+            if c == ')':
+                in_parens -= 1
 
-                if c == '{':
-                    c = '('
-                elif c == '}':
-                    c = ')'
+            if in_parens == 0:
+                desiderata.append(expr)
+                expr = ''
+        if expr:
+            desiderata.append(expr + ')' * in_parens)
 
-                token += c
-
-                if c == '(':
-                    in_parens += 1
-                    continue
-
-                if c == ')':
-                    in_parens -= 1
-
-                if in_parens == 0:
-                    yield token
-                    token = ''
-
-            if token:
-                yield token + ')' * in_parens
-
-        desiderata = list(_get_expressions(perm))
-        old_data = self.data[:]
-        self.data = []
-        self.rows = self.cols = 0
+        old_data = self.data.copy()
+        self.data.clear()
+        self.cols = 0
         value_dict = {'Decimal': decimal.Decimal}
         for k in identity:
             value_dict[k.upper()] = 0 # accumulators
@@ -787,9 +807,9 @@ class Table:
                 continue
             cols_to_check.append(i)
         rows_to_delete = []
-        previous_t = ''.join(self.data[0][j] for j in cols_to_check)
-        for i in range(1, self.rows):
-            this_t = ' '.join(self.data[i][j] for j in cols_to_check)
+        previous_t = ''
+        for i, row in enumerate(self.data):
+            this_t = ' '.join(row[j] for j in cols_to_check)
             if previous_t == this_t:
                 rows_to_delete.append(i)
             else:
@@ -797,7 +817,6 @@ class Table:
 
         for i in reversed(rows_to_delete):
             del self.data[i]
-            self.rows -= 1
 
     def _roll_by_col(self, col_spec):
         '''Roll columns, up, or down
@@ -823,10 +842,10 @@ class Table:
         aligns = []
         for i in range(self.cols):
             booleans, _ = zip(*self.column(i))
-            aligns.append('>' if sum(booleans)/self.rows > 1/2 else '<')
+            aligns.append('>' if sum(booleans)/len(booleans) > 1/2 else '<')
 
         # generate nicely lined up rows
-        for i in range(self.rows):
+        for i, row in enumerate(self.data):
             if self.extras[i] == 'rule':
                 yield ' ' * self.indent + '-' * (sum(widths) + self.cols * len(self.separator) - len(self.separator) + len(self.eol_marker))
             elif self.extras[i] == 'blank':
@@ -835,8 +854,8 @@ class Table:
                 yield self.extras[i]
 
             out = []
-            for j in range(self.cols):
-                out.append(f'{self.data[i][j]:{aligns[j]}{widths[j]}}')
+            for j, cell in enumerate(row):
+                out.append(f'{cell:{aligns[j]}{widths[j]}}')
 
             yield ' ' * self.indent + self.separator.join(out).rstrip() + self.eol_marker # no trailing blanks
 
