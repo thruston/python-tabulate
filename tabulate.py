@@ -43,7 +43,7 @@ def dow(sss, date_format="%a"):
     try:
         return dup.parse(sss).strftime(date_format)
     except (TypeError, ValueError):
-        return sss
+        return "dow"
 
 def base(sss=None):
     '''Get today's date as "base" number, or whatever date you give
@@ -92,6 +92,32 @@ def date(ordinal=0):
 
     return dt.isoformat()
 
+def is_as_decimal(sss):
+    '''Is this a decimal, and if so what is the value?
+
+    >>> is_as_decimal('')
+    (False, '')
+    >>> is_as_decimal("Label")
+    (False, 'Label')
+    >>> is_as_decimal("3.14")
+    (True, Decimal('3.14'))
+    >>> is_as_decimal('0')
+    (True, Decimal('0'))
+    '''
+    try:
+        return (True, decimal.Decimal(sss))
+    except decimal.InvalidOperation:
+        return (False, sss)
+
+def as_decimal(n, na_value=decimal.Decimal('0')):
+    "Make this a decimal"
+    try:
+        return decimal.Decimal(n)
+    except decimal.InvalidOperation:
+        return na_value
+
+
+
 class Table:
     '''A class to hold a table -- and some functions thereon'''
 
@@ -100,29 +126,30 @@ class Table:
         self.data = []
         self.rows = 0
         self.cols = 0
-        self.indent = 999
+        self.indent = 0
         self.extras = collections.defaultdict(str)
         self.separator = '  ' # two spaces
         self.eol_marker = ''
         self.operations = {
-            'add': self.append_reduction,
-            'arr': self.arrange_columns,
-            'ditto': self.copy_down,
-            'dp': self.fix_decimal_places,
-            'gen': self.generate_new_rows,
-            'make': self.set_output_form,
-            'label': self.label_columns,
-            'pivot': self.wrangle,
-            'roll': self.roll_by_col,
-            'sf': self.fix_sigfigs,
-            'shuffle': self.shuffle_rows,
-            'sort': self.sort_rows_by_col,
-            'uniq': self.remove_duplicates_by_col,
-            'unwrap': self.unrapper,
-            'unzip': self.unzipper,
-            'wrap': self.rapper,
-            'xp': self.transpose,
-            'zip': self.zipper,
+            'add': self._append_reduction,
+            'arr': self._arrange_columns,
+            'ditto': self._copy_down,
+            'dp': self._fix_decimal_places,
+            'gen': self._generate_new_rows,
+            'make': self._set_output_form,
+            'label': self._label_columns,
+            'pivot': self._wrangle,
+            'pop': self.pop,
+            'roll': self._roll_by_col,
+            'sf': self._fix_sigfigs,
+            'shuffle': self._shuffle_rows,
+            'sort': self._sort_rows_by_col,
+            'uniq': self._remove_duplicates_by_col,
+            'unwrap': self._unrapper,
+            'unzip': self._unzipper,
+            'wrap': self._rapper,
+            'xp': self._transpose,
+            'zip': self._zipper,
         }
 
     def __str__(self):
@@ -131,7 +158,8 @@ class Table:
 
     def parse_lines(self, lines_thing, splitter=re.compile(r'\s\s+'), splits=0):
         "Read lines from an iterable thing, and append to self"
-
+    
+        self.indent = 99
         for raw_line in lines_thing:
             raw_line = raw_line.replace("\t", "    ")
             stripped_line = raw_line.strip()
@@ -153,6 +181,20 @@ class Table:
         self.indent = 0
         for r in list_of_iterables:
             self.append(r)
+
+    def pop(self, n=None):
+        "remove a row"
+
+        if n is None:
+            self.data.pop()
+            self.rows -= 1
+            return
+
+        try:
+            self.data.pop(int(n))
+            self.rows -= 1
+        except (IndexError, ValueError):
+            return
     
     def append(self, row, filler='-'):
         "add a row, maintaining rows and cols"
@@ -164,7 +206,7 @@ class Table:
                 r.extend([filler] * (n - self.cols))
             self.cols = n
 
-        # they should all be strings, and normalize space in last row...
+        # they should all be strings, and normalize space in last column...
         self.data.append([str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
         self.rows = len(self.data)
 
@@ -187,7 +229,7 @@ class Table:
 
             self.operations[op](argument)
 
-    def label_columns(self, _):
+    def _label_columns(self, _):
         "add some labels in alphabetical order"
         self.data.insert(0, string.ascii_lowercase[:self.cols])
         self.rows += 1
@@ -218,7 +260,7 @@ class Table:
         "stash a comment line"
         self.extras[self.rows] = '#' + contents.lstrip('#')
 
-    def set_output_form(self, form_name):
+    def _set_output_form(self, form_name):
         "Set the seps"
         form = form_name.lower()
         if form == 'plain':
@@ -236,19 +278,19 @@ class Table:
         else:
             pass
 
-    def transpose(self, _):
+    def _transpose(self, _):
         '''Swap rows and columns
         '''
         self.data = list(list(r) for r in zip(*self.data))
         self.rows, self.cols = self.cols, self.rows
         self.extras.clear()
 
-    def shuffle_rows(self, _):
+    def _shuffle_rows(self, _):
         '''Re-arrange the rows at random'''
         random.shuffle(self.data)
         self.extras.clear()
 
-    def fix_decimal_places(self, dp_string):
+    def _fix_decimal_places(self, dp_string):
         "Round all the numerical fields in each row"
         if dp_string is None:
             return
@@ -262,12 +304,12 @@ class Table:
         def _round(s, n):
             try:
                 return '{:.{n}f}'.format(decimal.Decimal(s), n=n)
-            except ValueError:
+            except decimal.InvalidOperation:
                 return s
 
         self.data = list(list(_round(c, dp) for c, dp in zip(r, dp_values)) for r in self.data)
 
-    def fix_sigfigs(self, sf_string):
+    def _fix_sigfigs(self, sf_string):
         "Round to n sig figs all the numeric fields in each row"
         if sf_string is None:
             return
@@ -291,7 +333,7 @@ class Table:
 
         self.data = list(list(_siggy(c, sf) for c, sf in zip(r, sf_values)) for r in self.data)
 
-    def generate_new_rows(self, count_or_range):
+    def _generate_new_rows(self, count_or_range):
         "Add some more data on the bottom"
         alpha = 1
         try:
@@ -308,14 +350,14 @@ class Table:
         for i in range(alpha, omega+1):
             self.append([i])
 
-    def copy_down(self, _):
+    def _copy_down(self, _):
         '''Fix up ditto marks'''
         for r in range(1, self.rows):
             for c in range(self.cols):
                 if self.data[r][c] == '"':
                     self.data[r][c] = self.data[r-1][c]
 
-    def zipper(self, n):
+    def _zipper(self, n):
         '''Put n rows side by side
         '''
         try:
@@ -339,7 +381,7 @@ class Table:
         self.cols = max(len(c) for c in self.data)
         self.extras.clear()
 
-    def unzipper(self, n):
+    def _unzipper(self, n):
         '''The opposite of zip.  Split rows so that there are cols/n cols in each'''
         try:
             splits = int(n)
@@ -359,7 +401,7 @@ class Table:
         self.cols = max(len(c) for c in self.data)
         self.extras.clear()
 
-    def rapper(self, n):
+    def _rapper(self, n):
         '''It's a wrap.'''
         try:
             groups = int(n)
@@ -389,7 +431,7 @@ class Table:
             if parts > 1:
                 yield from self._splitme(seq[size:], parts - 1)
 
-    def unrapper(self, n):
+    def _unrapper(self, n):
         '''It's not a wrap'''
         try:
             groups = int(n)
@@ -406,7 +448,7 @@ class Table:
         self.cols = max(len(c) for c in self.data)
         self.extras.clear()
 
-    def append_reduction(self, fun):
+    def _append_reduction(self, fun):
         '''Reduce column and append result to foot of table
         fun is the name, func is the callable.
         first see if this is the name of something in stats
@@ -431,7 +473,7 @@ class Table:
         self.add_rule()
         self.append(footer)
 
-    def wrangle(self, shape):
+    def _wrangle(self, shape):
         '''Reflow / pivot / reshape from wide to long or long to wide
 
         pivot wide assumes that col -1 has values and -2 has col head values
@@ -508,14 +550,15 @@ class Table:
             for n, v in zip(names, r[keystop:]):
                 self.append(r[:keystop] + [n, v])
 
-    def arrange_columns(self, perm):
+    def _arrange_columns(self, perm):
         '''Arrange the columns of the table
         '''
         if perm is None:
             return
 
-        perm = perm.replace('()', '') # get right of empty parens
-        perm = perm.replace('{}', '') # get right of empty braces
+        for p in ("()", "{}"):
+            while perm.endswith(p):
+                perm = perm[:-len(p)]
 
         identity = string.ascii_lowercase[:self.cols]
         specials = '.?;'
@@ -619,7 +662,7 @@ class Table:
                     new_row.append(dd)
             self.append(new_row)
 
-    def fancy_col_index(self, col_spec):
+    def _fancy_col_index(self, col_spec):
         '''Find me an index, returns index + T/F to say if letter was upper case
         '''
 
@@ -649,7 +692,7 @@ class Table:
         assert 0 <= c < self.cols
         return (c, flag)
 
-    def sort_rows_by_col(self, col_spec):
+    def _sort_rows_by_col(self, col_spec):
         '''Sort the table
         By default sort by all columns left to right.
 
@@ -663,6 +706,57 @@ class Table:
         groups are done right to left...
 
         '''
+        def _as_numeric_tuple(x, backwards=False):
+            '''return something for sort to work with
+            >>> _as_numeric_tuple("a")
+            (-1000000000000.0, 'A')
+
+            >>> _as_numeric_tuple("a", True)
+            (1000000000000.0, 'A')
+
+            >>> _as_numeric_tuple(None)
+            (1000000000000.0, '')
+
+            >>> _as_numeric_tuple("3.14")
+            (3.14, '3.14')
+
+            >>> _as_numeric_tuple("2020-05-01")
+            (1588287600, '2020-05-01')
+
+            >>> _as_numeric_tuple("2 May 2020")
+            (1588374000, '2 MAY 2020')
+
+            >>> _as_numeric_tuple("A19")
+            (-1000000000000.0, 'A000000000000019')
+            '''
+
+            alpha, omega = -1e12, 1e12
+            if backwards:
+                alpha, omega = omega, alpha
+
+            if x is None:
+                return (omega, '') # put it at the bottom
+
+            x = x.upper()
+
+            try:
+                return (float(x), x)
+            except ValueError:
+                pass
+
+            try:
+                return (int(dup.parse(x).strftime("%s")), x)
+            except ValueError:
+                pass
+
+            # pad trailing numbers with zeros
+            # Make A1, A2, A10 etc sortable...
+            m = re.match(r'(.*\D)(\d+)\Z', x)
+            if m is not None:
+                return (alpha, m.group(1) + m.group(2).zfill(15))
+
+            return (alpha, x)
+
         identity = string.ascii_lowercase[:self.cols]
         if col_spec is None:
             col_spec = identity
@@ -674,21 +768,21 @@ class Table:
 
         if i is not None:
             if -self.cols <= i < self.cols:
-                self.data.sort(key=lambda row: as_numeric_tuple(row[i], False))
+                self.data.sort(key=lambda row: _as_numeric_tuple(row[i], False))
             return
 
         for col in col_spec[::-1]:
-            c, want_reverse = self.fancy_col_index(col)
+            c, want_reverse = self._fancy_col_index(col)
             if c is None:
                 continue
-            self.data.sort(key=lambda row: as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
+            self.data.sort(key=lambda row: _as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
 
-    def remove_duplicates_by_col(self, col_spec):
+    def _remove_duplicates_by_col(self, col_spec):
         '''like uniq, remove row if key cols match the row above
         '''
         cols_to_check = []
         for c in col_spec:
-            i, _ = self.fancy_col_index(c)
+            i, _ = self._fancy_col_index(c)
             if i is None:
                 continue
             cols_to_check.append(i)
@@ -705,7 +799,7 @@ class Table:
             del self.data[i]
             self.rows -= 1
 
-    def roll_by_col(self, col_spec):
+    def _roll_by_col(self, col_spec):
         '''Roll columns, up, or down
         '''
         if col_spec is None:
@@ -713,7 +807,7 @@ class Table:
         else:
             self.data = list(map(list, zip(*self.data)))
             for c in col_spec:
-                i, up = self.fancy_col_index(c)
+                i, up = self._fancy_col_index(c)
                 if i is None:
                     continue
                 if up:
@@ -746,71 +840,6 @@ class Table:
 
             yield ' ' * self.indent + self.separator.join(out).rstrip() + self.eol_marker # no trailing blanks
 
-
-def as_numeric_tuple(x, backwards=False):
-    '''return something for sort to work with
-    >>> as_numeric_tuple("a")
-    (-1000000000000.0, 'A')
-
-    >>> as_numeric_tuple("a", True)
-    (1000000000000.0, 'A')
-
-    >>> as_numeric_tuple(None)
-    (1000000000000.0, '')
-
-    >>> as_numeric_tuple("3.14")
-    (3.14, '3.14')
-
-    >>> as_numeric_tuple("2020-05-01")
-    (1588287600, '2020-05-01')
-
-    >>> as_numeric_tuple("2 May 2020")
-    (1588374000, '2 MAY 2020')
-
-    >>> as_numeric_tuple("A19")
-    (-1000000000000.0, 'A000000000000019')
-    '''
-
-    alpha, omega = -1e12, 1e12
-    if backwards:
-        alpha, omega = omega, alpha
-
-    if x is None:
-        return (omega, '') # put it at the bottom
-
-    x = x.upper()
-
-    try:
-        return (float(x), x)
-    except ValueError:
-        pass
-
-    try:
-        return (int(dup.parse(x).strftime("%s")), x)
-    except ValueError:
-        pass
-
-    # pad trailing numbers with zeros
-    # Make A1, A2, A10 etc sortable...
-    m = re.match(r'(.*\D)(\d+)\Z', x)
-    if m is not None:
-        return (alpha, m.group(1) + m.group(2).zfill(15))
-
-    return (alpha, x)
-
-def as_decimal(n, na_value=decimal.Decimal('0')):
-    "Make this a decimal"
-    try:
-        return decimal.Decimal(n)
-    except decimal.InvalidOperation:
-        return na_value
-
-def is_as_decimal(n):
-    "Is this a decimal"
-    try:
-        return (True, decimal.Decimal(n))
-    except decimal.InvalidOperation:
-        return (False, n)
 
 if __name__ == "__main__":
 
