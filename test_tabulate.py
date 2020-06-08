@@ -1,5 +1,10 @@
 import unittest
+import doctest
 import tabulate
+
+def load_tests(loader, tests, ignore):
+    tests.addTests(doctest.DocTestSuite(tabulate))
+    return tests
 
 class TestTable(unittest.TestCase):
 
