@@ -158,8 +158,10 @@ class Table:
             'ditto': self._copy_down,
             'dp': self._fix_decimal_places,
             'gen': self._generate_new_rows,
+            'help': self._describe_operations,
             'make': self._set_output_form,
             'label': self._label_columns,
+            'nospace': self._remove_spaces_from_values,
             'pivot': self._wrangle,
             'pop': self.pop,
             'roll': self._roll_by_col,
@@ -177,6 +179,10 @@ class Table:
     def __str__(self):
         "Print neatly"
         return "\n".join(self.tabulate())
+
+    def _describe_operations(self, _):
+        '''What commands are defined?'''
+        print('Try one of these: ' + ' '.join(sorted(self.operations)))
 
     def parse_lines(self, lines_thing, splitter=re.compile(r'\s\s+'), splits=0):
         "Read lines from an iterable thing, and append to self"
@@ -200,7 +206,6 @@ class Table:
 
     def parse_lol(self, list_of_iterables):
         "pass lol into self.data"
-        self.indent = 0
         for r in list_of_iterables:
             self.append(r)
 
@@ -259,13 +264,6 @@ class Table:
         except IndexError:
             return []
 
-    def row(self, i):
-        "get a row - zero indexed"
-        try:
-            return [is_as_decimal(c) for c in self.data[i]]
-        except IndexError:
-            return []
-
     def add_blank(self):
         "flag a blank"
         self.extras[len(self.data)] = "blank"
@@ -293,6 +291,13 @@ class Table:
         '''Re-arrange the data at random'''
         random.shuffle(self.data)
         self.extras.clear()
+
+    def _remove_spaces_from_values(self, joiner):
+        '''Remove spaces from values -- this can make it easier to import into R'''
+        if joiner is None:
+            joiner = ''
+        for i, row in enumerate(self.data):
+            self.data[i] = [joiner.join(cell.split()) for cell in row]
 
     def _fix_decimal_places(self, dp_string):
         "Round all the numerical fields in each row"
@@ -833,7 +838,7 @@ class Table:
             eol_marker = ' \\cr'
             comment_marker = '%'
             blank_line = "\\noalign{\\medskip}"
-            ruler = "\\noalign{\\smallskip\\hline\\medskip}"
+            ruler = "\\noalign{\\vskip2pt\\hrule\\vskip4pt}"
         elif self.form == 'latex':
             separator = ' & '
             eol_marker = ' \\\\'
