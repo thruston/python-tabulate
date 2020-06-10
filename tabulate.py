@@ -151,8 +151,7 @@ class Table:
         self.cols = 0
         self.indent = 0
         self.extras = collections.defaultdict(str)
-        self.separator = '  ' # two spaces
-        self.eol_marker = ''
+        self.form = 'plain'
         self.operations = {
             'add': self._append_reduction,
             'arr': self._arrange_columns,
@@ -280,22 +279,8 @@ class Table:
         self.extras[len(self.data)] = '#' + contents.lstrip('#')
 
     def _set_output_form(self, form_name):
-        "Set the seps"
-        form = form_name.lower()
-        if form == 'plain':
-            self.separator = '  '
-        elif form == 'tex':
-            self.separator = ' & '
-            self.eol_marker = ' \\cr'
-        elif form == 'latex':
-            self.separator = ' & '
-            self.eol_marker = ' \\\\'
-        elif form == 'tsv':
-            self.separator = '\t'
-        elif form == 'single':
-            self.separator = ' '
-        else:
-            pass
+        "Set the form name, used in `tabulate`"
+        self.form = form_name.lower()
 
     def _transpose(self, _):
         '''Swap rows and columns
@@ -838,26 +823,65 @@ class Table:
     def tabulate(self):
         '''Generate nicely lined up rows
         '''
+        eol_marker = ''
+        separator = '  '
+        blank_line = None
+        comment_marker = None
+        ruler = None
+        if self.form == 'tex':
+            separator = ' & '
+            eol_marker = ' \\cr'
+            comment_marker = '%'
+            blank_line = "\\noalign{\\medskip}"
+            ruler = "\\noalign{\\smallskip\\hline\\medskip}"
+        elif self.form == 'latex':
+            separator = ' & '
+            eol_marker = ' \\\\'
+            comment_marker = '%'
+            blank_line = "\\noalign{\\medskip}"
+            ruler = "\\hline"
+        elif self.form == 'tsv':
+            separator = '\t'
+        elif self.form == 'pipe':
+            separator = ' | '
+            ruler = 'piped'
+        else:
+            blank_line = ''
+            comment_marker = '#'
+            ruler = 'plain'
+
         widths = [max(len(row[i]) for row in self.data) for i in range(self.cols)]
         aligns = []
         for i in range(self.cols):
             booleans, _ = zip(*self.column(i))
             aligns.append('>' if sum(booleans)/len(booleans) > 1/2 else '<')
 
+        def _pipe_rule(w, a):
+            '''A rule for piped format, given width and alignment
+            '''
+            return '-' * (w-1) + (':' if a == '>' else '-')
+
         # generate nicely lined up rows
         for i, row in enumerate(self.data):
-            if self.extras[i] == 'rule':
-                yield ' ' * self.indent + '-' * (sum(widths) + self.cols * len(self.separator) - len(self.separator) + len(self.eol_marker))
-            elif self.extras[i] == 'blank':
-                yield ''
-            elif self.extras[i].startswith('#'):
-                yield self.extras[i]
+            if self.extras[i] == 'rule' and ruler is not None:
+                if ruler == "plain":
+                    yield ' ' * self.indent + '-' * (sum(widths) + self.cols * len(separator) - len(separator) + len(eol_marker))
+                elif ruler == "piped":
+                    yield ' ' * self.indent + separator.join(_pipe_rule(w, a) for w, a in zip(widths, aligns))
+                else:
+                    yield ruler
+
+            elif self.extras[i] == 'blank' and blank_line is not None:
+                yield blank_line
+
+            elif self.extras[i].startswith('#') and comment_marker is not None:
+                yield comment_marker + self.extras[i][1:]
 
             out = []
             for j, cell in enumerate(row):
                 out.append(f'{cell:{aligns[j]}{widths[j]}}')
 
-            yield ' ' * self.indent + self.separator.join(out).rstrip() + self.eol_marker # no trailing blanks
+            yield ' ' * self.indent + separator.join(out).rstrip() + eol_marker # no trailing blanks
 
 
 if __name__ == "__main__":
