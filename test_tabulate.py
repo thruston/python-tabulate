@@ -19,7 +19,7 @@ class TestTable(unittest.TestCase):
         self.tab.append("First Second Third".split())
         self.tab.append("12 34 56".split())
         self.tab.append("78 90 120".split())
-        
+
         self.assertTrue(self.tab.data)
         self.assertTrue(len(self.tab.data) == 3)
         self.assertTrue(self.tab.cols == 3)
@@ -28,14 +28,14 @@ class TestTable(unittest.TestCase):
         self.tab.append("First Second Third".split())
         self.tab.append("12 34 56".split())
         self.tab.append("78 90 120".split())
-        self.assertEqual("\n" + str(self.tab), 
+        self.assertEqual("\n" + str(self.tab),
 '''
 First  Second  Third
    12      34     56
    78      90    120''')
 
         self.tab.do("add")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 First  Second  Third
    12      34     56
@@ -44,7 +44,7 @@ First  Second  Third
    90     124    176
 ''')
         self.tab.do("xp add")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 First    12   78   90
 Second   34   90  124
@@ -53,7 +53,7 @@ Third    56  120  176
 Total   102  288  390
 ''')
         self.tab.do("add mean")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 First    12   78   90
 Second   34   90  124
@@ -98,7 +98,7 @@ mean     51  144  195
     2020-05-19  09:20:30  28.3  28.2  29.1  25.3  22.9  24.4  24.3  18.1  1375  48.6
     2020-05-19  09:20:40  28.3  28.6  22.5  22.3  24.1  23.7  19.7  23.0  1428  50.5'''.splitlines())
         self.tab.do("arr abced")
-        self.assertEqual(str(self.tab) + "\n", 
+        self.assertEqual(str(self.tab) + "\n",
 '''
     2020-05-19  09:18:00  30.3  30.1  30.2
     2020-05-19  09:18:10  29.2  29.4  29.1
@@ -110,7 +110,7 @@ mean     51  144  195
 ''')
 
         self.tab.do("arr abcdeE")
-        self.assertEqual(str(self.tab) + "\n", 
+        self.assertEqual(str(self.tab) + "\n",
 '''
     2020-05-19  09:18:00  30.3  30.1  30.2   30.2
     2020-05-19  09:18:10  29.2  29.4  29.1   59.3
@@ -122,7 +122,7 @@ mean     51  144  195
 ''')
 
         self.tab.do("arr -z arr ~(d/e)")
-        self.assertEqual(str(self.tab) + "\n", 
+        self.assertEqual(str(self.tab) + "\n",
 '''
     2020-05-19  09:18:00  30.3  30.1  30.2  0.996688741722
     2020-05-19  09:18:10  29.2  29.4  29.1   1.01030927835
@@ -133,7 +133,7 @@ mean     51  144  195
     2020-05-19  09:20:40  28.3  22.5  28.6  0.786713286713
 ''')
         self.tab.do("arr -z arr ~(sqrt(c)")
-        self.assertEqual(str(self.tab) + "\n", 
+        self.assertEqual(str(self.tab) + "\n",
 '''
     2020-05-19  09:18:00  30.3  30.1  30.2  5.50454357781
     2020-05-19  09:18:10  29.2  29.4  29.1  5.40370243444
@@ -144,7 +144,7 @@ mean     51  144  195
     2020-05-19  09:20:40  28.3  22.5  28.6  5.31977443131
 ''')
         self.tab.do("arr -z arr ~(sqrt(c) dp 001144")
-        self.assertEqual(str(self.tab) + "\n", 
+        self.assertEqual(str(self.tab) + "\n",
 '''
     2020-05-19  09:18:00  30.3  30.1  30.2000  5.5045
     2020-05-19  09:18:10  29.2  29.4  29.1000  5.4037
@@ -155,7 +155,7 @@ mean     51  144  195
     2020-05-19  09:20:40  28.3  22.5  28.6000  5.3198
 ''')
         self.tab.do("arr abccde roll d arr abc{c-d}ef")
-        self.assertEqual(str(self.tab) + "\n", 
+        self.assertEqual(str(self.tab) + "\n",
 '''
     2020-05-19  09:18:00  30.3   2.0  30.1  30.2000
     2020-05-19  09:18:10  29.2  -1.1  29.4  29.1000
@@ -165,11 +165,22 @@ mean     51  144  195
     2020-05-19  09:20:30  28.3  -4.8  29.1  28.2000
     2020-05-19  09:20:40  28.3   0.0  22.5  28.6000
 ''')
+        self.tab.do("arr abc('Aok  {:.2f}'.format(f)")
+        self.assertEqual(str(self.tab) + "\n",
+'''
+    2020-05-19  09:18:00  30.3  Aok 30.20
+    2020-05-19  09:18:10  29.2  Aok 29.10
+    2020-05-19  09:18:20  29.2  Aok 28.80
+    2020-05-19  09:18:30  31.2  Aok 31.60
+    2020-05-19  09:18:40  33.1  Aok 32.90
+    2020-05-19  09:20:30  28.3  Aok 28.20
+    2020-05-19  09:20:40  28.3  Aok 28.60
+''')
 
 
     def test_gen_and_wrap_and_zip(self):
         self.tab.do("gen 16 wrap 4")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 1  5   9  13
 2  6  10  14
@@ -177,13 +188,13 @@ mean     51  144  195
 4  8  12  16
 ''')
         self.tab.do("zip")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 1  5   9  13  2  6  10  14
 3  7  11  15  4  8  12  16
 ''')
         self.tab.do("unwrap")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 1  5   9  13
 3  7  11  15
@@ -191,7 +202,7 @@ mean     51  144  195
 4  8  12  16
 ''')
         self.tab.do("unzip")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
  1   5
  9  13
@@ -203,7 +214,7 @@ mean     51  144  195
 12  16
 ''')
         self.tab.do("xp unzip arr acbd label")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 a  b   c   d
 1  3   9  11
@@ -212,7 +223,7 @@ a  b   c   d
 6  8  14  16
 ''')
         self.tab.do("shuffle sort B")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 a  b   c   d
 6  8  14  16
@@ -224,18 +235,18 @@ a  b   c   d
 
     def test_ditto(self):
         self.tab.parse_lines('''
--  Act 3  -  -  Enzo Florimo, Håkan Hagegård, Arleen Augér, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Östman
+-  Act 3  -  -  Enzo Florimo, Hakan Hagegard, Arleen Auger, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Oestman
 1.  "  "Io vi dico, signor"  [1:10]  "
-2.  "  Sull'aria...Cosa mi narri!...Che soave zefiretto...  [2:42]  " 
-3.  "  "Ricevete, o padroncina" - "Queste sono, Madama"  [3:58]   "  
-4.  "  Ecco la marcia...Eh, già, solita usanza  [5:58]   "'''.splitlines())
+2.  "  Sull'aria...Cosa mi narri!...Che soave zefiretto...  [2:42]  "
+3.  "  "Ricevete, o padroncina" - "Queste sono, Madama"  [3:58]   "
+4.  "  Ecco la marcia...Eh, gia, solita usanza  [5:58]   "'''.splitlines())
         self.tab.do("ditto pop 0")
-        self.assertEqual(str(self.tab) + "\n", 
+        self.assertEqual(str(self.tab) + "\n",
 '''
-1.  Act 3  "Io vi dico, signor"                                 [1:10]  Enzo Florimo, Håkan Hagegård, Arleen Augér, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Östman
-2.  Act 3  Sull'aria...Cosa mi narri!...Che soave zefiretto...  [2:42]  Enzo Florimo, Håkan Hagegård, Arleen Augér, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Östman
-3.  Act 3  "Ricevete, o padroncina" - "Queste sono, Madama"     [3:58]  Enzo Florimo, Håkan Hagegård, Arleen Augér, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Östman
-4.  Act 3  Ecco la marcia...Eh, già, solita usanza              [5:58]  Enzo Florimo, Håkan Hagegård, Arleen Augér, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Östman
+1.  Act 3  "Io vi dico, signor"                                 [1:10]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Oestman
+2.  Act 3  Sull'aria...Cosa mi narri!...Che soave zefiretto...  [2:42]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Oestman
+3.  Act 3  "Ricevete, o padroncina" - "Queste sono, Madama"     [3:58]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Oestman
+4.  Act 3  Ecco la marcia...Eh, gia, solita usanza              [5:58]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Oestman
 ''')
 
 
@@ -247,7 +258,7 @@ a  b   c   d
         self.tab.append(['2011-07-05'])
 
         self.tab.do("arr a{dow(a)}")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 Date        dow
 2011-01-17  Mon
@@ -257,7 +268,7 @@ Date        dow
 ''')
 
         self.tab.do("pop 0 arr a{base('2020-05-22')-base(a)}")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 2011-01-17  3413
 2011-02-23  3376
@@ -266,14 +277,14 @@ Date        dow
 ''')
 
         self.tab.do("arr a{date(base(a)+140)}")
-        self.assertEqual("\n" + str(self.tab) + "\n", 
+        self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 2011-01-17  2011-06-06
 2011-02-23  2011-07-13
 2011-03-19  2011-08-06
 2011-07-05  2011-11-22
 ''')
-        
+
     def test_pivot(self):
         self.tab.parse_lines('''
     Exposure category     Lung cancer  No lung cancer

@@ -32,6 +32,7 @@ def exp(d):
     Decimal('2.71828182846')
     '''
     return d.exp()
+
 def sqrt(d):
     '''sqrt for decimals
     >>> sqrt(decimal.Decimal('0'))
@@ -42,6 +43,7 @@ def sqrt(d):
     Decimal('1.41421356237')
     '''
     return d.sqrt()
+
 def log10(d):
     '''log base 10 for decimals
     >>> log10(decimal.Decimal('10'))
@@ -50,6 +52,7 @@ def log10(d):
     Decimal('2')
     '''
     return d.log10()
+
 def log(d):
     '''natural log for decimals (following math.log name...)
     >>> log(exp(decimal.Decimal('1')))
@@ -241,7 +244,7 @@ class Table:
         while agenda:
             op = agenda.pop(0)
             if op not in self.operations:
-                print(f'{op} ??')
+                print(op, '??')
                 continue
 
             # get any arguments
@@ -685,7 +688,7 @@ class Table:
             for dd in desiderata:
                 try:
                     new_row.append(eval(_decimalize(dd), globals(), value_dict))
-                except (ValueError, TypeError, NameError, AttributeError):
+                except (ValueError, TypeError, NameError, AttributeError) as e:
                     new_row.append(dd)
             self.append(new_row)
 
