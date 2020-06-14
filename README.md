@@ -32,7 +32,7 @@ allows you to filter a file, or a buffer, or a group of lines through an
 external program.  Such as Vim.  The idea is that you create a Vim command that
 calls this filter on a marked area in your file which is then replaced with the
 (improved) output. It also works as a simple command line filter.  The details
-of setting up Vim are explained below.  
+of setting up Vim are explained below.
 
 This Python version can also be used as an external module so that you can line
 up any table of text data.
@@ -190,7 +190,7 @@ So the sequence `xp add xp` will give you row totals, for example.
 
 `add` adds the total to the foot of a column.  The default option is `sum`, but
 it can be any method from the Python3 `statistics` library: `mean`, `median`,
-`mode`, `stdev`, `variance`, and so on.  Non-numerical entries in a column count 
+`mode`, `stdev`, `variance`, and so on.  Non-numerical entries in a column count
 as zeros.  A rule is added before the total row.  Given the simple table above `add` produces:
 
     First   100
@@ -259,6 +259,15 @@ normal built-in or `math` functions; besides all the BIFs you get `log`, `log10`
 and `sqrt`, as shown above. If you want any others from `math`, you need to prefix them
 with `math`, so use `math.sin`, `math.cos`, etc...
 
+Curly braces are only treated as parens at the top level (and this only for compatibility
+with the old Perl version of tabulate), so you can put them in normal Python expressions like
+
+    arr ab('{} {}'.format(c, d))
+
+which (incidentally) shows you how to concatenate two columns into one.  You can include
+spaces in your formula.  The argument to `arr` ends at the next operation or the end
+of the command line.
+
 Note that you should use lower case letters only to refer to each column value.
 If you use an upper case letter, `A`, `B`, etc, it will be replaced by the
 cumulative sum of the corresponding column, in other words the sum of the
@@ -311,7 +320,7 @@ As a convenience is the number given to `date()` is less than 1000, then it's
 assumed that you mean a delta on today rather than a day in the pre-Christian
 era.  So `date(70)` will produce the date in 10 weeks time, and `date(-91)`
 will give you the date three months ago, and so on.  `date()` produces today's
-date.  If the number you give date is large, it will be interpreted as epoch 
+date.  If the number you give date is large, it will be interpreted as epoch
 seconds, and if it is very large, epoch milliseconds.
 
 Note: `base()` will recognize dates in the form yyyymmdd or yyyy/mm/dd,
@@ -484,8 +493,8 @@ Upper case letters roll up, so `roll B` would have produced
     13   1   3   8
     15  11   6  16
     12   7  10  14
-        
-As with `sort` you can string column letters together.  
+
+As with `sort` you can string column letters together.
 
 One use of this is to calculate the differences between a series of timestamps,
 so for example with a list of epoch milliseconds like this, how long was the
@@ -505,7 +514,7 @@ You can find that with `arr abb roll c arr ab(b-c)` to get:
     10085  1534951870335   1158
     10085  1534951873005   2670
 
-The negative number at the top shows you the difference between 
+The negative number at the top shows you the difference between
 the last and the first.
 
 
@@ -531,7 +540,7 @@ No attempt is made to create a preamble for you.
 Usage as an importable module
 -----------------------------
 
-Tabulate can also be used from your own Python scripts.  If you have 
+Tabulate can also be used from your own Python scripts.  If you have
 data as a list of lists, or a  list of strings, then you can use `tabulate` to format
 them neatly.  Something like this
 
@@ -544,7 +553,7 @@ tt.do("add")
 print(tt)
 ```
 
-which should produce 
+which should produce
 
 ```
 Item          Amount

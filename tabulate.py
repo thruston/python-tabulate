@@ -244,14 +244,21 @@ class Table:
                 print(f'{op} ??')
                 continue
 
-            # get an argument if there is one
-            argument = agenda.pop(0) if agenda else None
-            # put it back if it is really the next op
-            if argument in self.operations:
-                agenda.insert(0, argument)
-                argument = None
+            # get any arguments
+            argument = []
+            while True:
+                this = agenda.pop(0) if agenda else None
+                # put it back if it is really the next op
+                if this in self.operations:
+                    agenda.insert(0, this)
+                    this = None
 
-            self.operations[op](argument)
+                if this is None:
+                    break
+
+                argument.append(this)
+
+            self.operations[op](' '.join(argument))
 
     def _label_columns(self, _):
         "add some labels in alphabetical order"
@@ -347,7 +354,7 @@ class Table:
         alpha = 1
         try:
             omega = int(count_or_range)
-        except ValueError:
+        except (TypeError, ValueError):
             m = re.match(r'(-?\d+)\D(-?\d+)$', count_or_range)
             if m is None:
                 omega = 10
@@ -371,7 +378,7 @@ class Table:
         '''
         try:
             rows_to_zip = int(n)
-        except TypeError:
+        except (ValueError, TypeError):
             rows_to_zip = 2
 
         if rows_to_zip < 2:
@@ -393,7 +400,7 @@ class Table:
         '''The opposite of zip.  Split rows so that there are cols/n cols in each'''
         try:
             splits = int(n)
-        except TypeError:
+        except (ValueError, TypeError):
             splits = 2
 
         desired_cols = math.ceil(self.cols / splits)
@@ -413,7 +420,7 @@ class Table:
         '''It's a wrap.'''
         try:
             groups = int(n)
-        except TypeError:
+        except (ValueError, TypeError):
             groups = 2
 
         rows_per_group = math.ceil(len(self.data) / groups)
@@ -444,7 +451,7 @@ class Table:
         '''It's not a wrap'''
         try:
             groups = int(n)
-        except TypeError:
+        except (ValueError, TypeError):
             groups = 2
 
         old_data = self.data.copy()
