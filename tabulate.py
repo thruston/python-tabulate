@@ -634,14 +634,22 @@ class Table:
         desiderata = []
         in_parens = 0
         expr = ''
-        for c in perm.replace('{', '(').replace('}', ')'):
-            if c.lower() not in identity + '?()' and in_parens == 0:
+        for c in perm:
+            if c.lower() not in identity + '?(){}' and in_parens == 0:
                 continue
+
+            # allow {} to be () but only at top level (for compatibility)
+            if c == '{' and in_parens == 0:
+                c = '('
+            elif c == '}' and in_parens == 1:
+                c = ')'
+
             expr += c
-            if c == '(':
+            if c in '({':
                 in_parens += 1
                 continue
-            if c == ')':
+
+            if c in ')}':
                 in_parens -= 1
 
             if in_parens == 0:
@@ -649,6 +657,8 @@ class Table:
                 expr = ''
         if expr:
             desiderata.append(expr + ')' * in_parens)
+
+        # print(desiderata)
 
         old_data = self.data.copy()
         self.data.clear()
@@ -659,7 +669,7 @@ class Table:
         for r in old_data:
             for k, v in zip(identity, r):
                 try:
-                    value_dict[k] = decimal.Decimal(v)
+                    value_dict[k] = int(v) if v.isdigit() else decimal.Decimal(v)
                     value_dict[k.upper()] += value_dict[k]
                 except decimal.InvalidOperation:
                     value_dict[k] = v
@@ -668,7 +678,7 @@ class Table:
             for dd in desiderata:
                 try:
                     new_row.append(eval(_decimalize(dd), globals(), value_dict))
-                except (TypeError, NameError, AttributeError):
+                except (ValueError, TypeError, NameError, AttributeError):
                     new_row.append(dd)
             self.append(new_row)
 
