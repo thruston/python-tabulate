@@ -8,6 +8,7 @@ Toby Thurston -- June 2020
 
 # pylint: disable=C0103, C0301
 
+import argparse
 import collections
 import datetime
 import decimal
@@ -910,8 +911,12 @@ class Table:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("agenda", nargs='*', help="[delimiter.maxsplit] [verb [option]]...")
+    parser.add_argument("--file", help="Source file name, defaults to STDIN")
+    args = parser.parse_args()
 
-    agenda = ' '.join(sys.argv[1:]).replace('\\', '').split(None)
+    agenda = ' '.join(args.agenda).replace('\\', '').split(None)
 
     try:
         delim = agenda.pop(0)
@@ -935,7 +940,12 @@ if __name__ == "__main__":
     else:
         in_sep = re.compile(re.escape(delim))
 
+    fh = sys.stdin if args.file is None else open(args.file)
+    
     table = Table()
-    table.parse_lines(sys.stdin, splitter=in_sep, splits=cell_limit)
+    table.parse_lines(fh, splitter=in_sep, splits=cell_limit)
     table.do(agenda)
     print(table)
+
+    if args.file is not None:
+        fh.close()

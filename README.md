@@ -8,7 +8,187 @@ you hours of time faffing about with format and alignment.  As a script it
 provides a filter with a simple DSL that can be used to make and manipulate
 tables in editors that support external filters, as Vim does.
 
-Toby Thurston -- 04 Jun 2020
+If your work involves editing lots of plain text you will get familiar with a
+plain text editor such as Vim or Emacs or similar. You will get familiar with
+the facilities for arranging code and paragraphs of plain text.  Eventually you
+will need to create a table of data or other information, something like this
+
+    event  eruption  waiting
+        1     3.600       79
+        2     1.800       54
+        3     3.333       74
+        4     2.283       62
+        5     4.533       85
+
+and you may find that your editor has some useful facilities for working in "block"
+mode that help to manage the table.  But you might also find that the facilities are
+just a little bit limited.   You want to know the totals of each column, but you
+really didn't want to load the data into a spreadsheet or a statistics system like
+R; you just want the simple totals.   That's what tabulate is for.  If you set it up
+in Vim (see below) as a user command, then you can just say `:Table add` to get this:
+
+    event  eruption  waiting
+        1     3.600       79
+        2     1.800       54
+        3     3.333       74
+        4     2.283       62
+        5     4.533       85
+    ------------------------
+       15    15.549      354
+
+OK, that's not perfect, but all you have to do now is change that 15 to `Total` (or just
+undo the last change to get rid of the new lines or whatever).
+
+Tabulate also lets you transpose a table (to get this...)
+
+    event         1      2      3      4      5
+    eruption  3.600  1.800  3.333  2.283  4.533
+    waiting      79     54     74     62     85
+
+as well as, sort by any column in the table, rearrange the columns, delete
+columns, or add new columns computed from the others.  It can't do everything
+you can do in a spreadsheet but it can do most of the simple things, and you
+can use it right in the middle of your favourite editor.
+
+Many of my Python scripts create tables of data that I need to share in plain
+text (on Slack for example), and I often find myself loading the output into
+Vim just so I can tidy it up with tabulate.  So I have re-written the original
+Perl version of tabulate as a Python module that can be imported, and used to
+tidy up a list of lists of data for printing.
+
+Toby Thurston -- 4 Jun 2020
+
+## Usage and set up 
+
+You can use tabulate from the command line, from your editor, or as a Python module.
+In each case, you use the same mini-language of verbs to act on your table.  These
+are described in the next main section.
+
+### Usage from the command line
+
+You can run `tabulate.py` from the command line.  It will process lines from STDIN
+or from an optional file path.  
+
+    usage: tabulate.py [-h] [--file FILE] [agenda [agenda ...]]
+
+    positional arguments:
+      agenda       [delimiter.maxsplit] [verb [option]]...
+
+    optional arguments:
+      -h, --help   show this help message and exit
+      --file FILE  Source file name, defaults to STDIN
+
+### Usage from within Vim
+
+To use tabulate as a filter, you need first to add a line to your `.vimrc` file like this:
+
+    :command! -nargs=* -range=% Table <line1>,<line2>!python3 ~/python-tabulate/tabulate.py <q-args>
+
+which you should adjust appropriately so your python3 can find where you put
+tabulate.  You can of course use some word other than `Table` as the command
+name. Perhaps `Tbl` ?  Take your pick, you can choose anything, except that Vim
+insists on the name starting with an uppercase letter.
+
+With a definition like this, when you type `:Table` in normal mode in Vim, it
+will call tabulate on the current area and replace it with the output.  If you
+are in Visual Line mode then the current area will just be the marked lines.
+If you are in Normal mode then the current area will be the whole file.
+
+    :Table [delimiter.maxsplit] [verb [option]]...
+
+### Writing the command line
+
+Whether you are calling tabulate from Vim or the command line, the parsing of your 
+input is the same.  
+
+Use blanks to separate the arguments you type: the delimiter argument and any
+verbs must be single blank-separated words.  Any word that looks like a verb
+will be treated as a verb, even if you meant it to be an option.  See below for
+details.  Options can in some cases contain blanks.
+
+The delimiter is used to split up each input line into cells.  It can be any
+single non-alphabetic character or a whole number between 0 and 9.  You can't use
+blanks (even inside quotes) because of the simple way that I split up the
+command line, and so I use whole numbers to mean `split on at least that many
+consecutive blanks` so if you use 1 as an argument the line will be split on
+every blank space, and so on. The default argument is 2.  This means the line
+will be split at every occurrence of two or more blanks.  This is generally
+what you want.  Consider this example.
+
+    Item          Amount
+    First label       23
+    Second thing      45
+    Third one         55
+    Total            123
+
+In most circumstances you can just leave the delimiter out and let it default
+to two or more spaces.  Incidentally, any tab characters in your input are
+silently converted to double spaces before parsing.
+
+You can also limit the number of cell splits done by adding a second number to
+a numeric delimiter.  So "1.3" will use one or more spaces as the delimiter, 
+but will only make 4 columns. This is often handy when parsing log files etc.
+
+After the optional delimiter you should specify a sequence of verbs.  If the
+verb needs an option then that goes right after the verb.  Verbs and options
+are separated by blanks.  The parsing is very simple.  If it looks like a verb
+it's treated as one.  If it doesn't, it's assumed to be an option.  Anything
+coming after an option, but not recognized as a verb, causes an error.  A
+message will be written back in the file.  You will probably want to use the
+`undo` function after reading it.
+
+### Usage as a Python library
+
+Tabulate can also be used from your own Python scripts.  If you have
+data as a list of lists, or a  list of strings, then you can use `tabulate` to format
+them neatly.  Something like this
+
+```python
+import tabulate
+data = [('Item', 'Amount'), ('First label', 23), ('Second thing', 45), ('Third one', 55)]
+tt = tabulate.Table()
+tt.parse_lol(data)
+tt.do("add")
+print(tt)
+```
+
+which should produce
+
+```
+Item          Amount
+First label       23
+Second thing      45
+Third one         55
+--------------------
+Total            123
+```
+
+`parse_lol` is expecting a list of lists (or list of iterables) as shown.  But 
+you can also use `tt.parse_lines(object_with_lines)` to read a file or a list of strings.  
+
+    tt.parse_lines(lines_thing, splitter=re.compile('\\s\\s+'), splits=0)
+
+As shown, `parse_limes` takes two optional arguments:  a regex for splitting
+and a maximum number of splits to make, where 0 means "as many as there are".
+
+You could also add lines one at a time using the Table.append() method.  So the example 
+above could be done as
+```python
+data = [('Item', 'Amount'), ('First label', 23), ('Second thing', 45), ('Third one', 55)]
+tt = tabulate.Table()
+for row in data:
+    tt.append(row)
+tt.do("add")
+print(tt)
+```
+The appended `row` is treated as an iterable. If you append a single string it will be 
+split up into letters following normal Python semantics.
+
+The `do` method processes a list of verbs and options as described above.
+
+The tabulate module overloads the `__str__` method, so that printing your Table object 
+will show it neatly tabulated.  If you want the individual lines, use the `tabulate()` method
+to get a generator of neat lines.  
 
 ## Verbs in the DSL
 
@@ -27,148 +207,7 @@ Toby Thurston -- 04 Jun 2020
     pivot wide|long  reshape, tidyr, melt/cast, simple tables
     roll [col]
 
-This filter is primarily intended to be used as an assistant for an editor that
-allows you to filter a file, or a buffer, or a group of lines through an
-external program.  Such as Vim.  The idea is that you create a Vim command that
-calls this filter on a marked area in your file which is then replaced with the
-(improved) output. It also works as a simple command line filter.  The details
-of setting up Vim are explained below.
-
-This Python version can also be used as an external module so that you can line
-up any table of text data.
-
-## Motivation
-
-If your work involves editing lots of plain text you will get familiar with a
-plain text editor such as Vim or Emacs or similar. You will get familiar with
-the facilities for arranging code and paragraphs of plain text.  Eventually you
-will need to create a table of data or other information, something like this
-
-    event  eruption  waiting
-        1     3.600       79
-        2     1.800       54
-        3     3.333       74
-        4     2.283       62
-        5     4.533       85
-
-and you may find that your editor has some useful facilities for working in "block"
-mode that help to manage the table.  But you might also find that the facilities are
-just a little bit limited.   You want to know the totals of each column, but you
-really didn't want to load the data into a spreadsheet or a statistics system like
-R; you just want the simple totals.   That's what tabulate is for.  Calling `:Table add`
-creates this:
-
-    event  eruption  waiting
-        1     3.600       79
-        2     1.800       54
-        3     3.333       74
-        4     2.283       62
-        5     4.533       85
-    ------------------------
-       15    15.549      354
-
-OK, that's not perfect, but all you have to do now is change that 15 to `Total` (or just
-undo the last change to get rid of the new line or whatever).
-
-Tabulate also lets you transpose a table (to get this...)
-
-    event         1      2      3      4      5
-    eruption  3.600  1.800  3.333  2.283  4.533
-    waiting      79     54     74     62     85
-
-as well as, sort by any column in the table, rearrange the columns, delete columns,
-or add new columns computed from the others.  It can't do everything you can do in a
-spreadsheet but it can do most of the simple things, and you can use it right in the
-middle of your favourite editor.
-
-## Design
-
-The overall flow is as follows
-
-1. Deal with the command line in a nice flexible way.
-
-2. Read <STDIN> and parse each line into a row of table cells.
-
-3. Update the table according to the verbs given on the command line.
-
-4. Work out the widths and alignments for each column in the finished table.
-
-5. Print the table neatly to <STDOUT>
-
-Note that you don't have to supply any verbs; so in this case step 3 takes no
-time at all, and the default action is therefore just to line up your table
-neatly.  Text columns are aligned left, numeric columns aligned right.
-
-USAGE
------
-
-## Use from the command line
-
-You are unlikely to want to do this much, but try something like this
-
-   cat somefile.txt | python3 tabulate.py xp sort xp    # or whatever verbs you want
-
-## Setting up a Table command in Vim
-
-Add a line like the following to your `.vimrc` file
-
-    :command! -nargs=* -range=% Table <line1>,<line2>!python3 ~/python-tabulate/tabulate.py <q-args>
-
-which you should adjust appropriately so your python can find where you put
-tabulate.  You can of course use some word other than `Table` as the command
-name. Perhaps `Tbl` ?  Take your pick, you can choose anything, except that Vim
-insists on the name starting with an uppercase letter.
-
-With a definition like this, when you type `:Table` in normal mode in Vim, it
-will call tabulate on the current area and replace it with the output.  If you
-are in Visual Line mode then the current area will just be the marked lines.
-If you are in Normal mode then the current area will be the whole file.
-
-From now on, I'm assuming you are using a Vim `:Table` command to access tabulate
-
-## Use from within Vim or GVim or MacVim, etc
-
-    :Table [delimiter] [verb [option]]...
-
-Use blank to separate the command line: the delimiter argument and any verbs or
-options must be single blank-separated words.  Any word that looks like a verb
-will be treated as a verb, even if you meant it to be an option.  See below for
-details.
-
-The delimiter is used to split up each input line into cells.  It can be any
-single punctuation character or a whole number between 0 and 9.  You can't use
-blanks (even inside quotes) because of the simple way that I split up the
-command line, and so I use whole numbers to mean `split on at least that many
-consecutive blanks` so if you use 1 as an argument the line will be split on
-every blank space, and so on. The default argument is 2.  This means the line
-will be split at every occurrence of two or more blanks.  This is generally
-what you want.  Consider this example.
-
-    Item          Amount
-    First label       23
-    Second thing      45
-    Third one         55
-    Total            123
-
-In most circumstances you can just leave the delimiter out and let it default
-to two or more spaces.  Incidentally, any tab characters in your input are
-silently converted to double spaces before parsing.
-
-After the optional delimiter you should specify a sequence of verbs.  If the
-verb needs an option then that goes right after the verb.  Verbs and options
-are separated by blanks.  The parsing is very simple.  If it looks like a verb
-it's treated as one.  If it doesn't, it's assumed to be an option.  Anything
-coming after an option, but not recognized as a verb, causes an error.  A
-message will be written back in the file.  You will probably want to use the
-`undo` function after reading it.
-
-DESCRIPTION
------------
-
-## Verbs
-
-In all the examples below you need to prefix the command with `:Table`.  You can string
-together as many verbs (plus optional arguments) as you like.
+You can string together as many verbs (plus optional arguments) as you like.
 
 ### xp - transpose the table
 
@@ -190,8 +229,8 @@ So the sequence `xp add xp` will give you row totals, for example.
 
 `add` adds the total to the foot of a column.  The default option is `sum`, but
 it can be any method from the Python3 `statistics` library: `mean`, `median`,
-`mode`, `stdev`, `variance`, and so on.  Non-numerical entries in a column count
-as zeros.  A rule is added before the total row.  Given the simple table above `add` produces:
+`mode`, `stdev`, `variance`, and so on.  Non-numerical entries in a column are ignored.
+A rule is added before the total row.  Given the simple table above `add` produces:
 
     First   100
     Second  200
@@ -515,7 +554,7 @@ You can find that with `arr abb roll c arr ab(b-c)` to get:
     10085  1534951873005   2670
 
 The negative number at the top shows you the difference between
-the last and the first.
+the last and the first. (And hence the new column sums to zero).
 
 
 ## Special rows
@@ -527,39 +566,3 @@ are treated as horizontal rules and reinserted (appropriately sized) on output.
 Any lines starting with `#` are treated as comment lines, and again reinserted in the
 right places on output.
 
-## Support for TeX and LaTeX
-
-`tabulate` also supports tables neatly in TeX and LaTeX documents.  To convert
-a plain table to TeX format use `make tex`.  If you already have a TeX table
-then `tabulate` automatically spots the TeX delimiters `&` and `\cr`, and puts
-them back in when it formats the output. Everything else works as described
-above.  If you convert from plain to TeX format, then any horizontal rules will
-be converted to the appropriate bit of TeX input to get a neat output rule.
-No attempt is made to create a preamble for you.
-
-Usage as an importable module
------------------------------
-
-Tabulate can also be used from your own Python scripts.  If you have
-data as a list of lists, or a  list of strings, then you can use `tabulate` to format
-them neatly.  Something like this
-
-```python
-import tabulate
-data = [('Item', 'Amount'), ('First label', 23), ('Second thing', 45), ('Third one', 55)]
-tt = tabulate.Table()
-tt.parse_lol(data)
-tt.do("add")
-print(tt)
-```
-
-which should produce
-
-```
-Item          Amount
-First label       23
-Second thing      45
-Third one         55
---------------------
-Total            123
-```
