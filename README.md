@@ -168,7 +168,7 @@ you can also use `tt.parse_lines(object_with_lines)` to read a file or a list of
 
     tt.parse_lines(lines_thing, splitter=re.compile('\\s\\s+'), splits=0)
 
-As shown, `parse_limes` takes two optional arguments:  a regex for splitting
+As shown, `parse_lines` takes two optional arguments:  a regex for splitting
 and a maximum number of splits to make, where 0 means "as many as there are".
 
 You could also add lines one at a time using the Table.append() method.  So the example 
