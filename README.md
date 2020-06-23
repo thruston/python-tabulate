@@ -303,9 +303,16 @@ with the old Perl version of tabulate), so you can put them in normal Python exp
 
     arr ab('{} {}'.format(c, d))
 
-which (incidentally) shows you how to concatenate two columns into one.  You can include
-spaces in your formula.  The argument to `arr` ends at the next operation or the end
-of the command line.
+which (incidentally) shows one way to concatenate two columns into one.  You can include
+spaces in your formula;  The argument to `arr` ends at the next operation or the end
+of the command line.  The access to Python in (more or less) entirely general, but is 
+only really intended for simple manipulation of a few values, so don't expect too much.
+But (assuming you are using Python 3.6 or better by now) you could also write the above 
+example as 
+
+    arr ab(f"{c} {d}")
+
+which you might find more convenient.  
 
 Note that you should use lower case letters only to refer to each column value.
 If you use an upper case letter, `A`, `B`, etc, it will be replaced by the
@@ -364,6 +371,9 @@ seconds, and if it is very large, epoch milliseconds.
 
 Note: `base()` will recognize dates in the form yyyymmdd or yyyy/mm/dd,
 etc, or anything that dateutil.parser can read.
+
+There are also useful functions to convert HH:MM:SS to fractional hours, minutes or seconds.
+`hms()` takes fractional hours and produces `hh:mm:ss`, while `hr`, `mins`, and `secs` go the other way.
 
 ### dp [nnnnn...] - round numbers to n decimal places
 
@@ -556,6 +566,38 @@ You can find that with `arr abb roll c arr ab(b-c)` to get:
 The negative number at the top shows you the difference between
 the last and the first. (And hence the new column sums to zero).
 
+### nospace [filler] - remove spaces from cell values
+
+This is useful for the `read.table` function in R, that by default treats all blanks including 
+single ones as delimiters.  Given this table
+
+    Exposure category     Name            Value
+    -------------------------------------------
+    Asbestos exposure     Lung cancer         6
+    Asbestos exposure     No lung cancer     51
+    No asbestos exposure  Lung cancer        52
+    No asbestos exposure  No lung cancer    941
+
+`:Table nospace` will produce:
+
+    Exposurecategory    Name          Value
+    ---------------------------------------
+    Asbestosexposure    Lungcancer        6
+    Asbestosexposure    Nolungcancer     51
+    Noasbestosexposure  Lungcancer       52
+    Noasbestosexposure  Nolungcancer    941
+
+since that's a litte hard to read you can also specify an optional filler character.  `:Table nospace .` would have 
+produced this:
+
+    Exposure.category     Name            Value
+    -------------------------------------------
+    Asbestos.exposure     Lung.cancer         6
+    Asbestos.exposure     No.lung.cancer     51
+    No.asbestos.exposure  Lung.cancer        52
+    No.asbestos.exposure  No.lung.cancer    941
+
+so that all spaces are replaced by periods.
 
 ## Special rows
 

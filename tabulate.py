@@ -4,6 +4,15 @@ Tabulate
 
 A module to line up text tables.
 Toby Thurston -- June 2020
+
+TODO: 
+- More than one special per row
+- Money cols (maybe)
+- Better support for TeX
+- Parse CSV
+- Support units? MiB KiB etc like sort -h
+
+
 '''
 
 # pylint: disable=C0103, C0301
@@ -120,6 +129,45 @@ def date(ordinal=0):
             dt = datetime.date.today()
 
     return dt.isoformat()
+
+def hms(fractional_things):
+    '''Turn decimal hours/degrees into h/d:mm:ss.fff
+
+    >>> hms(57.2957795)
+    '57:17:44.806'
+
+    >>> hms(10801/3600)
+    '3:00:01.000'
+    '''
+    hh, r = divmod(fractional_things, 1)
+    mm, r = divmod(r * 60, 1)
+    return "{}:{:02d}:{:06.3f}".format(int(hh), int(mm), r*60)
+
+def hr(hms_word, s=0):
+    '''Turn hh:mm:ss.sss into fractional hours
+
+    >>> hr("12:34:56")
+    12.582222222222223
+    '''
+    hours = 0 
+    for i, p in enumerate(hms_word.split(':')):
+        hours += float(p) * 60 ** (s-i)
+    return hours
+
+def mins(hms_word):
+    '''Turn hh:mm:ss.sss into fractional minutes
+    >>> mins('1:23:45')
+    83.75
+    '''
+    return hr(hms_word, 1)
+
+def secs(hms_word):
+    '''Turn hh:mm:ss.sss into fractional seconds
+    >>> secs('1:23:45.67')
+    5025.67
+    '''
+    return hr(hms_word, 2)
+
 
 def is_as_decimal(sss):
     '''Is this a decimal, and if so what is the value?
