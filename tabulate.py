@@ -5,13 +5,15 @@ Tabulate
 A module to line up text tables.
 Toby Thurston -- June 2020
 
-TODO: 
-- More than one special per row
-- Money cols (maybe)
-- Better support for TeX
-- Parse CSV
-- Support units? MiB KiB etc like sort -h
+TODO:
 
+    - ranges in arr
+    - trim trailing filler (or just get rid?)
+    - Better support for TeX
+    - Parse CSV
+    - Support units? MiB KiB etc like sort -h
+    - Money cols (maybe)
+    - Generic col type... 0 string 1 decimal 2 money 3 units ??
 
 '''
 
@@ -28,8 +30,6 @@ import re
 import statistics
 import string
 import sys
-
-import dateutil.parser as dup
 
 decimal.getcontext().prec = 12
 
@@ -71,6 +71,19 @@ def log(d):
     return d.ln()
 
 # Calendar functions for column arrangements
+def parse_date(sss):
+    '''Try to parse a date
+    >>> parse_date("1 January 2001").isoformat()
+    '2001-01-01'
+    '''
+    for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y', '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y'):
+        try:
+            return datetime.datetime.strptime(sss, fmt).date()
+        except ValueError:
+            pass
+
+    raise ValueError
+
 def dow(sss, date_format="%a"):
     '''Is it Friday yet?
     >>> dow("1 January 2001")
@@ -79,7 +92,7 @@ def dow(sss, date_format="%a"):
     'Monday'
     '''
     try:
-        return dup.parse(sss).strftime(date_format)
+        return parse_date(sss).strftime(date_format)
     except (TypeError, ValueError):
         return "dow"
 
@@ -89,14 +102,15 @@ def base(sss=None):
     730486
     >>> base("1 January 1901")
     693961
+    >>> base("01/01/01")
+    730486
     >>> base("31 Dec 2000")-base("1 Jan 1901")
     36524
     '''
     try:
-        dt = dup.parse(sss)
-    except (TypeError, ValueError):
-        dt = datetime.date.today()
-    return dt.toordinal()
+        return parse_date(sss).toordinal()
+    except ValueError:
+        return datetime.date.today().toordinal()
 
 def date(ordinal=0):
     '''Turn a base number (or an epoch time or a millisecond epoch time) into a date
@@ -149,7 +163,7 @@ def hr(hms_word, s=0):
     >>> hr("12:34:56")
     12.582222222222223
     '''
-    hours = 0 
+    hours = 0
     for i, p in enumerate(hms_word.split(':')):
         hours += float(p) * 60 ** (s-i)
     return hours
@@ -202,7 +216,7 @@ class Table:
         self.data = []
         self.cols = 0
         self.indent = 0
-        self.extras = collections.defaultdict(str)
+        self.extras = collections.defaultdict(list)
         self.form = 'plain'
         self.operations = {
             'add': self._append_reduction,
@@ -210,10 +224,12 @@ class Table:
             'ditto': self._copy_down,
             'dp': self._fix_decimal_places,
             'gen': self._generate_new_rows,
+            'group': self._add_grouping_blanks,
             'help': self._describe_operations,
             'make': self._set_output_form,
             'label': self._label_columns,
             'nospace': self._remove_spaces_from_values,
+            'noblanks': self._remove_blank_extras,
             'pivot': self._wrangle,
             'pop': self.pop,
             'roll': self._roll_by_col,
@@ -325,15 +341,15 @@ class Table:
 
     def add_blank(self):
         "flag a blank"
-        self.extras[len(self.data)] = "blank"
+        self.extras[len(self.data)].append("blank")
 
     def add_rule(self):
         "mark a rule"
-        self.extras[len(self.data)] = "rule"
+        self.extras[len(self.data)].append("rule")
 
     def add_comment(self, contents):
         "stash a comment line"
-        self.extras[len(self.data)] = '#' + contents.lstrip('#')
+        self.extras[len(self.data)].append('#' + contents.lstrip('#'))
 
     def _set_output_form(self, form_name):
         "Set the form name, used in `tabulate`"
@@ -350,6 +366,10 @@ class Table:
         '''Re-arrange the data at random'''
         random.shuffle(self.data)
         self.extras.clear()
+
+    def _remove_blank_extras(self, _):
+        for i in range(len(self.data)):
+            self.extras[i] = [x for x in self.extras[i] if x != "blank"]
 
     def _remove_spaces_from_values(self, joiner):
         '''Remove spaces from values -- this can make it easier to import into R'''
@@ -694,7 +714,7 @@ class Table:
         in_parens = 0
         expr = ''
         for c in perm:
-            if c.lower() not in identity + '?(){}' and in_parens == 0:
+            if c.lower() not in identity + '?(){}-' and in_parens == 0:
                 continue
 
             # allow {} to be () but only at top level (for compatibility)
@@ -717,8 +737,6 @@ class Table:
         if expr:
             desiderata.append(expr + ')' * in_parens)
 
-        # print(desiderata)
-
         old_data = self.data.copy()
         self.data.clear()
         self.cols = 0
@@ -737,7 +755,7 @@ class Table:
             for dd in desiderata:
                 try:
                     new_row.append(eval(_decimalize(dd), globals(), value_dict))
-                except (ValueError, TypeError, NameError, AttributeError) as e:
+                except (ValueError, TypeError, NameError, AttributeError):
                     new_row.append(dd)
             self.append(new_row)
 
@@ -824,7 +842,7 @@ class Table:
                 pass
 
             try:
-                return (int(dup.parse(x).strftime("%s")), x)
+                return (int(parse_date(x).strftime("%s")), x)
             except ValueError:
                 pass
 
@@ -876,6 +894,26 @@ class Table:
 
         for i in reversed(rows_to_delete):
             del self.data[i]
+
+    def _add_grouping_blanks(self, col_spec):
+        '''Add blanks to show groups in given column
+        '''
+        if col_spec is None:
+            col_spec = 'a'
+
+        cols_to_check = []
+        for c in col_spec:
+            i, _ = self._fancy_col_index(c)
+            if i is None:
+                continue
+            cols_to_check.append(i)
+        last_tag = ''
+        for i, row in enumerate(self.data):
+            this_tag = ' '.join(row[j] for j in cols_to_check)
+            if i > 0 and this_tag != last_tag and not self.extras[i]:
+                self.extras[i].append("blank")
+            last_tag = this_tag
+
 
     def _roll_by_col(self, col_spec):
         '''Roll columns, up, or down
@@ -937,19 +975,20 @@ class Table:
 
         # generate nicely lined up rows
         for i, row in enumerate(self.data):
-            if self.extras[i] == 'rule' and ruler is not None:
-                if ruler == "plain":
-                    yield ' ' * self.indent + '-' * (sum(widths) + self.cols * len(separator) - len(separator) + len(eol_marker))
-                elif ruler == "piped":
-                    yield ' ' * self.indent + separator.join(_pipe_rule(w, a) for w, a in zip(widths, aligns))
-                else:
-                    yield ruler
+            for ex in self.extras[i]:
+                if ex == 'rule' and ruler is not None:
+                    if ruler == "plain":
+                        yield ' ' * self.indent + '-' * (sum(widths) + self.cols * len(separator) - len(separator) + len(eol_marker))
+                    elif ruler == "piped":
+                        yield ' ' * self.indent + separator.join(_pipe_rule(w, a) for w, a in zip(widths, aligns))
+                    else:
+                        yield ruler
 
-            elif self.extras[i] == 'blank' and blank_line is not None:
-                yield blank_line
+                elif ex == 'blank' and blank_line is not None:
+                    yield blank_line
 
-            elif self.extras[i].startswith('#') and comment_marker is not None:
-                yield comment_marker + self.extras[i][1:]
+                elif ex.startswith('#') and comment_marker is not None:
+                    yield comment_marker + ex[1:]
 
             out = []
             for j, cell in enumerate(row):
@@ -989,7 +1028,7 @@ if __name__ == "__main__":
         in_sep = re.compile(re.escape(delim))
 
     fh = sys.stdin if args.file is None else open(args.file)
-    
+
     table = Table()
     table.parse_lines(fh, splitter=in_sep, splits=cell_limit)
     table.do(agenda)
