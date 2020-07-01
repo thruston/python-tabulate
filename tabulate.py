@@ -622,7 +622,7 @@ class Table:
 
         self.data = []
         self.cols = 0
-        names = sorted(names_seen)
+        names = list(names_seen)
         self.append(header + names)
         for k in keys_seen:
             self.append(list(k) + [fun(bags[(k, n)]) for n in names])
