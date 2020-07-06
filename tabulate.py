@@ -3,11 +3,10 @@
 Tabulate
 
 A module to line up text tables.
-Toby Thurston -- June 2020
+Toby Thurston -- July 2020
 
 TODO:
 
-    - ranges in arr
     - trim trailing filler (or just get rid?)
     - Better support for TeX
     - Parse CSV
@@ -76,7 +75,8 @@ def parse_date(sss):
     >>> parse_date("1 January 2001").isoformat()
     '2001-01-01'
     '''
-    for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y', '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y'):
+    for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y',
+                '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%a', '%A'):
         try:
             return datetime.datetime.strptime(sss, fmt).date()
         except ValueError:
@@ -640,27 +640,114 @@ class Table:
             for n, v in zip(names, r[keystop:]):
                 self.append(r[:keystop] + [n, v])
 
+    def _get_expr_list(self, given):
+        '''Turn the user's argument into a tuple of expression strings
+
+        >>> t = Table()
+        >>> a = (1, 2, 3, 4, 5, 6, 7, 8)
+        >>> t.parse_lol((a, a))
+        >>> t._get_expr_list("abc")
+        ['a', 'b', 'c']
+        >>> t._get_expr_list("abcA")
+        ['a', 'b', 'c', 'A']
+        >>> t._get_expr_list("-abc")
+        ['d', 'e', 'f', 'g', 'h']
+        >>> t._get_expr_list("abc()e")
+        ['a', 'b', 'c', 'e']
+        >>> t._get_expr_list("abc(2+2)e")
+        ['a', 'b', 'c', '(2+2)', 'e']
+        >>> t._get_expr_list("abc(2+2**(4+5))e")
+        ['a', 'b', 'c', '(2+2**(4+5))', 'e']
+        >>> # allow missing trailing parens
+        >>> t._get_expr_list("abc(2+2")
+        ['a', 'b', 'c', '(2+2)']
+        >>> t._get_expr_list("a-e")
+        ['a', 'b', 'c', 'd', 'e']
+        >>> t._get_expr_list("a-E")
+        ['a', 'E']
+        >>> t._get_expr_list("a-Z")
+        ['a', 'H']
+        >>> t._get_expr_list("e-a")
+        ['e', 'd', 'c', 'b', 'a']
+        >>> t._get_expr_list("-a-e")
+        ['f', 'g', 'h']
+        >>> t._get_expr_list("a-z")
+        ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+        >>> t._get_expr_list("~z")
+        ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'h']
+        >>> t._get_expr_list("xyz")
+        ['f', 'g', 'h']
+        >>> t._get_expr_list("-z")
+        ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        >>> t._get_expr_list("~(d/e)")
+        ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '(d/e)']
+
+
+        '''
+        identity = string.ascii_lowercase[:self.cols]
+        in_parens = 0
+        out = []
+        if given[0] == '-':
+            given = given[1:]
+            negate = True
+        else:
+            negate = False
+        expr = []
+        last = ''
+
+        if '(' not in given and self.cols < 20:
+            for i, x in enumerate('zyxw'):
+                given = given.replace(x, identity[-1-i])
+                given = given.replace(x.upper(), identity[-1-i].upper())
+
+        for c in given:
+            if in_parens == 0:
+                if c.lower() in identity + '?;.':
+                    if last == '-' and out[-1] in identity and c in identity:
+                        a = ord(out[-1])
+                        b = ord(c)
+                        if a < b:
+                            out.extend([chr(x) for x in range(a+1, b)])
+                        elif a > b:
+                            out.extend([chr(x) for x in range(a-1, b, -1)])
+                    out.append(c)
+                elif c in '({':
+                    in_parens = 1
+                    expr = ['(']
+                elif c == '~':
+                    out.extend(x for x in identity)
+                else:
+                    pass # ignore anything else outside parens
+                last = c
+            else:
+                if c == '}' and in_parens == 1: # allow } as ) at top level
+                    c = ')'
+                expr.append(c)
+                if c in '({':
+                    in_parens += 1
+                elif c in ')}':
+                    in_parens -= 1
+                if in_parens == 0:
+                    if len(expr) > 2: # ignore ()
+                        out.append(''.join(expr))
+        if in_parens > 0:
+            out.append(''.join(expr) + ')' * in_parens)
+
+        if negate:
+            return list(x for x in identity if x not in out)
+        return out
+
     def _arrange_columns(self, perm):
         '''Arrange the columns of the table
         '''
         if perm is None:
             return
 
-        for p in ("()", "{}"):
-            while perm.endswith(p):
-                perm = perm[:-len(p)]
-
         identity = string.ascii_lowercase[:self.cols]
         specials = '.?;'
 
-        # expand any ~s
-        perm = perm.replace("~", identity)
+        perm = self._get_expr_list(perm)
 
-        # deal with deletions
-        if perm == '-z' and self.cols < 26: # special case
-            perm = identity[:-1]
-        elif perm.startswith('-'):
-            perm = ''.join(sorted(set(identity) - set(perm)))
 
         if all(x in identity + specials for x in perm):
             self._simple_rearrangement(perm)
@@ -683,7 +770,7 @@ class Table:
         self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
         self.cols = len(perm) # perm can delete and/or add columns
 
-    def _general_recalculation(self, perm):
+    def _general_recalculation(self, desiderata):
         '''Do some (decimal) arithmetic on each row...
         '''
         def _decimalize(expr):
@@ -710,32 +797,6 @@ class Table:
             return tokenize.untokenize(out)
 
         identity = string.ascii_lowercase[:self.cols]
-        desiderata = []
-        in_parens = 0
-        expr = ''
-        for c in perm:
-            if c.lower() not in identity + '?(){}-' and in_parens == 0:
-                continue
-
-            # allow {} to be () but only at top level (for compatibility)
-            if c == '{' and in_parens == 0:
-                c = '('
-            elif c == '}' and in_parens == 1:
-                c = ')'
-
-            expr += c
-            if c in '({':
-                in_parens += 1
-                continue
-
-            if c in ')}':
-                in_parens -= 1
-
-            if in_parens == 0:
-                desiderata.append(expr)
-                expr = ''
-        if expr:
-            desiderata.append(expr + ')' * in_parens)
 
         old_data = self.data.copy()
         self.data.clear()
