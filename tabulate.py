@@ -6,7 +6,7 @@ A module to line up text tables.
 Toby Thurston -- July 2020
 
 TODO:
-
+    
     - trim trailing filler (or just get rid?)
     - Better support for TeX
     - Parse CSV
@@ -695,7 +695,7 @@ class Table:
         expr = []
         last = ''
 
-        if '(' not in given and self.cols < 20:
+        if '(' not in given and 7 < self.cols < 20:
             for i, x in enumerate('zyxw'):
                 given = given.replace(x, identity[-1-i])
                 given = given.replace(x.upper(), identity[-1-i].upper())
