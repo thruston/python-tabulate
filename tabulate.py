@@ -251,10 +251,19 @@ class Table:
         '''What commands are defined?'''
         print('Try one of these: ' + ' '.join(sorted(self.operations)))
 
-    def parse_lines(self, lines_thing, splitter=re.compile(r'\s\s+'), splits=0):
+    def clear(self):
+        "Clear data etc"
+        self.data.clear()
+        self.extras.clear()
+        self.cols = 0
+        self.indent = 0
+
+    def parse_lines(self, lines_thing, splitter=re.compile(r'\s\s+'), splits=0, append=False):
         "Read lines from an iterable thing, and append to self"
 
-        self.indent = 99
+        if not append:
+            self.clear()
+            self.indent = 99
         for raw_line in lines_thing:
             raw_line = raw_line.replace("\t", "    ")
             stripped_line = raw_line.strip()
@@ -271,8 +280,10 @@ class Table:
         if not self.data:
             self.indent = 0
 
-    def parse_lol(self, list_of_iterables):
+    def parse_lol(self, list_of_iterables, append=False):
         "pass lol into self.data"
+        if not append:
+            self.clear()
         for r in list_of_iterables:
             self.append(r)
 
