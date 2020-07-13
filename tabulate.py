@@ -182,7 +182,6 @@ def secs(hms_word):
     '''
     return hr(hms_word, 2)
 
-
 def is_as_decimal(sss):
     '''Is this a decimal, and if so what is the value?
 
@@ -814,6 +813,7 @@ class Table:
                 try:
                     new_row.append(eval(_decimalize(dd), globals(), value_dict))
                 except (ValueError, TypeError, NameError, AttributeError):
+                    # raise
                     new_row.append(dd)
             self.append(new_row)
 
