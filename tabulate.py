@@ -650,8 +650,6 @@ class Table:
         ['a', 'b', 'c']
         >>> t._get_expr_list("abcA")
         ['a', 'b', 'c', 'A']
-        >>> t._get_expr_list("-abc")
-        ['d', 'e', 'f', 'g', 'h']
         >>> t._get_expr_list("abc()e")
         ['a', 'b', 'c', 'e']
         >>> t._get_expr_list("abc(2+2)e")
@@ -669,16 +667,14 @@ class Table:
         ['a', 'H']
         >>> t._get_expr_list("e-a")
         ['e', 'd', 'c', 'b', 'a']
-        >>> t._get_expr_list("-a-e")
-        ['f', 'g', 'h']
         >>> t._get_expr_list("a-z")
         ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
         >>> t._get_expr_list("~z")
         ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'h']
         >>> t._get_expr_list("xyz")
         ['f', 'g', 'h']
-        >>> t._get_expr_list("-z")
-        ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        >>> t._get_expr_list("z")
+        ['h']
         >>> t._get_expr_list("~(d/e)")
         ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '(d/e)']
 
@@ -687,16 +683,12 @@ class Table:
         identity = string.ascii_lowercase[:self.cols]
         in_parens = 0
         out = []
-        if given[0] == '-':
-            given = given[1:]
-            negate = True
-        else:
-            negate = False
         expr = []
         last = ''
 
-        if '(' not in given and 7 < self.cols < 20:
-            for i, x in enumerate('zyxw'):
+        # Allow counting from the right (but only xxyz)
+        if '(' not in given and self.cols < 22:
+            for i, x in enumerate('zyxw'[:len(identity)]):
                 given = given.replace(x, identity[-1-i])
                 given = given.replace(x.upper(), identity[-1-i].upper())
 
@@ -733,8 +725,6 @@ class Table:
         if in_parens > 0:
             out.append(''.join(expr) + ')' * in_parens)
 
-        if negate:
-            return list(x for x in identity if x not in out)
         return out
 
     def _arrange_columns(self, perm):
@@ -743,11 +733,18 @@ class Table:
         if perm is None:
             return
 
+        # deletions...
+        if perm[0] == '-':
+            if '(' not in perm:
+                delenda = list(ord(x) - ord('a') for x in self._get_expr_list(perm[1:]))
+                self.data = list(list(x for i, x in enumerate(r) if i not in delenda) for r in self.data) 
+                self.cols = len(self.data[0])
+            return
+
         identity = string.ascii_lowercase[:self.cols]
         specials = '.?;'
 
         perm = self._get_expr_list(perm)
-
 
         if all(x in identity + specials for x in perm):
             self._simple_rearrangement(perm)
