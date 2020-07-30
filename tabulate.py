@@ -354,13 +354,17 @@ class Table:
         except IndexError:
             return []
 
-    def add_blank(self):
+    def add_blank(self, n=None):
         "flag a blank"
-        self.extras[len(self.data)].append("blank")
+        if n is None:
+            n = len(self.data)
+        self.extras[n].append("blank")
 
-    def add_rule(self):
+    def add_rule(self, n=None):
         "mark a rule"
-        self.extras[len(self.data)].append("rule")
+        if n is None:
+            n = len(self.data)
+        self.extras[n].append("rule")
 
     def add_comment(self, contents):
         "stash a comment line"
