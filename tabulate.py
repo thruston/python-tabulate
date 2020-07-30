@@ -285,7 +285,12 @@ class Table:
         if not append:
             self.clear()
         for r in list_of_iterables:
-            self.append(r)
+            if not r:
+                self.add_blank()
+            elif set(''.join(str(x) for x in r)) == {'-'}:
+                self.add_rule()
+            else:
+                self.append(r)
 
     def pop(self, n=None):
         "remove a row"
