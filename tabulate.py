@@ -6,7 +6,6 @@ A module to line up text tables.
 Toby Thurston -- Aug 2020
 
 TODO:
-
     - Better support for TeX
     - Support units? MiB KiB etc like sort -h
     - Money cols (maybe)
@@ -190,6 +189,32 @@ def secs(hms_word):
     5025.67
     '''
     return hr(hms_word, 2)
+
+def si(amount):
+    """If amount is a number, add largest possible SI suffix, 
+    otherwise try to remove the suffix and return a value
+    >>> si('10M')
+    Decimal('10000000')
+    >>> si(12315350)
+    '12.31535 M'
+    >>> si(10)
+    '10'
+    >>> si('.2 k')
+    Decimal('200.0')
+
+    """
+    sips = ' kMGTPE'
+    m = re.match(rf'([-+]?(?:\d+\.\d*|\.\d+|0|[1-9]\d*))\s*([{sips}])\Z', str(amount))
+    if m is not None:
+        return decimal.Decimal(m.group(1)) * 10 ** (3 * sips.index(m.group(2)))
+    try:
+        n = decimal.Decimal(amount)
+    except decimal.InvalidOperation:
+        return amount
+    else:
+        e = min(int(n.log10()/3), len(sips)-1)
+        return '{:7.3f} {}'.format(n / (10 ** (3*e)), sips[e]).strip()
+
 
 def is_as_decimal(sss):
     '''Is this a decimal, and if so what is the value?
