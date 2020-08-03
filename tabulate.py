@@ -6,7 +6,7 @@ A module to line up text tables.
 Toby Thurston -- July 2020
 
 TODO:
-    
+
     - trim trailing filler (or just get rid?)
     - Better support for TeX
     - Parse CSV
@@ -32,15 +32,18 @@ import sys
 
 decimal.getcontext().prec = 12
 
-# Functions for column maths, using the Decimal versions
+# Functions for column maths, using the Decimal versions, and
+# also supporting ints...
 def exp(d):
     '''exp for Decimals
     >>> exp(decimal.Decimal('0'))
     Decimal('1')
     >>> exp(decimal.Decimal('1'))
     Decimal('2.71828182846')
+    >>> exp(2)
+    Decimal('7.38905609893')
     '''
-    return d.exp()
+    return decimal.Decimal(d).exp()
 
 def sqrt(d):
     '''sqrt for decimals
@@ -50,8 +53,10 @@ def sqrt(d):
     Decimal('1')
     >>> sqrt(decimal.Decimal('2'))
     Decimal('1.41421356237')
+    >>> sqrt(121)
+    Decimal('11')
     '''
-    return d.sqrt()
+    return decimal.Decimal(d).sqrt()
 
 def log10(d):
     '''log base 10 for decimals
@@ -59,15 +64,19 @@ def log10(d):
     Decimal('1')
     >>> log10(decimal.Decimal('100'))
     Decimal('2')
+    >>> log10(1000)
+    Decimal('3')
     '''
-    return d.log10()
+    return decimal.Decimal(d).log10()
 
 def log(d):
     '''natural log for decimals (following math.log name...)
     >>> log(exp(decimal.Decimal('1')))
     Decimal('1.00000000000')
+    >>> log(42)
+    Decimal('3.73766961828')
     '''
-    return d.ln()
+    return decimal.Decimal(d).ln()
 
 # Calendar functions for column arrangements
 def parse_date(sss):
@@ -707,9 +716,9 @@ class Table:
 
         # Allow counting from the right (but only xxyz)
         if '(' not in given and self.cols < 22:
-            for i, x in enumerate('zyxw'[:len(identity)]):
-                given = given.replace(x, identity[-1-i])
-                given = given.replace(x.upper(), identity[-1-i].upper())
+            for a, b in zip("zyxw", reversed(identity)):
+                given = given.replace(a, b)
+                given = given.replace(a.upper(), b.upper())
 
         for c in given:
             if in_parens == 0:
@@ -756,7 +765,7 @@ class Table:
         if perm[0] == '-':
             if '(' not in perm:
                 delenda = list(ord(x) - ord('a') for x in self._get_expr_list(perm[1:]))
-                self.data = list(list(x for i, x in enumerate(r) if i not in delenda) for r in self.data) 
+                self.data = list(list(x for i, x in enumerate(r) if i not in delenda) for r in self.data)
                 self.cols = len(self.data[0])
             return
 
@@ -828,12 +837,16 @@ class Table:
                 except decimal.InvalidOperation:
                     value_dict[k] = v
 
+            # allow xyz to refer to cells counted from the end...
+            for j, k in zip("zyxw", reversed(identity)):
+                value_dict[j] = value_dict[k]
+                value_dict[j.upper()] = value_dict[k.upper()]
+
             new_row = []
             for dd in desiderata:
                 try:
                     new_row.append(eval(_decimalize(dd), globals(), value_dict))
                 except (ValueError, TypeError, NameError, AttributeError):
-                    # raise
                     new_row.append(dd)
             self.append(new_row)
 
