@@ -3,13 +3,11 @@
 Tabulate
 
 A module to line up text tables.
-Toby Thurston -- July 2020
+Toby Thurston -- Aug 2020
 
 TODO:
 
-    - trim trailing filler (or just get rid?)
     - Better support for TeX
-    - Parse CSV
     - Support units? MiB KiB etc like sort -h
     - Money cols (maybe)
     - Generic col type... 0 string 1 decimal 2 money 3 units ??
@@ -20,10 +18,12 @@ TODO:
 
 import argparse
 import collections
+import csv
 import datetime
 import decimal
 import itertools
 import math
+import os
 import random
 import re
 import statistics
@@ -313,7 +313,7 @@ class Table:
         except (IndexError, ValueError):
             return
 
-    def append(self, row, filler='-'):
+    def append(self, row, filler=''):
         "add a row, maintaining cols"
         n = len(row)
         if n < self.cols:
@@ -556,6 +556,7 @@ class Table:
 
         old_data = self.data.copy()
         old_cols = self.cols
+        groups = min(groups, old_cols) # no blanks on the end thank you
 
         self.data.clear()
         self.cols = 0
@@ -1026,6 +1027,11 @@ class Table:
     def tabulate(self):
         '''Generate nicely lined up rows
         '''
+        if self.form == 'csv':
+            w = csv.writer(sys.stdout, lineterminator=os.linesep)
+            w.writerows(self.data)
+            return
+
         eol_marker = ''
         separator = '  '
         blank_line = None
@@ -1121,7 +1127,10 @@ if __name__ == "__main__":
     fh = sys.stdin if args.file is None else open(args.file)
 
     table = Table()
-    table.parse_lines(fh, splitter=in_sep, splits=cell_limit)
+    if delim == ',':
+        table.parse_lol(csv.reader(fh))
+    else:
+        table.parse_lines(fh, splitter=in_sep, splits=cell_limit)
     table.do(agenda)
     print(table)
 
