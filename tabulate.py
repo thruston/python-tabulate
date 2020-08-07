@@ -196,9 +196,9 @@ def si(amount):
     >>> si('10M')
     Decimal('10000000')
     >>> si(12315350)
-    '12.31535 M'
+    '12.315 M'
     >>> si(10)
-    '10'
+    '10.000'
     >>> si('.2 k')
     Decimal('200.0')
 
@@ -874,6 +874,8 @@ class Table:
                     new_row.append(eval(_decimalize(dd), globals(), value_dict))
                 except (ValueError, TypeError, NameError, AttributeError):
                     new_row.append(dd)
+                except ZeroDivisionError:
+                    new_row.append("-")
             self.append(new_row)
 
     def _fancy_col_index(self, col_spec):
