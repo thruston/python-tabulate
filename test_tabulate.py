@@ -308,6 +308,16 @@ a  b   c   d
 2  4  10  12
 1  3   9  11
 ''')
+        self.tab.add_rule(-1)
+        self.assertEqual("\n" + str(self.tab) + "\n",
+'''
+a  b   c   d
+6  8  14  16
+5  7  13  15
+2  4  10  12
+------------
+1  3   9  11
+''')
 
 
     def test_ditto(self):

@@ -390,15 +390,19 @@ class Table:
 
     def add_blank(self, n=None):
         "flag a blank"
-        if n is None:
-            n = len(self.data)
-        self.extras[n].append("blank")
+        try:
+            i = int(n) % len(self.data)
+        except TypeError:
+            i = len(self.data)
+        self.extras[i].append("blank")
 
     def add_rule(self, n=None):
         "mark a rule"
-        if n is None:
-            n = len(self.data)
-        self.extras[n].append("rule")
+        try:
+            i = int(n) % len(self.data)
+        except TypeError:
+            i = len(self.data)
+        self.extras[i].append("rule")
 
     def add_comment(self, contents):
         "stash a comment line"
