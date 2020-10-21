@@ -3,10 +3,10 @@ Tabulate
 
 Line up tabular material neatly.
 
-An exportable module that will line up tabular material automatically saving
-you hours of time faffing about with format and alignment.  As a script it
+An exportable module that will line up tabular material automatically, and so
+save you hours of time faffing about with format and alignment.  As a script it
 provides a filter with a simple DSL that can be used to make and manipulate
-tables in editors that support external filters, as Vim does.
+tables in editors that support external filters (such as Vim).
 
 If your work involves editing lots of plain text you will get familiar with a
 plain text editor such as Vim or Emacs or similar. You will get familiar with
@@ -369,8 +369,27 @@ will give you the date three months ago, and so on.  `date()` produces today's
 date.  If the number you give date is large, it will be interpreted as epoch
 seconds, and if it is very large, epoch milliseconds.
 
-Note: `base()` will recognize dates in the form yyyymmdd or yyyy/mm/dd,
-etc, or anything that dateutil.parser can read.
+Note: `base()` will actually recognize dates in several different (mainly ISO or British) forms
+as well as `yyyy-mm-dd`, as follows:
+
+    Example                   strftime format used
+    ----------------------------------------------
+    2020-12-25                %Y-%m-%d
+    20201225                  %Y%m%d
+    Fri Dec 25 12:34:56 2020  %c
+    12/25/20                  %x
+    25 December 2020          %d %B %Y
+    25 Dec 2020               %d %b %Y
+    25 Dec 20                 %d %b %y
+    25 December 20            %d %B %y
+    25/12/2020                %d/%m/%Y
+    25/12/20                  %d/%m/%y
+    Fri                       %a
+    Friday                    %A
+
+This table shows the strftime formats used.  This is not as clever as using
+`dateutil.parser` but it does mean that tabulate only uses the standard Python3
+libraries.  
 
 There are also useful functions to convert HH:MM:SS to fractional hours, minutes or seconds.
 `hms()` takes fractional hours and produces `hh:mm:ss`, while `hr`, `mins`, and `secs` go the other way.
@@ -391,14 +410,13 @@ with the default two spaces.   Or you might want explicitly to make a plain tabl
 
 Note that this only affects the rows, it won't magically generate the TeX or LaTeX table preamble.
 
-The CSV option should produce something that you can easily import into Excel
-or similar spreadsheets.  However beware that it's not very clever: fields with
-commas in will be enclosed with `double quotes`, but my routines are designed
-to be simple rather than fool proof.  To get back from CSV form to plain form
-do `Table , make plain`, (or just the undo command in Vi).
+The `make csv` option should produce something that you can easily import into Excel
+or similar spreadsheets.  The output is produced with the standard Python CSV writer, 
+so double quotes will be added around cell values where needed.  To get back to the 
+plain data just do `:Table ,`.
 
 The TSV option can be used when you want to import into Word -- you can use Table.. Convert Text to Table...
-using tabs as the column separator
+using tabs as the column separator.
 
 ### pivot [long|wide] - expand or condense data tables for R
 

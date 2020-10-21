@@ -98,6 +98,12 @@ def dow(sss, date_format="%a"):
     'Mon'
     >>> dow("1 January 2001", "%A")
     'Monday'
+
+    You can actually use this to produce any strftime format...
+
+    >>> dow("25 Dec 2001", "%c")
+    'Tue Dec 25 00:00:00 2001'
+
     '''
     try:
         return parse_date(sss).strftime(date_format)
@@ -1135,29 +1141,19 @@ if __name__ == "__main__":
     parser.add_argument("--file", help="Source file name, defaults to STDIN")
     args = parser.parse_args()
 
+    # Join the agenda args into one string, remove any backslash (for Vim), and split into a list
     agenda = ' '.join(args.agenda).replace('\\', '').split(None)
 
+    # Get the delimiter from the agenda (which might be empty), default to "2"
     try:
         delim = agenda.pop(0)
     except IndexError:
         delim = '2'
 
+    # If the removed delim starts with alphabetic, put it back and default to "2"
     if re.match(r'^[a-zA-Z]', delim):
         agenda.insert(0, delim)
         delim = '2'
-
-    cell_limit = 0
-    mm = re.match(r'(\d*)\.(\d+)', delim)
-    if mm is not None:
-        delim = mm.group(1)
-        if delim == '':
-            delim = '2'
-        cell_limit = int(mm.group(2))
-
-    if delim.isdigit():
-        in_sep = re.compile(rf'\s{{{delim},}}')
-    else:
-        in_sep = re.compile(re.escape(delim))
 
     fh = sys.stdin if args.file is None else open(args.file)
 
@@ -1165,6 +1161,19 @@ if __name__ == "__main__":
     if delim == ',':
         table.parse_lol(csv.reader(fh))
     else:
+        # check for a maxsplit spec ".3", "2.4" etc 
+        mm = re.match(r'(\d*)\.(\d+)', delim)
+        if mm is not None:
+            delim = mm.group(1)
+            if delim == '':
+                delim = '2'
+            cell_limit = int(mm.group(2))
+        else:
+            cell_limit = 0
+        if delim.isdigit():
+            in_sep = re.compile(rf'\s{{{delim},}}')
+        else:
+            in_sep = re.compile(re.escape(delim))
         table.parse_lines(fh, splitter=in_sep, splits=cell_limit)
     table.do(agenda)
     print(table)
