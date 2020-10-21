@@ -646,6 +646,10 @@ class Table:
             self._wrangle_wide(len)
             return
 
+        if "mean".startswith(shape.lower()):
+            self._wrangle_wide(lambda x: sum(x)/len(x))
+            return
+
         if "any".startswith(shape.lower()):
             self._wrangle_wide(any)
             return
