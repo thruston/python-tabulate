@@ -653,7 +653,7 @@ class Table:
             return
 
         if "mean".startswith(shape.lower()):
-            self._wrangle_wide(lambda x: sum(x)/len(x))
+            self._wrangle_wide(lambda x: sum(x)/len(x) if x else 'NA')
             return
 
         if "any".startswith(shape.lower()):
