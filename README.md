@@ -206,6 +206,7 @@ to get a generator of neat lines.
     unzip n          unzip into n * the current number of rows & 1/n columns.
     pivot wide|long  reshape, tidyr, melt/cast, simple tables
     roll [col]
+    gen pattern      generate new rows
 
 You can string together as many verbs (plus optional arguments) as you like.
 
@@ -518,7 +519,7 @@ you zip every other row, and unzip the table in half (as it were).
 `label` simply adds an alphabetic label at the top of the
 columns to help you work out which is which when rearranging.
 
-### gen - generate rows
+### gen - generate new rows
 
 `gen a..b` where `a` and `b` are integers, and `..` is any non-numeric character sequence,
 will generate a table with a single column of integers running from `a` to `b`.  `gen 10` is
@@ -526,6 +527,29 @@ interpreted as `gen 1..10`.
 
 If the table already has some data, then the single column will be appended as new rows at the bottom
 of the existing column `a`.
+
+To get more general new rows try `gen` with a pattern like `AB2`, which will produce:
+
+    A  A
+    A  B
+    B  A
+    B  B
+
+or `gen PQR2`
+
+    P  P
+    P  Q
+    P  R
+    Q  P
+    Q  Q
+    Q  R
+    R  P
+    R  Q
+    R  R
+
+The argument should be a string of letters followed by a single digit.  The
+digit controls the number of columns created, and all the required combinations
+of letters in the string will be used to generate rows.
 
 ### shuffle - rearrange the rows with a Fisher-Yates shuffle.
 

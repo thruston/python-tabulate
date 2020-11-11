@@ -197,7 +197,7 @@ def secs(hms_word):
     return hr(hms_word, 2)
 
 def si(amount):
-    """If amount is a number, add largest possible SI suffix, 
+    """If amount is a number, add largest possible SI suffix,
     otherwise try to remove the suffix and return a value
     >>> si('10M')
     Decimal('10000000')
@@ -486,20 +486,28 @@ class Table:
 
     def _generate_new_rows(self, count_or_range):
         "Add some more data on the bottom"
-        alpha = 1
-        try:
-            omega = int(count_or_range)
-        except (TypeError, ValueError):
-            m = re.match(r'(-?\d+)\D(-?\d+)$', count_or_range)
-            if m is None:
-                omega = 10
-            else:
-                alpha, omega = (int(x) for x in m.groups())
-        if alpha > omega:
-            (alpha, omega) = (omega, alpha)
 
-        for i in range(alpha, omega+1):
-            self.append([i])
+        # simple integer
+        if count_or_range.isdigit():
+            self.parse_lol(list([x+1] for x in range(int(count_or_range))), append=True)
+            return
+
+        # integer range -4:99 etc...
+        m = re.match(r'(-?\d+)\D(-?\d+)$', count_or_range)
+        if m is not None:
+            alpha, omega = (int(x) for x in m.groups())
+            if alpha > omega:
+                (alpha, omega) = (omega, alpha)
+            self.parse_lol(list([x] for x in range(alpha, omega+1)), append=True)
+            return
+
+        # Labels * Cols...
+        m = re.match(r'([A-Z]+)(\d)$', count_or_range)
+        if m is not None:
+            labels = m.group(1)
+            columns = int(m.group(2))
+            self.parse_lol(list([*x] for x in itertools.product(labels, repeat=columns)), append=True)
+            return
 
     def _copy_down(self, _):
         '''Fix up ditto marks'''
@@ -638,27 +646,20 @@ class Table:
         or "long3" -- numbering from a=1
 
         '''
-        if shape is None:
+        if shape is None or self.cols < 3:
             return
 
-        if self.cols < 3:
-            return
+        pivot_function_for = {
+            'wide': sum,
+            'count': len,
+            'mean':  lambda a: statistics.mean(a) if a else 'NA',
+            'any': any,
+        }
 
-        if "wide".startswith(shape.lower()):
-            self._wrangle_wide()
-            return
-
-        if "count".startswith(shape.lower()):
-            self._wrangle_wide(len)
-            return
-
-        if "mean".startswith(shape.lower()):
-            self._wrangle_wide(lambda x: sum(x)/len(x) if x else 'NA')
-            return
-
-        if "any".startswith(shape.lower()):
-            self._wrangle_wide(any)
-            return
+        for k in pivot_function_for:
+            if k.startswith(shape.lower()):
+                self._wrangle_wide(pivot_function_for[k])
+                return
 
         m = re.match(r'long([1-9a-o])?', shape)
         if m is None:
@@ -1161,7 +1162,7 @@ if __name__ == "__main__":
     if delim == ',':
         table.parse_lol(csv.reader(fh))
     else:
-        # check for a maxsplit spec ".3", "2.4" etc 
+        # check for a maxsplit spec ".3", "2.4" etc
         mm = re.match(r'(\d*)\.(\d+)', delim)
         if mm is not None:
             delim = mm.group(1)
