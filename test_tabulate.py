@@ -424,5 +424,41 @@ Date        dow
  2.795   2.255  1.353  -167.5
  3.612   3.017  8.675   2.117''')
 
+    def test_complex_gen(self):
+        '''Test out gen with ABCn argument and some of the 
+        smarter bits of pivot'''
+        self.tab.do("gen PQ4")
+        expected = '''
+P  P  P  P
+P  P  P  Q
+P  P  Q  P
+P  P  Q  Q
+P  Q  P  P
+P  Q  P  Q
+P  Q  Q  P
+P  Q  Q  Q
+Q  P  P  P
+Q  P  P  Q
+Q  P  Q  P
+Q  P  Q  Q
+Q  Q  P  P
+Q  Q  P  Q
+Q  Q  Q  P
+Q  Q  Q  Q
+'''.strip()
+        self.assertEqual(str(self.tab), expected)
+
+        self.tab.do("label pivot count add")
+        expected = '''
+a      b      P  Q
+P      P      2  2
+P      Q      2  2
+Q      P      2  2
+Q      Q      2  2
+------------------
+Total  Total  8  8
+'''.strip()
+        self.assertEqual(str(self.tab), expected)
+
 if __name__ == "__main__":
     unittest.main()

@@ -385,7 +385,7 @@ class Table:
 
     def _label_columns(self, _):
         "add some labels in alphabetical order"
-        self.data.insert(0, string.ascii_lowercase[:self.cols])
+        self.data.insert(0, list(string.ascii_lowercase[:self.cols])) # make the string into a list
 
     def column(self, i):
         "get a column from the table - zero indexed"
