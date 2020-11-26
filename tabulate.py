@@ -728,15 +728,15 @@ class Table:
         >>> # allow missing trailing parens
         >>> t._get_expr_list("abc(2+2")
         ['a', 'b', 'c', '(2+2)']
-        >>> t._get_expr_list("a-e")
+        >>> t._get_expr_list("a:e")
         ['a', 'b', 'c', 'd', 'e']
-        >>> t._get_expr_list("a-E")
+        >>> t._get_expr_list("a:E")
         ['a', 'E']
-        >>> t._get_expr_list("a-Z")
+        >>> t._get_expr_list("a:Z")
         ['a', 'H']
-        >>> t._get_expr_list("e-a")
+        >>> t._get_expr_list("e:a")
         ['e', 'd', 'c', 'b', 'a']
-        >>> t._get_expr_list("a-z")
+        >>> t._get_expr_list("a:z")
         ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
         >>> t._get_expr_list("~z")
         ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'h']
@@ -746,6 +746,8 @@ class Table:
         ['h']
         >>> t._get_expr_list("~(d/e)")
         ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '(d/e)']
+        >>> t._get_expr_list("(a:c/2)")
+        ['(a/2)', '(b/2)', '(c/2)']
 
 
         '''
@@ -756,15 +758,35 @@ class Table:
         last = ''
 
         # Allow counting from the right (but only xxyz)
+        # only for simple_rearrangement here -- this shold probably refactor to there...
         if '(' not in given and self.cols < 22:
             for a, b in zip("zyxw", reversed(identity)):
                 given = given.replace(a, b)
                 given = given.replace(a.upper(), b.upper())
 
+        # this is a kuldge to attempt to support ranges in calcs...
+        def replicate(mob):
+            '''replicate the string from the mob'''
+            prefix, a, b, suffix = mob.groups()
+            if prefix is None:
+                prefix = ''
+            if suffix is None:
+                suffix = ''
+            a = min(ord(a), ord(identity[-1]))
+            b = min(ord(b), ord(identity[-1]))
+            if a > b:
+                r = range(a, b-1, -1)
+            else:
+                r = range(a, b+1)
+
+            return ''.join(['(' + prefix + chr(x) + suffix + ')' for x in r])
+
+        given = re.sub(r'\((.*?[^a-z])?([a-z]):([a-z])([^a-z].*?)?\)', replicate, given)
+
         for c in given:
             if in_parens == 0:
                 if c.lower() in identity + '?;.':
-                    if last == '-' and out[-1] in identity and c in identity:
+                    if last == ':' and out[-1] in identity and c in identity:
                         a = ord(out[-1])
                         b = ord(c)
                         if a < b:
