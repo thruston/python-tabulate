@@ -3,13 +3,7 @@
 Tabulate
 
 A module to line up text tables.
-Toby Thurston -- Aug 2020
-
-TODO:
-    - Better support for TeX
-    - Support units? MiB KiB etc like sort -h
-    - Money cols (maybe)
-    - Generic col type... 0 string 1 decimal 2 money 3 units ??
+Toby Thurston -- 08 Dec 2020
 
 '''
 
@@ -260,6 +254,7 @@ class Table:
         self.operations = {
             'add': self._append_reduction,
             'arr': self._arrange_columns,
+            'cdiff': self._cumulative_differences,
             'ditto': self._copy_down,
             'dp': self._fix_decimal_places,
             'gen': self._generate_new_rows,
@@ -443,6 +438,24 @@ class Table:
             joiner = ''
         for i, row in enumerate(self.data):
             self.data[i] = [joiner.join(cell.split()) for cell in row]
+
+    def _cumulative_differences(self, start_col):
+        '''Insert cumulative differences between adjacent columns of numbers, starting at col x'''
+        if len(start_col) > 1:
+            return
+        identity = string.ascii_lowercase[:self.cols]
+        
+        try:
+            k = identity.index(start_col) + 1
+        except ValueError:
+            k = 1
+
+        arrangement = identity[:k]
+        for c in identity[k:]:
+            arrangement += f'({arrangement[-1].upper()}-{c.upper()}){c}'
+
+        self._general_recalculation(self._get_expr_list(arrangement))
+
 
     def _apply_function_to_numeric_values(self, fstring):
         '''fstring should be a maths expression with an x, as x+1 or 2**x etc
