@@ -207,6 +207,10 @@ to get a generator of neat lines.
     pivot wide|long  reshape, tidyr, melt/cast, simple tables
     roll [col]
     gen pattern      generate new rows
+    normalize ["table" | "row"]  
+                     normalize the numeric values so that they add to 1 
+    tap "x-expression"
+                     adjust the numeric values with the given expression
 
 You can string together as many verbs (plus optional arguments) as you like.
 
@@ -395,6 +399,33 @@ libraries.
 There are also useful functions to convert HH:MM:SS to fractional hours, minutes or seconds.
 `hms()` takes fractional hours and produces `hh:mm:ss`, while `hr`, `mins`, and `secs` go the other way.
 
+### tap x-expression - apply a function to each numerical value
+
+This is useful for adjusting all the numeric values in your table at once, 
+perhaps for making byte values into megabytes etc.  Given values with headings like this
+
+    Category  Type A  Type B
+    ------------------------
+    First         34      21
+    Second        58      72
+
+`tap +1000` will produce
+
+    Category  Type A  Type B
+    ------------------------
+    First       1034    1021
+    Second      1058    1072
+
+and then `tap log(x)` produces
+
+    Category         Type A         Type B
+    --------------------------------------
+    First     6.94119005507  6.92853781816
+    Second    6.96413561242  6.97728134163
+
+if you omit `x` from your "x-expression", it will be added to the front.
+
+
 ### dp [nnnnn...] - round numbers to n decimal places
 
 As delivered tabulate calculates with 12 decimal places, so you might need to round your answers a bit.
@@ -513,6 +544,43 @@ as input, `zip` gives you
 
 `unzip` does the opposite.  The option is the number of rows to combine.  The default is 2, so that
 you zip every other row, and unzip the table in half (as it were).
+
+### normalize [table|row] - adjust values so that they sum to one
+
+    Exposure category     Lung cancer  No lung cancer
+    -------------------------------------------------
+    Asbestos exposure               6              51
+    No asbestos exposure           52             941
+
+`normalize` produces this
+
+    Exposure category         Lung cancer  No lung cancer
+    -----------------------------------------------------
+    Asbestos exposure      0.105263157895  0.894736842105
+    No asbestos exposure  0.0523665659617  0.947633434038
+
+which you might like to tidy up with `tap` or `dp`....
+
+If you want the whole table to add to 1 then do `normalize table`:
+
+    Exposure category          Lung cancer   No lung cancer
+    -------------------------------------------------------
+    Asbestos exposure     0.00571428571429  0.0485714285714
+    No asbestos exposure   0.0495238095238   0.896190476190
+
+If you want the columns to add to 1 then use `xp normalize xp`:
+
+    Exposure category        Lung cancer   No lung cancer
+    -----------------------------------------------------
+    Asbestos exposure     0.103448275862  0.0514112903226
+    No asbestos exposure  0.896551724138   0.948588709677
+
+(But note that `xp` gets rid of your rules, so I actually did that with 
+`xp normalize xp rule 1`)
+
+### rule n - add a rule after line n
+
+`rule n` adds a string of '-' characters after line `n`.
 
 ### label - add alphabetic labels to all the columns
 

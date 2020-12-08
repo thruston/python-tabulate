@@ -267,11 +267,14 @@ class Table:
             'help': self._describe_operations,
             'make': self._set_output_form,
             'label': self._label_columns,
+            'normalize': self._normalize_numeric_values,
             'nospace': self._remove_spaces_from_values,
             'noblanks': self._remove_blank_extras,
             'pivot': self._wrangle,
             'pop': self.pop,
             'roll': self._roll_by_col,
+            'rule': self.add_rule,
+            'tap': self._apply_function_to_numeric_values,
             'sf': self._fix_sigfigs,
             'shuffle': self._shuffle_rows,
             'sort': self._sort_rows_by_col,
@@ -406,7 +409,7 @@ class Table:
         "mark a rule"
         try:
             i = int(n) % len(self.data)
-        except TypeError:
+        except (TypeError, ValueError) as e:
             i = len(self.data)
         self.extras[i].append("rule")
 
@@ -440,6 +443,53 @@ class Table:
             joiner = ''
         for i, row in enumerate(self.data):
             self.data[i] = [joiner.join(cell.split()) for cell in row]
+
+    def _apply_function_to_numeric_values(self, fstring):
+        '''fstring should be a maths expression with an x, as x+1 or 2**x etc
+        which is to be applied to each numeric value in the table. If there is 
+        no x in the expression, we add one to the front, so you can write things
+        like "+1" or "/4" as fstrings....
+        '''
+        if "x" not in fstring:
+            fstring = "x" + fstring
+
+        for i, row in enumerate(self.data):
+            new_row = []
+            for cell in row:
+                is_numeric, x = is_as_decimal(cell)
+                if is_numeric:
+                    new_row.append(f'{eval(fstring)}')
+                else:
+                    new_row.append(cell)
+            self.data[i] = new_row[:]
+
+    def _normalize_numeric_values(self, dimension):
+        '''Adjust numeric values so that they sum to 1, by row or whole table'''
+        if "row".startswith(dimension.lower()): # default...
+            margin = 1
+        elif "table".startswith(dimension.lower()):  
+            margin = 0
+        elif dimension == "1":
+            margin = 1
+        else:
+            margin = 0
+        
+        if margin == 0:
+            zztot = sum(as_decimal(x) for row in self.data for x in row)
+
+        for i, row in enumerate(self.data):
+            if margin > 0:
+                zztot = sum(as_decimal(x) for x in row)
+            if zztot == 0:
+                continue
+            new_row = []
+            for cell in row:
+                is_numeric, x = is_as_decimal(cell)
+                if is_numeric:
+                    new_row.append(f'{x/zztot}')
+                else:
+                    new_row.append(cell)
+            self.data[i] = new_row[:]
 
     def _fix_decimal_places(self, dp_string):
         "Round all the numerical fields in each row"
