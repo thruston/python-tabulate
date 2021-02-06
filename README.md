@@ -842,5 +842,5 @@ interface, so that all you have to do is
 
     print(t)
 
-and t.tabulate() will be called automatically.  The `tabulate` method will use the current settings
+and `t.tabulate()` will be called automatically.  The `tabulate` method will use the current settings
 for separators, so if you have done `t.do('make csv')` you will get lines of values with commas.

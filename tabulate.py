@@ -366,6 +366,7 @@ class Table:
         self.data.insert(i, [str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
 
     def copy(self):
+        "Implement the standard copy method"
         return self.data[:]
 
     def do(self, agenda):
@@ -461,7 +462,7 @@ class Table:
         if len(start_col) > 1:
             return
         identity = string.ascii_lowercase[:self.cols]
-        
+
         try:
             k = identity.index(start_col) + 1
         except ValueError:
@@ -476,7 +477,7 @@ class Table:
 
     def _apply_function_to_numeric_values(self, fstring):
         '''fstring should be a maths expression with an x, as x+1 or 2**x etc
-        which is to be applied to each numeric value in the table. If there is 
+        which is to be applied to each numeric value in the table. If there is
         no x in the expression, we add one to the front, so you can write things
         like "+1" or "/4" as fstrings....
         '''
@@ -497,13 +498,13 @@ class Table:
         '''Adjust numeric values so that they sum to 1, by row or whole table'''
         if "row".startswith(dimension.lower()): # default...
             margin = 1
-        elif "table".startswith(dimension.lower()):  
+        elif "table".startswith(dimension.lower()):
             margin = 0
         elif dimension == "1":
             margin = 1
         else:
             margin = 0
-        
+
         if margin == 0:
             zztot = sum(as_decimal(x) for row in self.data for x in row)
 
