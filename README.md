@@ -56,7 +56,7 @@ Vim just so I can tidy it up with tabulate.  So I have re-written the original
 Perl version of tabulate as a Python module that can be imported, and used to
 tidy up a list of lists of data for printing.
 
-Toby Thurston -- 4 Jun 2020
+Toby Thurston -- 06 Feb 2021
 
 ## Usage and set up 
 
@@ -190,6 +190,17 @@ The tabulate module overloads the `__str__` method, so that printing your Table 
 will show it neatly tabulated.  If you want the individual lines, use the `tabulate()` method
 to get a generator of neat lines.  
 
+See below for all the public methods provided by a `Table` object.
+
+## Special rows
+
+Any blank lines in your table are saved as special lines and reinserted at the
+appropriate place on output. So if you have a long table you can use blanks to
+separate blocks of data.  Similarly any lines consisting entirely of `-`
+characters are treated as horizontal rules and reinserted (appropriately sized)
+on output.  Any lines starting with `#` are treated as comment lines, and again
+reinserted in the right places on output.
+
 ## Verbs in the DSL
 
     xp               transpose rows and cells
@@ -303,7 +314,7 @@ normal built-in or `math` functions; besides all the BIFs you get `log`, `log10`
 and `sqrt`, as shown above. If you want any others from `math`, you need to prefix them
 with `math`, so use `math.sin`, `math.cos`, etc...
 
-Curly braces are only treated as parens at the top level (and this only for compatibility
+Curly braces are only treated as parentheses at the top level (and this only for compatibility
 with the old Perl version of tabulate), so you can put them in normal Python expressions like
 
     arr ab('{} {}'.format(c, d))
@@ -492,6 +503,8 @@ With this input, `pivot wide` gives you this
     West    2200  2500  1990  2600
 
 Notice that parts of the headings may get lost in transposition.
+Notice also that you *need* a heading so some sort, otherwise `pivot wide` will 
+mangle the first row of your data.  So you might like to use `label` before `pivot`.
 
 ### wrap [n] | unwrap [n]
 
@@ -585,7 +598,8 @@ If you want the columns to add to 1 then use `xp normalize xp`:
 ### label - add alphabetic labels to all the columns
 
 `label` simply adds an alphabetic label at the top of the
-columns to help you work out which is which when rearranging.
+columns to help you work out which is which when rearranging, or to 
+give you a temporary header before you `pivot wide`.
 
 ### gen - generate new rows
 
@@ -709,12 +723,124 @@ produced this:
 
 so that all spaces are replaced by periods.
 
-## Special rows
+## Methods available for a Table object
 
-Any blank lines in your table are saved as special lines and reinserted at the
-appropriate place on output. So if you have a long table you can use blanks
-to separate blocks of data.  Similarly any lines consisting entirely of `-` characters
-are treated as horizontal rules and reinserted (appropriately sized) on output.
-Any lines starting with `#` are treated as comment lines, and again reinserted in the
-right places on output.
+The `Table` class defined by `tabulate` provides the following instance methods.
+To use then you need to instantiate a table, then call the methods on that
+instance.
 
+    t = tabulate.Table()
+    t.parse_lol(data_rows)
+    t.do("add")
+    print(t)
+
+An instance of a `Table` is essentially an augmented list of lists, so 
+it implements most of the normal Python list interface, except that you
+can't assign to it directly.  Instead you should use one of the two 
+data parsing methods to insert data.
+
+### `parse_lol(list_of_iterables, append=False, filler='')`
+
+Parse a list of iterables into your table instance.  By default this will
+replace any existing values in the instance but if you add `append=True` the
+new values will be appended (or rather the old values will not be cleared first).
+
+Note that you can use lists or tuples or strings as the "rows" in the list of iterables.
+The "rows" can vary in length, and short ones will be expanded using the optional
+filler string, so that they are all the same length. The default filler is an empty string
+so quite often you will not notice this expansion.
+
+After this expansion each row in the list of iterables is passed to the `append` method.
+
+### `parse_lines(lines_thing, splitter=re.compile(r'\s\s+'), splits=0, append=False)`
+
+Parse a list of plain text lines into your table instance.  Each line will be split up
+using the compiled regular expression passed as the `splitter` argument.  The default pattern is 
+two or more blanks.  The `splits` argument controls how many splits you want.  The append
+argument behaves the same as for `parse_lol`.  If it is false (default) then any data
+in the table instance will be cleared first.  
+
+This method will recognise rules (any line consisting of only "---" chars), blanks, 
+and comments (lines with leading '#').
+
+### List like methods
+
+You can use some of the regular list syntax with a Table instance.  So after 
+
+    t = tabulate.Table()
+    t.parse_lol(list_of_iterables)
+
+you can get the number of rows with `len(t)`, and you can get the first row with `t[0]`
+and the last with `t[-1]`, and so on.  A non-integer index, or an index that is too big 
+will raise the normal list exceptions.  A row will be returned as a list of strings.  
+(Even the strings that look like numbers will be returned as strings).  You can also 
+return slices, so `t[::2]` gives you every other row, while `t[:]` gives you a raw copy
+of all the data.
+
+#### `append(row, filler='')`
+
+Add a new row to the bottom of the table.  The row should be an iterable as above.
+
+#### `insert(i, row, filler='')`
+
+Insert a new row after line `i`.   Note that both `append` and `insert` maintain 
+the other properties of the table instance.
+
+#### `pop(n=None)`
+
+Remove row `n` (or the last one if `n` is `None`).  The row will be returned as a
+list of strings. 
+
+#### `clear()`
+
+Remove all the rows of data from your table instance. 
+
+### `column(i)`
+
+Get a column from the table.  The data is returned as a list of 2-tuples. 
+Each tuple is either:
+
+- True, followed by a numeric value as a Decimal object
+- False, followed by a string that does not look like a number
+
+So (for example) you could get the total of the numbers in column 2 of your
+table like this
+
+    sum(x[1] for x in t.column(2) if x[0])
+
+### `do(agenda)`
+
+Apply a sequence of DSL verbs and options to the contents of the table.
+The verbs are described above.  Separate each verb and option by one or more blanks.
+
+### `add_blank(n=None)`
+
+Add a special blank line after row `n`, or at the end if `n` is None
+
+### `add_rule(n=None)`
+
+Add a special rule line after row `n` or at the end if `n` is None
+
+### `add_comment(contents)`
+
+Add a special comment line after row `n` or at the end if `n` is None
+
+### `tabulate()`
+
+Return a generator object, that will yield a tabulated string for each row in the table.
+You can print your table neatly like this:
+
+    for r in t.tabulate():
+        print(r)
+
+or perhaps
+
+    print("\n".join(t.tabulate()))
+
+except that you don't need to do that because the Table objects implement the magic printing 
+interface, so that all you have to do is
+
+   print(t)
+
+and t.tabulate() will be called automatically.  The `tabulate` method will use the current settings
+for separators, so if you have done `t.do('make csv')` you will get lines of values with commas.

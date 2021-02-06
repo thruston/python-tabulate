@@ -285,6 +285,12 @@ class Table:
         "Print neatly"
         return "\n".join(self.tabulate())
 
+    def __getitem__(self, i):
+        return self.data[i]
+
+    def __len__(self):
+        return len(self.data)
+
     def _describe_operations(self, _):
         '''What commands are defined?'''
         print('Try one of these: ' + ' '.join(sorted(self.operations)))
@@ -318,7 +324,7 @@ class Table:
         if not self.data:
             self.indent = 0
 
-    def parse_lol(self, list_of_iterables, append=False):
+    def parse_lol(self, list_of_iterables, append=False, filler=''):
         "pass lol into self.data"
         if not append:
             self.clear()
@@ -328,22 +334,26 @@ class Table:
             elif set(''.join(str(x) for x in r)) == {'-'}:
                 self.add_rule()
             else:
-                self.append(r)
+                self.append(r, filler)
 
     def pop(self, n=None):
         "remove a row"
 
         if n is None:
-            self.data.pop()
-            return
+            return self.data.pop()
 
         try:
-            self.data.pop(int(n))
+            return self.data.pop(int(n))
         except (IndexError, ValueError):
-            return
+            return None
 
-    def append(self, row, filler=''):
+    def append(self, iterable, filler=''):
+        "insert at the end"
+        self.insert(len(self.data), iterable, filler)
+
+    def insert(self, i, iterable, filler=''):
         "add a row, maintaining cols"
+        row = list(iterable)
         n = len(row)
         if n < self.cols:
             row.extend([filler] * (self.cols - n))
@@ -353,7 +363,10 @@ class Table:
             self.cols = n
 
         # they should all be strings, and normalize space in last column...
-        self.data.append([str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
+        self.data.insert(i, [str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
+
+    def copy(self):
+        return self.data[:]
 
     def do(self, agenda):
         "Do what we've been asked..."
@@ -408,9 +421,13 @@ class Table:
             i = len(self.data)
         self.extras[i].append("rule")
 
-    def add_comment(self, contents):
+    def add_comment(self, contents, n=None):
         "stash a comment line"
-        self.extras[len(self.data)].append('#' + contents.lstrip('#'))
+        try:
+            i = int(n) % len(self.data)
+        except (TypeError, ValueError) as e:
+            i = len(self.data)
+        self.extras[i].append('#' + contents.lstrip('#'))
 
     def _set_output_form(self, form_name):
         "Set the form name, used in `tabulate`"
