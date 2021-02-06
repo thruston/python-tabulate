@@ -726,7 +726,7 @@ so that all spaces are replaced by periods.
 ## Methods available for a Table object
 
 The `Table` class defined by `tabulate` provides the following instance methods.
-To use then you need to instantiate a table, then call the methods on that
+To use them you need to instantiate a table, then call the methods on that
 instance.
 
     t = tabulate.Table()
@@ -840,7 +840,7 @@ or perhaps
 except that you don't need to do that because the Table objects implement the magic printing 
 interface, so that all you have to do is
 
-   print(t)
+    print(t)
 
 and t.tabulate() will be called automatically.  The `tabulate` method will use the current settings
 for separators, so if you have done `t.do('make csv')` you will get lines of values with commas.
