@@ -23,55 +23,9 @@ import statistics
 import string
 import sys
 
-decimal.getcontext().prec = 12
-
-# Functions for column maths, using the Decimal versions, and
-# also supporting ints...
-def exp(d):
-    '''exp for Decimals
-    >>> exp(decimal.Decimal('0'))
-    Decimal('1')
-    >>> exp(decimal.Decimal('1'))
-    Decimal('2.71828182846')
-    >>> exp(2)
-    Decimal('7.38905609893')
-    '''
-    return decimal.Decimal(d).exp()
-
-def sqrt(d):
-    '''sqrt for decimals
-    >>> sqrt(decimal.Decimal('0'))
-    Decimal('0')
-    >>> sqrt(decimal.Decimal('1'))
-    Decimal('1')
-    >>> sqrt(decimal.Decimal('2'))
-    Decimal('1.41421356237')
-    >>> sqrt(121)
-    Decimal('11')
-    '''
-    return decimal.Decimal(d).sqrt()
-
-def log10(d):
-    '''log base 10 for decimals
-    >>> log10(decimal.Decimal('10'))
-    Decimal('1')
-    >>> log10(decimal.Decimal('100'))
-    Decimal('2')
-    >>> log10(1000)
-    Decimal('3')
-    '''
-    return decimal.Decimal(d).log10()
-
-def log(d):
-    '''natural log for decimals (following math.log name...)
-    >>> log(exp(decimal.Decimal('1')))
-    Decimal('1.00000000000')
-    >>> log(42)
-    Decimal('3.73766961828')
-    '''
-    return decimal.Decimal(d).ln()
 
 # Calendar functions for column arrangements
+
 def parse_date(sss):
     '''Try to parse a date
     >>> parse_date("1 January 2001").isoformat()
@@ -215,6 +169,24 @@ def si(amount):
         e = min(int(n.log10()/3), len(sips)-1)
         return '{:7.3f} {}'.format(n / (10 ** (3*e)), sips[e]).strip()
 
+decimal.getcontext().prec = 12
+
+# A great cat of functions for column maths, using the Decimal versions... 
+# This includes the functions defined above...
+Panther = {
+    'exp': lambda x: decimal.Decimal(x).exp(),
+    'sqrt': lambda x: decimal.Decimal(x).sqrt(),
+    'log': lambda x: decimal.Decimal(x).ln(), 
+    'log10': lambda x: decimal.Decimal(x).log10(),
+    'dow': dow,
+    'date': date,
+    'base': base,
+    'parse_date': parse_date,
+    'format': format,
+    '__builtins__': {}
+}
+
+
 
 def is_as_decimal(sss):
     '''Is this a decimal, and if so what is the value?
@@ -257,6 +229,7 @@ class Table:
             'cdiff': self._cumulative_differences,
             'ditto': self._copy_down,
             'dp': self._fix_decimal_places,
+            'filter': self._select_matching_rows,
             'gen': self._generate_new_rows,
             'group': self._add_grouping_blanks,
             'help': self._describe_operations,
@@ -286,9 +259,11 @@ class Table:
         return "\n".join(self.tabulate())
 
     def __getitem__(self, i):
+        "Like a list..."
         return self.data[i]
 
     def __len__(self):
+        "Also like a list..."
         return len(self.data)
 
     def _describe_operations(self, _):
@@ -441,6 +416,9 @@ class Table:
         self.data = list(list(r) for r in zip(*self.data))
         self.extras.clear()
 
+    def _select_matching_rows(self, _):
+        pass
+
     def _shuffle_rows(self, _):
         '''Re-arrange the data at random'''
         random.shuffle(self.data)
@@ -487,9 +465,9 @@ class Table:
         for i, row in enumerate(self.data):
             new_row = []
             for cell in row:
-                is_numeric, x = is_as_decimal(cell)
+                is_numeric, old_value = is_as_decimal(cell)
                 if is_numeric:
-                    new_row.append(f'{eval(fstring)}')
+                    new_row.append(f'{eval(fstring, Panther, {"x": old_value})}')
                 else:
                     new_row.append(cell)
             self.data[i] = new_row[:]
@@ -966,6 +944,7 @@ class Table:
             return tokenize.untokenize(out)
 
         identity = string.ascii_lowercase[:self.cols]
+        desiderata = list(compile(_decimalize(x), "<string>", 'eval') for x in desiderata)
 
         old_data = self.data.copy()
         self.data.clear()
@@ -973,6 +952,7 @@ class Table:
         value_dict = {'Decimal': decimal.Decimal}
         for k in identity:
             value_dict[k.upper()] = 0 # accumulators
+
         for r in old_data:
             for k, v in zip(identity, r):
                 try:
@@ -989,7 +969,7 @@ class Table:
             new_row = []
             for dd in desiderata:
                 try:
-                    new_row.append(eval(_decimalize(dd), globals(), value_dict))
+                    new_row.append(eval(dd, Panther, value_dict))
                 except (ValueError, TypeError, NameError, AttributeError):
                     new_row.append(dd)
                 except ZeroDivisionError:
