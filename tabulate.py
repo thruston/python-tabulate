@@ -23,55 +23,9 @@ import statistics
 import string
 import sys
 
-decimal.getcontext().prec = 12
-
-# Functions for column maths, using the Decimal versions, and
-# also supporting ints...
-def exp(d):
-    '''exp for Decimals
-    >>> exp(decimal.Decimal('0'))
-    Decimal('1')
-    >>> exp(decimal.Decimal('1'))
-    Decimal('2.71828182846')
-    >>> exp(2)
-    Decimal('7.38905609893')
-    '''
-    return decimal.Decimal(d).exp()
-
-def sqrt(d):
-    '''sqrt for decimals
-    >>> sqrt(decimal.Decimal('0'))
-    Decimal('0')
-    >>> sqrt(decimal.Decimal('1'))
-    Decimal('1')
-    >>> sqrt(decimal.Decimal('2'))
-    Decimal('1.41421356237')
-    >>> sqrt(121)
-    Decimal('11')
-    '''
-    return decimal.Decimal(d).sqrt()
-
-def log10(d):
-    '''log base 10 for decimals
-    >>> log10(decimal.Decimal('10'))
-    Decimal('1')
-    >>> log10(decimal.Decimal('100'))
-    Decimal('2')
-    >>> log10(1000)
-    Decimal('3')
-    '''
-    return decimal.Decimal(d).log10()
-
-def log(d):
-    '''natural log for decimals (following math.log name...)
-    >>> log(exp(decimal.Decimal('1')))
-    Decimal('1.00000000000')
-    >>> log(42)
-    Decimal('3.73766961828')
-    '''
-    return decimal.Decimal(d).ln()
 
 # Calendar functions for column arrangements
+
 def parse_date(sss):
     '''Try to parse a date
     >>> parse_date("1 January 2001").isoformat()
@@ -215,6 +169,24 @@ def si(amount):
         e = min(int(n.log10()/3), len(sips)-1)
         return '{:7.3f} {}'.format(n / (10 ** (3*e)), sips[e]).strip()
 
+decimal.getcontext().prec = 12
+
+# A great cat of functions for column maths, using the Decimal versions... 
+# This includes the functions defined above...
+Panther = {
+    'exp': lambda x: decimal.Decimal(x).exp(),
+    'sqrt': lambda x: decimal.Decimal(x).sqrt(),
+    'log': lambda x: decimal.Decimal(x).ln(), 
+    'log10': lambda x: decimal.Decimal(x).log10(),
+    'dow': dow,
+    'date': date,
+    'base': base,
+    'parse_date': parse_date,
+    'format': format,
+    '__builtins__': {}
+}
+
+
 
 def is_as_decimal(sss):
     '''Is this a decimal, and if so what is the value?
@@ -257,6 +229,7 @@ class Table:
             'cdiff': self._cumulative_differences,
             'ditto': self._copy_down,
             'dp': self._fix_decimal_places,
+            'filter': self._select_matching_rows,
             'gen': self._generate_new_rows,
             'group': self._add_grouping_blanks,
             'help': self._describe_operations,
@@ -284,6 +257,14 @@ class Table:
     def __str__(self):
         "Print neatly"
         return "\n".join(self.tabulate())
+
+    def __getitem__(self, i):
+        "Like a list..."
+        return self.data[i]
+
+    def __len__(self):
+        "Also like a list..."
+        return len(self.data)
 
     def _describe_operations(self, _):
         '''What commands are defined?'''
@@ -318,7 +299,7 @@ class Table:
         if not self.data:
             self.indent = 0
 
-    def parse_lol(self, list_of_iterables, append=False):
+    def parse_lol(self, list_of_iterables, append=False, filler=''):
         "pass lol into self.data"
         if not append:
             self.clear()
@@ -328,22 +309,26 @@ class Table:
             elif set(''.join(str(x) for x in r)) == {'-'}:
                 self.add_rule()
             else:
-                self.append(r)
+                self.append(r, filler)
 
     def pop(self, n=None):
         "remove a row"
 
         if n is None:
-            self.data.pop()
-            return
+            return self.data.pop()
 
         try:
-            self.data.pop(int(n))
+            return self.data.pop(int(n))
         except (IndexError, ValueError):
-            return
+            return None
 
-    def append(self, row, filler=''):
+    def append(self, iterable, filler=''):
+        "insert at the end"
+        self.insert(len(self.data), iterable, filler)
+
+    def insert(self, i, iterable, filler=''):
         "add a row, maintaining cols"
+        row = list(iterable)
         n = len(row)
         if n < self.cols:
             row.extend([filler] * (self.cols - n))
@@ -353,7 +338,11 @@ class Table:
             self.cols = n
 
         # they should all be strings, and normalize space in last column...
-        self.data.append([str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
+        self.data.insert(i, [str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
+
+    def copy(self):
+        "Implement the standard copy method"
+        return self.data[:]
 
     def do(self, agenda):
         "Do what we've been asked..."
@@ -408,9 +397,13 @@ class Table:
             i = len(self.data)
         self.extras[i].append("rule")
 
-    def add_comment(self, contents):
+    def add_comment(self, contents, n=None):
         "stash a comment line"
-        self.extras[len(self.data)].append('#' + contents.lstrip('#'))
+        try:
+            i = int(n) % len(self.data)
+        except (TypeError, ValueError) as e:
+            i = len(self.data)
+        self.extras[i].append('#' + contents.lstrip('#'))
 
     def _set_output_form(self, form_name):
         "Set the form name, used in `tabulate`"
@@ -422,6 +415,9 @@ class Table:
         self.cols = len(self.data)
         self.data = list(list(r) for r in zip(*self.data))
         self.extras.clear()
+
+    def _select_matching_rows(self, _):
+        pass
 
     def _shuffle_rows(self, _):
         '''Re-arrange the data at random'''
@@ -444,7 +440,7 @@ class Table:
         if len(start_col) > 1:
             return
         identity = string.ascii_lowercase[:self.cols]
-        
+
         try:
             k = identity.index(start_col) + 1
         except ValueError:
@@ -459,7 +455,7 @@ class Table:
 
     def _apply_function_to_numeric_values(self, fstring):
         '''fstring should be a maths expression with an x, as x+1 or 2**x etc
-        which is to be applied to each numeric value in the table. If there is 
+        which is to be applied to each numeric value in the table. If there is
         no x in the expression, we add one to the front, so you can write things
         like "+1" or "/4" as fstrings....
         '''
@@ -469,9 +465,9 @@ class Table:
         for i, row in enumerate(self.data):
             new_row = []
             for cell in row:
-                is_numeric, x = is_as_decimal(cell)
+                is_numeric, old_value = is_as_decimal(cell)
                 if is_numeric:
-                    new_row.append(f'{eval(fstring)}')
+                    new_row.append(f'{eval(fstring, Panther, {"x": old_value})}')
                 else:
                     new_row.append(cell)
             self.data[i] = new_row[:]
@@ -480,13 +476,13 @@ class Table:
         '''Adjust numeric values so that they sum to 1, by row or whole table'''
         if "row".startswith(dimension.lower()): # default...
             margin = 1
-        elif "table".startswith(dimension.lower()):  
+        elif "table".startswith(dimension.lower()):
             margin = 0
         elif dimension == "1":
             margin = 1
         else:
             margin = 0
-        
+
         if margin == 0:
             zztot = sum(as_decimal(x) for row in self.data for x in row)
 
@@ -948,6 +944,7 @@ class Table:
             return tokenize.untokenize(out)
 
         identity = string.ascii_lowercase[:self.cols]
+        desiderata = list(compile(_decimalize(x), "<string>", 'eval') for x in desiderata)
 
         old_data = self.data.copy()
         self.data.clear()
@@ -955,6 +952,7 @@ class Table:
         value_dict = {'Decimal': decimal.Decimal}
         for k in identity:
             value_dict[k.upper()] = 0 # accumulators
+
         for r in old_data:
             for k, v in zip(identity, r):
                 try:
@@ -971,7 +969,7 @@ class Table:
             new_row = []
             for dd in desiderata:
                 try:
-                    new_row.append(eval(_decimalize(dd), globals(), value_dict))
+                    new_row.append(eval(dd, Panther, value_dict))
                 except (ValueError, TypeError, NameError, AttributeError):
                     new_row.append(dd)
                 except ZeroDivisionError:
