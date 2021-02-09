@@ -136,7 +136,7 @@ def date(ordinal=0):
     try:
         ordinal = int(ordinal)
     except (TypeError, ValueError):
-        ordinal = 0
+        return ordinal
 
     if abs(ordinal) < 1000:
         dt = datetime.date.today() + datetime.timedelta(days=ordinal)
