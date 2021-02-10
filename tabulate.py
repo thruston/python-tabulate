@@ -12,7 +12,6 @@ Toby Thurston -- 08 Dec 2020
 import argparse
 import collections
 import csv
-import datetime
 import decimal
 import itertools
 import math
@@ -23,126 +22,7 @@ import statistics
 import string
 import sys
 
-
-# Calendar functions for column arrangements
-
-def parse_date(sss):
-    '''Try to parse a date
-    >>> parse_date("1 January 2001").isoformat()
-    '2001-01-01'
-    '''
-    for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y',
-                '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%a', '%A'):
-        try:
-            return datetime.datetime.strptime(sss, fmt).date()
-        except ValueError:
-            pass
-
-    raise ValueError
-
-def dow(sss, date_format="%a"):
-    '''Is it Friday yet?
-    >>> dow("1 January 2001")
-    'Mon'
-    >>> dow("1 January 2001", "%A")
-    'Monday'
-
-    You can actually use this to produce any strftime format...
-
-    >>> dow("25 Dec 2001", "%c")
-    'Tue Dec 25 00:00:00 2001'
-
-    '''
-    try:
-        return parse_date(sss).strftime(date_format)
-    except (TypeError, ValueError):
-        return "dow"
-
-def base(sss=None):
-    '''Get today's date as "base" number, or whatever date you give
-    >>> base("1 January 2001")
-    730486
-    >>> base("1 January 1901")
-    693961
-    >>> base("01/01/01")
-    730486
-    >>> base("31 Dec 2000")-base("1 Jan 1901")
-    36524
-    '''
-    try:
-        return parse_date(sss).toordinal()
-    except ValueError:
-        return datetime.date.today().toordinal()
-
-def date(ordinal=0):
-    '''Turn a base number (or an epoch time or a millisecond epoch time) into a date
-    >>> date(716257)
-    '1962-01-17'
-    >>> date(3652059)
-    '9999-12-31'
-    >>> date(3652060)
-    '1970-02-12T06:27:40'
-    >>> date(100000000000)
-    '5138-11-16T09:46:40'
-    >>> date(100000000001)
-    '1973-03-03T09:46:40.001000'
-    '''
-    try:
-        ordinal = int(ordinal)
-    except (TypeError, ValueError):
-        return ordinal
-
-    if abs(ordinal) < 1000:
-        dt = datetime.date.today() + datetime.timedelta(days=ordinal)
-    elif ordinal > 100000000000: # about 5000 AD as an epoch
-        dt = datetime.datetime.utcfromtimestamp(ordinal / 1000)
-    elif ordinal > 3652059:  # max date
-        dt = datetime.datetime.utcfromtimestamp(ordinal)
-    else:
-        try:
-            dt = datetime.date.fromordinal(ordinal)
-        except (TypeError, ValueError):
-            dt = datetime.date.today()
-
-    return dt.isoformat()
-
-def hms(fractional_things):
-    '''Turn decimal hours/degrees into h/d:mm:ss.fff
-
-    >>> hms(57.2957795)
-    '57:17:44.806'
-
-    >>> hms(10801/3600)
-    '3:00:01.000'
-    '''
-    hh, r = divmod(fractional_things, 1)
-    mm, r = divmod(r * 60, 1)
-    return "{}:{:02d}:{:06.3f}".format(int(hh), int(mm), r*60)
-
-def hr(hms_word, s=0):
-    '''Turn hh:mm:ss.sss into fractional hours
-
-    >>> hr("12:34:56")
-    12.582222222222223
-    '''
-    hours = 0
-    for i, p in enumerate(hms_word.split(':')):
-        hours += float(p) * 60 ** (s-i)
-    return hours
-
-def mins(hms_word):
-    '''Turn hh:mm:ss.sss into fractional minutes
-    >>> mins('1:23:45')
-    83.75
-    '''
-    return hr(hms_word, 1)
-
-def secs(hms_word):
-    '''Turn hh:mm:ss.sss into fractional seconds
-    >>> secs('1:23:45.67')
-    5025.67
-    '''
-    return hr(hms_word, 2)
+import tab_fun_dates
 
 def si(amount):
     """If amount is a number, add largest possible SI suffix,
@@ -171,22 +51,107 @@ def si(amount):
 
 decimal.getcontext().prec = 12
 
-# A great cat of functions for column maths, using the Decimal versions... 
+def pi():
+    """Compute Pi to the current precision.
+
+    >>> print(pi())
+    3.14159265359
+
+    """
+    decimal.getcontext().prec += 2  # extra digits for intermediate steps
+    three = decimal.Decimal(3)      # substitute "three=3.0" for regular floats
+    lasts, t, s, n, na, d, da = 0, three, 3, 1, 0, 0, 24
+    while s != lasts:
+        lasts = s
+        n, na = n+na, na+8
+        d, da = d+da, da+32
+        t = (t * n) / d
+        s += t
+    decimal.getcontext().prec -= 2
+    return +s
+
+def cos(x):
+    """Return the cosine of x as measured in radians.
+
+    The Taylor series approximation works best for a small value of x.
+    For larger values, first compute x = x % (2 * pi).
+
+    >>> print(cos(decimal.Decimal('0.5')))
+    0.877582561890
+
+    """
+    decimal.getcontext().prec += 2
+    i, lasts, s, fact, num, sign = 0, 0, 1, 1, 1, 1
+    while s != lasts:
+        lasts = s
+        i += 2
+        fact *= i * (i-1)
+        num *= x * x
+        sign *= -1
+        s += num / fact * sign
+    decimal.getcontext().prec -= 2
+    return +s
+
+def sin(x):
+    """Return the sine of x as measured in radians.
+
+    The Taylor series approximation works best for a small value of x.
+    For larger values, first compute x = x % (2 * pi).
+
+    >>> print(sin(decimal.Decimal('0.5')))
+    0.479425538604
+
+    """
+    decimal.getcontext().prec += 2
+    i, lasts, s, fact, num, sign = 1, 0, x, 1, x, 1
+    while s != lasts:
+        lasts = s
+        i += 2
+        fact *= i * (i-1)
+        num *= x * x
+        sign *= -1
+        s += num / fact * sign
+    decimal.getcontext().prec -= 2
+    return +s
+
+def tan(x):
+    "decimal tan"
+    return sin(x)/cos(x)
+
+def sind(x):
+    "sin in degrees"
+    return sin(x * pi() / 180)
+
+def cosd(x):
+    "cos in degrees"
+    return cos(x * pi() / 180)
+
+def tand(x):
+    "tan in degrees"
+    return tan(x * pi() / 180)
+
+# A great cat of functions for column maths, using the Decimal versions...
 # This includes the functions defined above...
 Panther = {
     'exp': lambda x: decimal.Decimal(x).exp(),
     'sqrt': lambda x: decimal.Decimal(x).sqrt(),
-    'log': lambda x: decimal.Decimal(x).ln(), 
+    'log': lambda x: decimal.Decimal(x).ln(),
     'log10': lambda x: decimal.Decimal(x).log10(),
-    'dow': dow,
-    'date': date,
-    'base': base,
-    'parse_date': parse_date,
+    'pi': pi(),
+    'sin': sin, 'sind': sind,
+    'cos': cos, 'cosd': cosd,
+    'tan': tan, 'tand': tand,
+    "dow": tab_fun_dates.dow,
+    "base": tab_fun_dates.base,
+    "date": tab_fun_dates.date,
+    "hms": tab_fun_dates.hms,
+    "hr": tab_fun_dates.hr,
+    "mins": tab_fun_dates.mins,
+    "secs": tab_fun_dates.secs,
+    'si': si,
     'format': format,
     '__builtins__': {}
 }
-
-
 
 def is_as_decimal(sss):
     '''Is this a decimal, and if so what is the value?
@@ -943,8 +908,24 @@ class Table:
 
             return tokenize.untokenize(out)
 
+        def _replace_values(failed_expression, known_variables):
+            '''replace the variables that we know about in the expression
+
+            >>> _replace_values('sin(a)', {'a': 0.5})
+            'sin(0.5)'
+            '''
+            for k, v in known_variables.items():
+                failed_expression = re.sub(rf'\b{k}\b', str(v), failed_expression)
+
+            if failed_expression[0] == '(' and failed_expression[-1] == ')':
+                return failed_expression[1:-1]
+
+            return failed_expression
+
+
         identity = string.ascii_lowercase[:self.cols]
-        desiderata = list(compile(_decimalize(x), "<string>", 'eval') for x in desiderata)
+        # make it into a list tuples
+        desiderata = list((compile(_decimalize(x), "<string>", 'eval'), x) for x in desiderata)
 
         old_data = self.data.copy()
         self.data.clear()
@@ -967,11 +948,11 @@ class Table:
                 value_dict[j.upper()] = value_dict[k.upper()]
 
             new_row = []
-            for dd in desiderata:
+            for compiled_code, literal_code in desiderata:
                 try:
-                    new_row.append(eval(dd, Panther, value_dict))
+                    new_row.append(eval(compiled_code, Panther, value_dict))
                 except (ValueError, TypeError, NameError, AttributeError):
-                    new_row.append(dd)
+                    new_row.append(_replace_values(literal_code, value_dict))
                 except ZeroDivisionError:
                     new_row.append("-")
             self.append(new_row)
@@ -1059,7 +1040,7 @@ class Table:
                 pass
 
             try:
-                return (int(parse_date(x).strftime("%s")), x)
+                return (int(tab_fun_dates.parse_date(x).strftime("%s")), x)
             except ValueError:
                 pass
 
