@@ -64,7 +64,7 @@ def base(sss=None):
     if sss is None:
         return datetime.date.today().toordinal()
 
-    if type(sss) is int:
+    if isinstance(sss, int):
         return datetime.date.today().toordinal() + sss
 
     try:

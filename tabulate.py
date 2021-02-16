@@ -23,6 +23,8 @@ import string
 import sys
 
 import tab_fun_dates
+import tab_fun_useful
+import tab_fun_maths
 
 def si(amount):
     """If amount is a number, add largest possible SI suffix,
@@ -48,27 +50,6 @@ def si(amount):
     else:
         e = min(int(n.log10()/3), len(sips)-1)
         return '{:7.3f} {}'.format(n / (10 ** (3*e)), sips[e]).strip()
-
-decimal.getcontext().prec = 12
-
-def pi():
-    """Compute Pi to the current precision.
-
-    >>> print(pi())
-    3.14159265359
-
-    """
-    decimal.getcontext().prec += 2  # extra digits for intermediate steps
-    three = decimal.Decimal(3)      # substitute "three=3.0" for regular floats
-    lasts, t, s, n, na, d, da = 0, three, 3, 1, 0, 0, 24
-    while s != lasts:
-        lasts = s
-        n, na = n+na, na+8
-        d, da = d+da, da+32
-        t = (t * n) / d
-        s += t
-    decimal.getcontext().prec -= 2
-    return +s
 
 def cos(x):
     """Return the cosine of x as measured in radians.
@@ -137,7 +118,8 @@ Panther = {
     'sqrt': lambda x: decimal.Decimal(x).sqrt(),
     'log': lambda x: decimal.Decimal(x).ln(),
     'log10': lambda x: decimal.Decimal(x).log10(),
-    'pi': pi(),
+    'pi': tab_fun_maths.PI,
+    'tau': tab_fun_maths.TAU,
     'sin': sin, 'sind': sind,
     'cos': cos, 'cosd': cosd,
     'tan': tan, 'tand': tand,
@@ -150,7 +132,10 @@ Panther = {
     "secs": tab_fun_dates.secs,
     'si': si,
     'format': format,
-    '__builtins__': {}
+    'divmod': divmod,
+    'sorted': tab_fun_useful.t_sorted,
+    'Decimal': decimal.Decimal,
+    '__builtins__': {},
 }
 
 def is_as_decimal(sss):
@@ -427,15 +412,21 @@ class Table:
         if "x" not in fstring:
             fstring = "x" + fstring
 
-        for i, row in enumerate(self.data):
+        old_rows = self.data[:]
+        self.data.clear()
+        for i, row in enumerate(old_rows):
             new_row = []
             for cell in row:
                 is_numeric, old_value = is_as_decimal(cell)
                 if is_numeric:
-                    new_row.append(f'{eval(fstring, Panther, {"x": old_value})}')
+                    new_value = eval(fstring, Panther, {"x": old_value})
+                    if isinstance(new_value, tuple):
+                        new_row.extend(new_value)
+                    else:
+                        new_row.append(new_value)
                 else:
                     new_row.append(cell)
-            self.data[i] = new_row[:]
+            self.append(new_row)
 
     def _normalize_numeric_values(self, dimension):
         '''Adjust numeric values so that they sum to 1, by row or whole table'''
@@ -638,21 +629,28 @@ class Table:
         '''Reduce column and append result to foot of table
         fun is the name, func is the callable.
         first see if this is the name of something in stats
-        or something else callable, if none of those then use "sum"
+        or something else built in that we like, if none of those then use "sum"
         '''
-        if isinstance(fun, str) and hasattr(statistics, fun):
+
+        if hasattr(statistics, fun):
             func = getattr(statistics, fun)
-        elif callable(fun):
-            func = fun
+        elif fun == "q75" and hasattr(statistics, "quantiles"):
+            func = lambda data: statistics.quantiles(data, n=4)[-1]
+        elif fun == "q95" and hasattr(statistics, "quantiles"):
+            func = lambda data: statistics.quantiles(data, n=20)[-1]
+        elif fun in "min max all any sum".split():
+            func = getattr(__builtins__, fun)
+        elif fun == "prod":
+            func = math.prod
         else:
             func = sum
-            fun = "Total"
+            fun = 'total'
 
         footer = []
         for c in range(self.cols):
             booleans, decimals = zip(*self.column(c))
             if not any(booleans):
-                footer.append(fun)
+                footer.append(fun.title())
             else:
                 footer.append(func(itertools.compress(decimals, booleans)))
 
@@ -930,7 +928,7 @@ class Table:
         old_data = self.data.copy()
         self.data.clear()
         self.cols = 0
-        value_dict = {'Decimal': decimal.Decimal}
+        value_dict = {}
         for k in identity:
             value_dict[k.upper()] = 0 # accumulators
 
@@ -950,7 +948,11 @@ class Table:
             new_row = []
             for compiled_code, literal_code in desiderata:
                 try:
-                    new_row.append(eval(compiled_code, Panther, value_dict))
+                    new_value = eval(compiled_code, Panther, value_dict)
+                    if isinstance(new_value, tuple):
+                        new_row.extend(new_value)
+                    else:
+                        new_row.append(new_value)
                 except (ValueError, TypeError, NameError, AttributeError):
                     new_row.append(_replace_values(literal_code, value_dict))
                 except ZeroDivisionError:
