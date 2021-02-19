@@ -51,14 +51,14 @@ you can do in a spreadsheet but it can do most of the simple things, and you
 can use it right in the middle of your favourite editor.
 
 Many of my Python scripts create tables of data that I need to share in plain
-text (on Slack for example), and I often find myself loading the output into
-Vim just so I can tidy it up with tabulate.  So I have re-written the original
+text (on Slack for example), and I often found myself loading the output into
+Vim just so I could tidy it up with `tabulate`.  So I have re-written the original
 Perl version of tabulate as a Python module that can be imported, and used to
-tidy up a list of lists of data for printing.
+tidy up a list of lists of data for printing directly as part of a script.
 
-Toby Thurston -- 06 Feb 2021
+Toby Thurston -- 19 Feb 2021
 
-## Usage and set up 
+## Usage and set up
 
 You can use tabulate from the command line, from your editor, or as a Python module.
 In each case, you use the same mini-language of verbs to act on your table.  These
@@ -67,7 +67,7 @@ are described in the next main section.
 ### Usage from the command line
 
 You can run `tabulate.py` from the command line.  It will process lines from STDIN
-or from an optional file path.  
+or from an optional file path.
 
     usage: tabulate.py [-h] [--file FILE] [agenda [agenda ...]]
 
@@ -98,8 +98,8 @@ If you are in Normal mode then the current area will be the whole file.
 
 ### Writing the command line
 
-Whether you are calling tabulate from Vim or the command line, the parsing of your 
-input is the same.  
+Whether you are calling tabulate from Vim or the command line, the parsing of your
+input is the same.
 
 Use blanks to separate the arguments you type: the delimiter argument and any
 verbs must be single blank-separated words.  Any word that looks like a verb
@@ -126,7 +126,7 @@ to two or more spaces.  Incidentally, any tab characters in your input are
 silently converted to double spaces before parsing.
 
 You can also limit the number of cell splits done by adding a second number to
-a numeric delimiter.  So "1.3" will use one or more spaces as the delimiter, 
+a numeric delimiter.  So "1.3" will use one or more spaces as the delimiter,
 but will only make 4 columns. This is often handy when parsing log files etc.
 
 After the optional delimiter you should specify a sequence of verbs.  If the
@@ -163,15 +163,15 @@ Third one         55
 Total            123
 ```
 
-`parse_lol` is expecting a list of lists (or list of iterables) as shown.  But 
-you can also use `tt.parse_lines(object_with_lines)` to read a file or a list of strings.  
+`parse_lol` is expecting a list of lists (or list of iterables) as shown.  But
+you can also use `tt.parse_lines(object_with_lines)` to read a file or a list of strings.
 
     tt.parse_lines(lines_thing, splitter=re.compile('\\s\\s+'), splits=0)
 
 As shown, `parse_lines` takes two optional arguments:  a regex for splitting
 and a maximum number of splits to make, where 0 means "as many as there are".
 
-You could also add lines one at a time using the Table.append() method.  So the example 
+You could also add lines one at a time using the Table.append() method.  So the example
 above could be done as
 ```python
 data = [('Item', 'Amount'), ('First label', 23), ('Second thing', 45), ('Third one', 55)]
@@ -181,14 +181,14 @@ for row in data:
 tt.do("add")
 print(tt)
 ```
-The appended `row` is treated as an iterable. If you append a single string it will be 
+The appended `row` is treated as an iterable. If you append a single string it will be
 split up into letters following normal Python semantics.
 
 The `do` method processes a list of verbs and options as described above.
 
-The tabulate module overloads the `__str__` method, so that printing your Table object 
+The tabulate module overloads the `__str__` method, so that printing your Table object
 will show it neatly tabulated.  If you want the individual lines, use the `tabulate()` method
-to get a generator of neat lines.  
+to get a generator of neat lines.
 
 See below for all the public methods provided by a `Table` object.
 
@@ -208,6 +208,7 @@ reinserted in the right places on output.
     uniq [col]
     add [function]   add sum, mean, var, sd etc to foot of column
     arr col-list     rearrange/insert/delete cols and/or do calculations on column values.
+    filter expr      select rows where "expr" evaluates to True
     dp dp-list       round numbers in each col to specified decimal places
     sf sf-list       round numbers in each col to specified significant figures
     make tex | latex | plain | csv | tsv | md   output in tex etc form
@@ -218,8 +219,8 @@ reinserted in the right places on output.
     pivot wide|long  reshape, tidyr, melt/cast, simple tables
     roll [col]
     gen pattern      generate new rows
-    normalize ["table" | "row"]  
-                     normalize the numeric values so that they add to 1 
+    normalize ["table" | "row"]
+                     normalize the numeric values so that they add to 1
     tap "x-expression"
                      adjust the numeric values with the given expression
 
@@ -309,10 +310,9 @@ You can also insert arbitrary calculated columns by putting an expression in cur
 - `arr ~{sqrt(a)}` keeps all existing cols and adds a new col with the square root of the value in col 1.
 
 and so on.  Each single letter `a`, `b`, etc is changed into the corresponding
-cell value and then the resulting expression is evaluated. You can use most
+cell value and then the resulting expression is evaluated. You can use a subset of the
 normal built-in or `math` functions; besides all the BIFs you get `log`, `log10`, `exp`
-and `sqrt`, as shown above. If you want any others from `math`, you need to prefix them
-with `math`, so use `math.sin`, `math.cos`, etc...
+and `sqrt`, as shown above.
 
 Curly braces are only treated as parentheses at the top level (and this only for compatibility
 with the old Perl version of tabulate), so you can put them in normal Python expressions like
@@ -321,14 +321,14 @@ with the old Perl version of tabulate), so you can put them in normal Python exp
 
 which (incidentally) shows one way to concatenate two columns into one.  You can include
 spaces in your formula;  The argument to `arr` ends at the next operation or the end
-of the command line.  The access to Python in (more or less) entirely general, but is 
+of the command line.  The access to Python in (more or less) entirely general, but is
 only really intended for simple manipulation of a few values, so don't expect too much.
-But (assuming you are using Python 3.6 or better by now) you could also write the above 
-example as 
+But (assuming you are using Python 3.6 or better by now) you could also write the above
+example as
 
     arr ab(f"{c} {d}")
 
-which you might find more convenient.  
+which you might find more convenient.
 
 Note that you should use lower case letters only to refer to each column value.
 If you use an upper case letter, `A`, `B`, etc, it will be replaced by the
@@ -392,6 +392,7 @@ as well as `yyyy-mm-dd`, as follows:
     ----------------------------------------------
     2020-12-25                %Y-%m-%d
     20201225                  %Y%m%d
+    2020-W52-5                %G-W%V-%u
     Fri Dec 25 12:34:56 2020  %c
     12/25/20                  %x
     25 December 2020          %d %B %Y
@@ -405,14 +406,14 @@ as well as `yyyy-mm-dd`, as follows:
 
 This table shows the strftime formats used.  This is not as clever as using
 `dateutil.parser` but it does mean that tabulate only uses the standard Python3
-libraries.  
+libraries.
 
 There are also useful functions to convert HH:MM:SS to fractional hours, minutes or seconds.
 `hms()` takes fractional hours and produces `hh:mm:ss`, while `hr`, `mins`, and `secs` go the other way.
 
 ### tap x-expression - apply a function to each numerical value
 
-This is useful for adjusting all the numeric values in your table at once, 
+This is useful for adjusting all the numeric values in your table at once,
 perhaps for making byte values into megabytes etc.  Given values with headings like this
 
     Category  Type A  Type B
@@ -436,6 +437,45 @@ and then `tap log(x)` produces
 
 if you omit `x` from your "x-expression", it will be added to the front.
 
+### filter expression - select rows where "expression" is True
+
+In long tables it is sometimes useful to pick out only some of the rows.  You can do this 
+with `filter`.   Say you have a table of rainfall data like this:
+
+    Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
+    2019-12-30     1  0.0  0.2   0.0  0.0  1.2   0.0   0.0    1.4
+    2020-01-06     2  0.5  0.0   0.0  6.4  0.0   0.1   1.7    8.7
+    2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
+    2020-01-20     4  0.0  0.0   0.0  0.0  0.0   0.1   2.3    2.4
+    2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
+    2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
+    2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
+    2020-02-17     8  0.2  3.3   1.0  3.8  0.0   0.5   1.0    9.8
+    2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
+    2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
+    2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
+    2020-03-16    12  3.6  1.3   0.0  0.0  0.0   0.5   0.0    5.4
+    2020-03-23    13  0.0  0.0   0.0  0.0  0.0   0.0   0.0    0.0
+    2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
+
+and you want only to keep the rows where the Total value is greater than 10, then you
+can try `filter j>10` to get
+
+    Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
+    2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
+    2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
+    2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
+    2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
+    2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
+    2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
+    2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
+    2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
+
+Notice that the header row was included.  If the expression causes an error (in this
+case because you can't compare a string to a number) then the row will always be included.
+The expressions can use the same subset of built-in and maths functions as the
+normal row arrangements with `arr`, and single letters refer to the value of the
+cells in the way described for `arr` above.
 
 ### dp [nnnnn...] - round numbers to n decimal places
 
@@ -454,8 +494,8 @@ with the default two spaces.   Or you might want explicitly to make a plain tabl
 Note that this only affects the rows, it won't magically generate the TeX or LaTeX table preamble.
 
 The `make csv` option should produce something that you can easily import into Excel
-or similar spreadsheets.  The output is produced with the standard Python CSV writer, 
-so double quotes will be added around cell values where needed.  To get back to the 
+or similar spreadsheets.  The output is produced with the standard Python CSV writer,
+so double quotes will be added around cell values where needed.  To get back to the
 plain data just do `:Table ,`.
 
 The TSV option can be used when you want to import into Word -- you can use Table.. Convert Text to Table...
@@ -503,7 +543,7 @@ With this input, `pivot wide` gives you this
     West    2200  2500  1990  2600
 
 Notice that parts of the headings may get lost in transposition.
-Notice also that you *need* a heading so some sort, otherwise `pivot wide` will 
+Notice also that you *need* a heading so some sort, otherwise `pivot wide` will
 mangle the first row of your data.  So you might like to use `label` before `pivot`.
 
 ### wrap [n] | unwrap [n]
@@ -588,7 +628,7 @@ If you want the columns to add to 1 then use `xp normalize xp`:
     Asbestos exposure     0.103448275862  0.0514112903226
     No asbestos exposure  0.896551724138   0.948588709677
 
-(But note that `xp` gets rid of your rules, so I actually did that with 
+(But note that `xp` gets rid of your rules, so I actually did that with
 `xp normalize xp rule 1`)
 
 ### rule n - add a rule after line n
@@ -598,7 +638,7 @@ If you want the columns to add to 1 then use `xp normalize xp`:
 ### label - add alphabetic labels to all the columns
 
 `label` simply adds an alphabetic label at the top of the
-columns to help you work out which is which when rearranging, or to 
+columns to help you work out which is which when rearranging, or to
 give you a temporary header before you `pivot wide`.
 
 ### gen - generate new rows
@@ -692,7 +732,7 @@ the last and the first. (And hence the new column sums to zero).
 
 ### nospace [filler] - remove spaces from cell values
 
-This is useful for the `read.table` function in R, that by default treats all blanks including 
+This is useful for the `read.table` function in R, that by default treats all blanks including
 single ones as delimiters.  Given this table
 
     Exposure category     Name            Value
@@ -711,7 +751,7 @@ single ones as delimiters.  Given this table
     Noasbestosexposure  Lungcancer       52
     Noasbestosexposure  Nolungcancer    941
 
-since that's a litte hard to read you can also specify an optional filler character.  `:Table nospace .` would have 
+since that's a litte hard to read you can also specify an optional filler character.  `:Table nospace .` would have
 produced this:
 
     Exposure.category     Name            Value
@@ -734,9 +774,9 @@ instance.
     t.do("add")
     print(t)
 
-An instance of a `Table` is essentially an augmented list of lists, so 
+An instance of a `Table` is essentially an augmented list of lists, so
 it implements most of the normal Python list interface, except that you
-can't assign to it directly.  Instead you should use one of the two 
+can't assign to it directly.  Instead you should use one of the two
 data parsing methods to insert data.
 
 ### `parse_lol(list_of_iterables, append=False, filler='')`
@@ -755,25 +795,25 @@ After this expansion each row in the list of iterables is passed to the `append`
 ### `parse_lines(lines_thing, splitter=re.compile(r'\s\s+'), splits=0, append=False)`
 
 Parse a list of plain text lines into your table instance.  Each line will be split up
-using the compiled regular expression passed as the `splitter` argument.  The default pattern is 
+using the compiled regular expression passed as the `splitter` argument.  The default pattern is
 two or more blanks.  The `splits` argument controls how many splits you want.  The append
 argument behaves the same as for `parse_lol`.  If it is false (default) then any data
-in the table instance will be cleared first.  
+in the table instance will be cleared first.
 
-This method will recognise rules (any line consisting of only "---" chars), blanks, 
+This method will recognise rules (any line consisting of only "---" chars), blanks,
 and comments (lines with leading '#').
 
 ### List like methods
 
-You can use some of the regular list syntax with a Table instance.  So after 
+You can use some of the regular list syntax with a Table instance.  So after
 
     t = tabulate.Table()
     t.parse_lol(list_of_iterables)
 
 you can get the number of rows with `len(t)`, and you can get the first row with `t[0]`
-and the last with `t[-1]`, and so on.  A non-integer index, or an index that is too big 
-will raise the normal list exceptions.  A row will be returned as a list of strings.  
-(Even the strings that look like numbers will be returned as strings).  You can also 
+and the last with `t[-1]`, and so on.  A non-integer index, or an index that is too big
+will raise the normal list exceptions.  A row will be returned as a list of strings.
+(Even the strings that look like numbers will be returned as strings).  You can also
 return slices, so `t[::2]` gives you every other row, while `t[:]` gives you a raw copy
 of all the data.
 
@@ -783,21 +823,21 @@ Add a new row to the bottom of the table.  The row should be an iterable as abov
 
 #### `insert(i, row, filler='')`
 
-Insert a new row after line `i`.   Note that both `append` and `insert` maintain 
+Insert a new row after line `i`.   Note that both `append` and `insert` maintain
 the other properties of the table instance.
 
 #### `pop(n=None)`
 
 Remove row `n` (or the last one if `n` is `None`).  The row will be returned as a
-list of strings. 
+list of strings.
 
 #### `clear()`
 
-Remove all the rows of data from your table instance. 
+Remove all the rows of data from your table instance.
 
 ### `column(i)`
 
-Get a column from the table.  The data is returned as a list of 2-tuples. 
+Get a column from the table.  The data is returned as a list of 2-tuples.
 Each tuple is either:
 
 - True, followed by a numeric value as a Decimal object
@@ -837,7 +877,7 @@ or perhaps
 
     print("\n".join(t.tabulate()))
 
-except that you don't need to do that because the Table objects implement the magic printing 
+except that you don't need to do that because the Table objects implement the magic printing
 interface, so that all you have to do is
 
     print(t)

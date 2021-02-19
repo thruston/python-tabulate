@@ -3,7 +3,7 @@
 Tabulate
 
 A module to line up text tables.
-Toby Thurston -- 08 Dec 2020
+Toby Thurston -- 19 Feb 2021
 
 '''
 
@@ -26,114 +26,41 @@ import tab_fun_dates
 import tab_fun_useful
 import tab_fun_maths
 
-def si(amount):
-    """If amount is a number, add largest possible SI suffix,
-    otherwise try to remove the suffix and return a value
-    >>> si('10M')
-    Decimal('10000000')
-    >>> si(12315350)
-    '12.315 M'
-    >>> si(10)
-    '10.000'
-    >>> si('.2 k')
-    Decimal('200.0')
-
-    """
-    sips = ' kMGTPE'
-    m = re.match(rf'([-+]?(?:\d+\.\d*|\.\d+|0|[1-9]\d*))\s*([{sips}])\Z', str(amount))
-    if m is not None:
-        return decimal.Decimal(m.group(1)) * 10 ** (3 * sips.index(m.group(2)))
-    try:
-        n = decimal.Decimal(amount)
-    except decimal.InvalidOperation:
-        return amount
-    else:
-        e = min(int(n.log10()/3), len(sips)-1)
-        return '{:7.3f} {}'.format(n / (10 ** (3*e)), sips[e]).strip()
-
-def cos(x):
-    """Return the cosine of x as measured in radians.
-
-    The Taylor series approximation works best for a small value of x.
-    For larger values, first compute x = x % (2 * pi).
-
-    >>> print(cos(decimal.Decimal('0.5')))
-    0.877582561890
-
-    """
-    decimal.getcontext().prec += 2
-    i, lasts, s, fact, num, sign = 0, 0, 1, 1, 1, 1
-    while s != lasts:
-        lasts = s
-        i += 2
-        fact *= i * (i-1)
-        num *= x * x
-        sign *= -1
-        s += num / fact * sign
-    decimal.getcontext().prec -= 2
-    return +s
-
-def sin(x):
-    """Return the sine of x as measured in radians.
-
-    The Taylor series approximation works best for a small value of x.
-    For larger values, first compute x = x % (2 * pi).
-
-    >>> print(sin(decimal.Decimal('0.5')))
-    0.479425538604
-
-    """
-    decimal.getcontext().prec += 2
-    i, lasts, s, fact, num, sign = 1, 0, x, 1, x, 1
-    while s != lasts:
-        lasts = s
-        i += 2
-        fact *= i * (i-1)
-        num *= x * x
-        sign *= -1
-        s += num / fact * sign
-    decimal.getcontext().prec -= 2
-    return +s
-
-def tan(x):
-    "decimal tan"
-    return sin(x)/cos(x)
-
-def sind(x):
-    "sin in degrees"
-    return sin(x * pi() / 180)
-
-def cosd(x):
-    "cos in degrees"
-    return cos(x * pi() / 180)
-
-def tand(x):
-    "tan in degrees"
-    return tan(x * pi() / 180)
-
 # A great cat of functions for column maths, using the Decimal versions...
-# This includes the functions defined above...
 Panther = {
-    'exp': lambda x: decimal.Decimal(x).exp(),
-    'sqrt': lambda x: decimal.Decimal(x).sqrt(),
-    'log': lambda x: decimal.Decimal(x).ln(),
-    'log10': lambda x: decimal.Decimal(x).log10(),
+    'abs': abs,
+    'bool': bool,  
+    'chr': chr,
+    'divmod': divmod,
+    'format': format,
+    'int': int,
+    'ord': ord, 
+    'pow': pow,
+    'round': round,
+    'base': tab_fun_dates.base,
+    'date': tab_fun_dates.date,
+    'dow': tab_fun_dates.dow,
+    'hms': tab_fun_dates.hms,
+    'hr': tab_fun_dates.hr,
+    'mins': tab_fun_dates.mins,
+    'secs': tab_fun_dates.secs,
     'pi': tab_fun_maths.PI,
     'tau': tab_fun_maths.TAU,
-    'sin': sin, 'sind': sind,
-    'cos': cos, 'cosd': cosd,
-    'tan': tan, 'tand': tand,
-    "dow": tab_fun_dates.dow,
-    "base": tab_fun_dates.base,
-    "date": tab_fun_dates.date,
-    "hms": tab_fun_dates.hms,
-    "hr": tab_fun_dates.hr,
-    "mins": tab_fun_dates.mins,
-    "secs": tab_fun_dates.secs,
-    'si': si,
-    'format': format,
-    'divmod': divmod,
+    'cos': tab_fun_maths.cos, 'cosd': tab_fun_maths.cosd,
+    'sin': tab_fun_maths.sin, 'sind': tab_fun_maths.sind,
+    'tan': tab_fun_maths.cos, 'tand': tab_fun_maths.tand,
+    'hypot': tab_fun_maths.pyth_add,
+    'si': tab_fun_maths.si,
+    'all': tab_fun_useful.t_all,  
+    'any': tab_fun_useful.t_any, 
+    'max': tab_fun_useful.t_max,
+    'min': tab_fun_useful.t_min,
     'sorted': tab_fun_useful.t_sorted,
+    'sum': tab_fun_useful.t_sum,
+    'exp': lambda x: decimal.Decimal(x).exp(),
+    'log': lambda x: decimal.Decimal(x).ln(),
+    'log10': lambda x: decimal.Decimal(x).log10(),
+    'sqrt': lambda x: decimal.Decimal(x).sqrt(),
     'Decimal': decimal.Decimal,
     '__builtins__': {},
 }
@@ -162,6 +89,28 @@ def as_decimal(n, na_value=decimal.Decimal('0')):
     except decimal.InvalidOperation:
         return na_value
 
+def _decimalize(expr):
+    '''borrowed from the example decistmt
+    '''
+    import tokenize
+    import io
+
+    out = []
+    for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(expr).readline):
+        if tn == tokenize.NUMBER and '.' in tv:
+            out.append((tokenize.NAME, 'Decimal'))
+            out.append((tokenize.OP, '('))
+            out.append((tokenize.STRING, repr(tv)))
+            out.append((tokenize.OP, ')'))
+        elif tv == '?':
+            out.append((tokenize.NAME, 'Decimal'))
+            out.append((tokenize.OP, '('))
+            out.append((tokenize.STRING, repr(random.random())))
+            out.append((tokenize.OP, ')'))
+        else:
+            out.append((tn, tv))
+
+    return tokenize.untokenize(out)
 
 class Table:
     '''A class to hold a table -- and some functions thereon'''
@@ -366,8 +315,31 @@ class Table:
         self.data = list(list(r) for r in zip(*self.data))
         self.extras.clear()
 
-    def _select_matching_rows(self, _):
-        pass
+    def _select_matching_rows(self, expression):
+        '''Filter the table to rows where expression is true
+        '''
+        cc = compile(_decimalize(expression), "<string>", 'eval')
+        old_data = self.data[:]
+        self.data.clear()
+        identity = string.ascii_lowercase[:self.cols]
+        value_dict = {}
+        for k in identity:
+            value_dict[k.upper()] = 0 # accumulators
+
+        for r in old_data:
+            for k, v in zip(identity, r):
+                try:
+                    value_dict[k] = int(v) if v.isdigit() else decimal.Decimal(v)
+                    value_dict[k.upper()] += value_dict[k]
+                except decimal.InvalidOperation:
+                    value_dict[k] = v
+
+            try:
+                wanted = eval(cc, Panther, value_dict)
+            except TypeError:
+                wanted = True  # default to keeping the row
+            if wanted:
+                self.append(r)
 
     def _shuffle_rows(self, _):
         '''Re-arrange the data at random'''
@@ -880,31 +852,10 @@ class Table:
         self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
         self.cols = len(perm) # perm can delete and/or add columns
 
+
     def _general_recalculation(self, desiderata):
         '''Do some (decimal) arithmetic on each row...
         '''
-        def _decimalize(expr):
-            '''borrowed from the example decistmt
-            '''
-            import tokenize
-            import io
-
-            out = []
-            for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(expr).readline):
-                if tn == tokenize.NUMBER and '.' in tv:
-                    out.append((tokenize.NAME, 'Decimal'))
-                    out.append((tokenize.OP, '('))
-                    out.append((tokenize.STRING, repr(tv)))
-                    out.append((tokenize.OP, ')'))
-                elif tv == '?':
-                    out.append((tokenize.NAME, 'Decimal'))
-                    out.append((tokenize.OP, '('))
-                    out.append((tokenize.STRING, repr(random.random())))
-                    out.append((tokenize.OP, ')'))
-                else:
-                    out.append((tn, tv))
-
-            return tokenize.untokenize(out)
 
         def _replace_values(failed_expression, known_variables):
             '''replace the variables that we know about in the expression

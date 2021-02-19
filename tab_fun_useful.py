@@ -20,3 +20,49 @@ def t_sorted(*args, reverse=False):
         return tuple(sorted(args, reverse=reverse))
     else:
         return tuple(sorted(it, reverse=reverse))
+
+
+def t_all(*args):
+    '''all allowing list of args or tuple'''  
+    try:
+        it = iter(*args)
+    except TypeError:
+        return all(args)
+    else:
+        return all(it)
+
+def t_any(*args):
+    '''any allowing list of args or tuple''' 
+    try:
+        it = iter(*args)
+    except TypeError:
+        return any(args)
+    else:
+        return any(it)
+
+def t_max(*args):
+    '''max allowing list of args or tuple'''
+    try:
+        it = iter(*args)
+    except TypeError:
+        return max(args)
+    else:
+        return max(it)
+
+def t_min(*args):
+    '''min allowing list of args or tuple'''
+    try:
+        it = iter(*args)
+    except TypeError:
+        return min(args)
+    else:
+        return min(it)
+
+def t_sum(*args):
+    '''sum allowing list of args or tuple'''
+    try:
+        it = iter(*args)
+    except TypeError:
+        return sum(args)
+    else:
+        return sum(it)

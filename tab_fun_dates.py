@@ -19,7 +19,7 @@ def parse_date(sss):
     >>> parse_date("1 January 2001").isoformat()
     '2001-01-01'
     '''
-    for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y',
+    for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y', '%G-W%V-%u',
                 '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%a', '%A'):
         try:
             return datetime.datetime.strptime(sss, fmt).date()
