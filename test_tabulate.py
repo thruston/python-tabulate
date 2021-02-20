@@ -460,6 +460,31 @@ Total  Total  8  8
 '''.strip()
         self.assertEqual(str(self.tab), expected)
 
+        self.tab.do("pop add mean")
+        expected = '''
+a     b     P  Q
+P     P     2  2
+P     Q     2  2
+Q     P     2  2
+Q     Q     2  2
+----------------
+Mean  Mean  2  2
+'''.strip()
+        self.assertEqual(str(self.tab), expected)
+
+        self.tab.do("rule 1")
+        expected = '''
+a     b     P  Q
+----------------
+P     P     2  2
+P     Q     2  2
+Q     P     2  2
+Q     Q     2  2
+----------------
+Mean  Mean  2  2
+'''.strip()
+        self.assertEqual(str(self.tab), expected)
+
     def test_normalize_and_tap(self):
         "Test table wide processing..."
         self.tab.parse_lines('''
@@ -520,6 +545,19 @@ Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
 '''.strip()
         self.maxDiff = None
         self.assertEqual(str(self.tab), expected)
+
+
+    def test_nothing(self):
+        some_lines = '''
+Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat  Sun  Total
+2020-01-13     3  5.3  1.7  9.1  3.0  1.7  0.0  0.0   20.8
+2020-01-27     5  8.4  2.1  0.0  0.5  1.0  0.0  7.1   19.1
+'''.strip()
+        self.tab.parse_lines(some_lines.splitlines())
+        self.assertEqual(str(self.tab), some_lines)
+        self.tab.do()
+        self.assertEqual(str(self.tab), some_lines)
+
 
 if __name__ == "__main__":
     unittest.main()

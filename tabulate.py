@@ -120,7 +120,7 @@ class Table:
         self.data = []
         self.cols = 0
         self.indent = 0
-        self.extras = collections.defaultdict(list)
+        self.extras = collections.defaultdict(set)
         self.form = 'plain'
         self.operations = {
             'add': self._append_reduction,
@@ -213,7 +213,7 @@ class Table:
     def pop(self, n=None):
         "remove a row"
 
-        if n is None:
+        if n is None or n == '':
             return self.data.pop()
 
         try:
@@ -243,7 +243,7 @@ class Table:
         "Implement the standard copy method"
         return self.data[:]
 
-    def do(self, agenda):
+    def do(self, agenda=None):
         "Do what we've been asked..."
         if agenda and isinstance(agenda, str):
             agenda = agenda.split()
@@ -286,7 +286,7 @@ class Table:
             i = int(n) % len(self.data)
         except TypeError:
             i = len(self.data)
-        self.extras[i].append("blank")
+        self.extras[i].add("blank")
 
     def add_rule(self, n=None):
         "mark a rule"
@@ -294,7 +294,7 @@ class Table:
             i = int(n) % len(self.data)
         except (TypeError, ValueError) as e:
             i = len(self.data)
-        self.extras[i].append("rule")
+        self.extras[i].add("rule")
 
     def add_comment(self, contents, n=None):
         "stash a comment line"
@@ -302,7 +302,7 @@ class Table:
             i = int(n) % len(self.data)
         except (TypeError, ValueError) as e:
             i = len(self.data)
-        self.extras[i].append('#' + contents.lstrip('#'))
+        self.extras[i].add('#' + contents.lstrip('#'))
 
     def _set_output_form(self, form_name):
         "Set the form name, used in `tabulate`"
@@ -348,7 +348,7 @@ class Table:
 
     def _remove_blank_extras(self, _):
         for i in range(len(self.data)):
-            self.extras[i] = [x for x in self.extras[i] if x != "blank"]
+            self.extras[i].discard('blank')
 
     def _remove_spaces_from_values(self, joiner):
         '''Remove spaces from values -- this can make it easier to import into R'''
@@ -1062,7 +1062,7 @@ class Table:
         for i, row in enumerate(self.data):
             this_tag = ' '.join(row[j] for j in cols_to_check)
             if i > 0 and this_tag != last_tag and not self.extras[i]:
-                self.extras[i].append("blank")
+                self.extras[i].add("blank")
             last_tag = this_tag
 
 

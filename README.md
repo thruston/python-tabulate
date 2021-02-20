@@ -203,28 +203,48 @@ reinserted in the right places on output.
 
 ## Verbs in the DSL
 
-    xp               transpose rows and cells
-    sort [col]       sort by value of columns in the order given, use UPPERCASE to reverse
-    uniq [col]
-    add [function]   add sum, mean, var, sd etc to foot of column
+If you do `help`, then tabulate will print "Try one of these:" followed by a list of 
+all the defined verbs.  Like this:
+
+    Try one of these: add arr cdiff ditto dp filter gen group help label make
+    noblanks normalize nospace pivot pop roll rule sf shuffle sort tap uniq unwrap
+    unzip wrap xp zip
+
+The following thematic tables summarize the ones you are likely to use most.
+Then they are all described in more detail below, in alphabetical order.
+
+- Rearrange the columns 
+
     arr col-list     rearrange/insert/delete cols and/or do calculations on column values.
+    wrap n           wrap columns in long table n times (default=2)
+    unwrap n         unwrap cols in wide table (default=half number of cols)
+    zip n            zip n rows together into a single row with n * more columns
+    unzip n          unzip into n * the current number of rows & 1/n columns
+    pivot wide|long  reshape, tidyr, melt/cast, simple tables
+    xp               transpose rows and cells
+
+- Rearrange or filter the rows
+
+    sort [col]       sort by value of columns in the order given, use UPPERCASE to reverse
+    uniq [col]       remove rows where the value of col is the same as the row above
+    group [col]      insert special blank rows between different values in given col
     filter expr      select rows where "expr" evaluates to True
+    pop [n]          remove row n, where n is 0-indexed and defaults to -1 
+
+- Decorate / adjust the whole table
+
+    label            add alphabetic labels at the top
+    add [function]   add sum, mean, var, sd etc to foot of each column
+    normalize        normalize the numeric values so that they add to 1
+    tap x-expr       adjust the numeric values with the given expression
     dp dp-list       round numbers in each col to specified decimal places
     sf sf-list       round numbers in each col to specified significant figures
     make tex | latex | plain | csv | tsv | md   output in tex etc form
-    wrap n           wrap columns in long table n times (default=2)
-    unwrap n         unwrap cols in wide table (default=half number of cols)
-    zip n            zip n rows together
-    unzip n          unzip into n * the current number of rows & 1/n columns.
-    pivot wide|long  reshape, tidyr, melt/cast, simple tables
-    roll [col]
-    gen pattern      generate new rows
-    normalize ["table" | "row"]
-                     normalize the numeric values so that they add to 1
-    tap "x-expression"
-                     adjust the numeric values with the given expression
 
 You can string together as many verbs (plus optional arguments) as you like.
+
+
+*TODO* -- put this in order....
 
 ### xp - transpose the table
 
@@ -273,6 +293,47 @@ column is used as the key.  But if you provide a list of columns the key will
 consist of the values in those columns.  So `uniq af` will remove all rows with
 duplicate values in column `a` and `f`, so that you are left with just the rows
 where the values in these columns are distinct.
+
+### filter expression - select rows where "expression" is True
+
+In long tables it is sometimes useful to pick out only some of the rows.  You can do this 
+with `filter`.   Say you have a table of rainfall data like this:
+
+    Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
+    2019-12-30     1  0.0  0.2   0.0  0.0  1.2   0.0   0.0    1.4
+    2020-01-06     2  0.5  0.0   0.0  6.4  0.0   0.1   1.7    8.7
+    2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
+    2020-01-20     4  0.0  0.0   0.0  0.0  0.0   0.1   2.3    2.4
+    2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
+    2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
+    2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
+    2020-02-17     8  0.2  3.3   1.0  3.8  0.0   0.5   1.0    9.8
+    2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
+    2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
+    2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
+    2020-03-16    12  3.6  1.3   0.0  0.0  0.0   0.5   0.0    5.4
+    2020-03-23    13  0.0  0.0   0.0  0.0  0.0   0.0   0.0    0.0
+    2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
+
+and you want only to keep the rows where the Total value is greater than 10, then you
+can try `filter j>10` to get
+
+    Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
+    2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
+    2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
+    2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
+    2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
+    2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
+    2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
+    2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
+    2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
+
+Notice that the header row was included.  If the expression causes an error (in this
+case because you can't compare a string to a number) then the row will always be included.
+The expressions can use the same subset of built-in and maths functions as the
+normal row arrangements with `arr`, and single letters refer to the value of the
+cells in the way described for `arr` above.
+
 
 ### arr [arrange-expression] - rearrange the columns
 
@@ -436,46 +497,6 @@ and then `tap log(x)` produces
     Second    6.96413561242  6.97728134163
 
 if you omit `x` from your "x-expression", it will be added to the front.
-
-### filter expression - select rows where "expression" is True
-
-In long tables it is sometimes useful to pick out only some of the rows.  You can do this 
-with `filter`.   Say you have a table of rainfall data like this:
-
-    Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
-    2019-12-30     1  0.0  0.2   0.0  0.0  1.2   0.0   0.0    1.4
-    2020-01-06     2  0.5  0.0   0.0  6.4  0.0   0.1   1.7    8.7
-    2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
-    2020-01-20     4  0.0  0.0   0.0  0.0  0.0   0.1   2.3    2.4
-    2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
-    2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
-    2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
-    2020-02-17     8  0.2  3.3   1.0  3.8  0.0   0.5   1.0    9.8
-    2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
-    2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
-    2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
-    2020-03-16    12  3.6  1.3   0.0  0.0  0.0   0.5   0.0    5.4
-    2020-03-23    13  0.0  0.0   0.0  0.0  0.0   0.0   0.0    0.0
-    2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
-
-and you want only to keep the rows where the Total value is greater than 10, then you
-can try `filter j>10` to get
-
-    Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
-    2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
-    2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
-    2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
-    2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
-    2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
-    2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
-    2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
-    2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
-
-Notice that the header row was included.  If the expression causes an error (in this
-case because you can't compare a string to a number) then the row will always be included.
-The expressions can use the same subset of built-in and maths functions as the
-normal row arrangements with `arr`, and single letters refer to the value of the
-cells in the way described for `arr` above.
 
 ### dp [nnnnn...] - round numbers to n decimal places
 
