@@ -301,6 +301,21 @@ on the end, like so `arr add{}`.
 Besides letters to identify column values you can use `?` to insert a random number,
 and `.` to insert the current row number and `;` to insert the total number of rows.
 
+Note that you should use lower case letters only to refer to each column value.
+If you use an upper case letter, `A`, `B`, etc, it will be replaced by the
+cumulative sum of the corresponding column, in other words the sum of the
+values in the column from the top of the table to the current row. So given
+
+    First   1
+    Second  2
+    Third   3
+
+`arr abB` gives you,
+
+    First   1  1
+    Second  2  3
+    Third   3  6
+
 You can also insert arbitrary calculated columns by putting an expression in curly braces or parentheses
 
 - `arr ab(a+b)` adds a new column that contains the sum of the values in the first two
@@ -330,26 +345,18 @@ example as
 
 which you might find more convenient.
 
-Note that you should use lower case letters only to refer to each column value.
-If you use an upper case letter, `A`, `B`, etc, it will be replaced by the
-cumulative sum of the corresponding column, in other words the sum of the
-values in the column from the top of the table to the current row. So given
+You can also use "?" in a formula to get a random number, but you can't use "."
+or ";" because it makes a mess of the parsing.  If you want the current row
+number or the total number of rows use the pre-defined variables `row_count`
+and `rows` in your formula.
 
-    First   1
-    Second  2
-    Third   3
-
-`arr abB` gives you,
-
-    First   1  1
-    Second  2  3
-    Third   3  6
-
-There are also some very simple date routines included.  `base` returns the number of days
-since 1 Jan in the year 1 (assuming the Gregorian calendar extended backwards).  The argument
-should be blank for today, or in the form `yyyy-mm-dd`.  `date` does the opposite: given
-a number that represents the number of days since the year dot, it returns the date in `yyyy-mm-dd` form.
-There's also `dow` which takes a date and returns the day of the week, as a three letter string.
+There are also some simple date routines included.  `base` returns the number
+of days since 1 Jan in the year 1 (assuming the Gregorian calendar extended
+backwards).  The argument should be blank for today, or some recognisable form
+of a date.  `date` does the opposite: given a number that represents the number
+of days since the year dot, it returns the date in `yyyy-mm-dd` form.  There's
+also `dow` which takes a date and returns the day of the week, as a three
+letter string.
 
 So given a table with a column of dates, like this
 
@@ -378,7 +385,7 @@ And `arr a{date(base(a)+140)}` will add 20 weeks to each date
     2011-02-23  2011-07-13
     2011-03-19  2011-08-06
 
-As a convenience is the number given to `date()` is less than 1000, then it's
+As a convenience, if the number given to `date()` is less than 1000, then it's
 assumed that you mean a delta on today rather than a day in the pre-Christian
 era.  So `date(70)` will produce the date in 10 weeks time, and `date(-91)`
 will give you the date three months ago, and so on.  `date()` produces today's
