@@ -29,12 +29,12 @@ import tab_fun_maths
 # A great cat of functions for column maths, using the Decimal versions...
 Panther = {
     'abs': abs,
-    'bool': bool,  
+    'bool': bool,
     'chr': chr,
     'divmod': divmod,
     'format': format,
     'int': int,
-    'ord': ord, 
+    'ord': ord,
     'pow': pow,
     'round': round,
     'base': tab_fun_dates.base,
@@ -51,8 +51,8 @@ Panther = {
     'tan': tab_fun_maths.cos, 'tand': tab_fun_maths.tand,
     'hypot': tab_fun_maths.pyth_add,
     'si': tab_fun_maths.si,
-    'all': tab_fun_useful.t_all,  
-    'any': tab_fun_useful.t_any, 
+    'all': tab_fun_useful.t_all,
+    'any': tab_fun_useful.t_any,
     'max': tab_fun_useful.t_max,
     'min': tab_fun_useful.t_min,
     'sorted': tab_fun_useful.t_sorted,
@@ -90,8 +90,16 @@ def as_decimal(n, na_value=decimal.Decimal('0')):
         return na_value
 
 def _decimalize(expr):
-    '''borrowed from the example decistmt
+    '''This loop through the expression does several useful things.
+    First we make all tokens that look like floats (NUMBER and
+    contains '.') into Decimals, so that we avoid the normal FP accuracy &
+    rounding issues.  Second we translate '?' into a (decimal) random number.
+    Other special characters could be handled here in the same way.  The
+    decimal technique is borrowed from the example in the docs for the Decimal
+    module.
+
     '''
+
     import tokenize
     import io
 
@@ -867,7 +875,10 @@ class Table:
                 failed_expression = re.sub(rf'\b{k}\b', str(v), failed_expression)
 
             if failed_expression[0] == '(' and failed_expression[-1] == ')':
-                return failed_expression[1:-1]
+                failed_expression = failed_expression[1:-1]
+
+            if failed_expression.endswith('+0'):
+                failed_expression = failed_expression[:-2]
 
             return failed_expression
 
@@ -880,10 +891,11 @@ class Table:
         self.data.clear()
         self.cols = 0
         value_dict = {}
+        value_dict['rows'] = len(old_data)
         for k in identity:
             value_dict[k.upper()] = 0 # accumulators
 
-        for r in old_data:
+        for row_number, r in enumerate(old_data):
             for k, v in zip(identity, r):
                 try:
                     value_dict[k] = int(v) if v.isdigit() else decimal.Decimal(v)
@@ -895,6 +907,9 @@ class Table:
             for j, k in zip("zyxw", reversed(identity)):
                 value_dict[j] = value_dict[k]
                 value_dict[j.upper()] = value_dict[k.upper()]
+
+            # and note the line number
+            value_dict['row_number'] = row_number + 1
 
             new_row = []
             for compiled_code, literal_code in desiderata:
