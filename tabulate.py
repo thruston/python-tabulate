@@ -391,15 +391,16 @@ class Table:
         '''
         if "x" not in fstring:
             fstring = "x" + fstring
+        cc = compile(_decimalize(fstring), "<string>", 'eval')
 
         old_rows = self.data[:]
         self.data.clear()
-        for i, row in enumerate(old_rows):
+        for row in old_rows:
             new_row = []
             for cell in row:
                 is_numeric, old_value = is_as_decimal(cell)
                 if is_numeric:
-                    new_value = eval(fstring, Panther, {"x": old_value})
+                    new_value = eval(cc, Panther, {"x": old_value})
                     if isinstance(new_value, tuple):
                         new_row.extend(new_value)
                     else:

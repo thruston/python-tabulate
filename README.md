@@ -789,7 +789,8 @@ produced this:
     No.asbestos.exposure  Lung.cancer        52
     No.asbestos.exposure  No.lung.cancer    941
 
-so that all spaces are replaced by periods.
+so that all spaces are replaced by periods.  Now you can read that into R
+without an error.
 
 ## Methods available for a Table object
 
