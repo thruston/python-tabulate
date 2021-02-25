@@ -221,7 +221,7 @@ Rearrange the columns
 - zip n            zip n rows together into a single row with n * more columns
 - unzip n          unzip into n * the current number of rows & 1/n columns
 - pivot wide|long  reshape, tidyr, melt/cast, simple tables
-- [xp](#xp)        transpose rows and cells
+- [xp](#xp---transpose-the-table)        transpose rows and cells
 
 Rearrange or filter the rows
 
@@ -262,12 +262,21 @@ becomes
 It's often useful in combination with verbs that operate on columns like `sort` or `add`.
 So the sequence `xp add xp` will give you row totals, for example.
 
-### add [sum|mean|...] - insert the sum|mean|etc at the bottom of a column
+### add - insert the sum|mean|etc at the bottom of a column
+
+    add [sum|mean|median|q95|...] 
 
 `add` adds the total to the foot of a column.  The default option is `sum`, but
 it can be any method from the Python3 `statistics` library: `mean`, `median`,
-`mode`, `stdev`, `variance`, and so on.  Non-numerical entries in a column are ignored.
-A rule is added before the total row.  Given the simple table above `add` produces:
+`mode`, `stdev`, `variance`, and so on, plus `q95` for the 95%-ile.
+Non-numerical entries in a column are ignored.  A rule is added before the
+total row.  Given this:
+
+    First   100
+    Second  200
+    Third   300
+
+then `add` produces:
 
     First   100
     Second  200
@@ -275,8 +284,22 @@ A rule is added before the total row.  Given the simple table above `add` produc
     -----------
     Total   600
 
+If you want to change the function, or if you have changed a value and you want to update
+the total, then you need to get rid of the total line first.  There is a slick way to do this.
+Given a table like the one immediately above with a total row, try `pop add mean`:
 
-### sort [a|b|c|...] - sort on column a|b|etc
+    First   100
+    Second  200
+    Third   300
+    -----------
+    Mean    200
+
+The `pop` removes the last row before adding the new function.  You can use the same trick
+if you change one or more of the values and want to update the total.
+
+### sort - sort on column
+
+    sort [a|b|c|...] 
 
 `sort` sorts the table on the given column.  `a` is the first, `b` the second, etc.
 If you use upper case letters, `A`, `B`, etc the sort direction is reversed.
@@ -284,9 +307,13 @@ An index beyond the last column is automatically adjusted so `sort z` sorts on t
 assuming you have fewer than 26 columns).
 
 You can sort on a sequence of columns by just giving a longer string.
-So `sort abc` is the same as `sort a sort b sort c` (but slightly quicker).
+So `sort abc` is the same as `sort c sort b sort a` (but slightly quicker).
 
-### uniq [a|b|c|...] - filter out duplicated rows
+The default is to sort by all columns from right to left.
+
+### uniq - filter out duplicated rows
+
+    uniq [a|b|c|...]
 
 `uniq` removes duplicate rows from the table.  With no argument the first
 column is used as the key.  But if you provide a list of columns the key will
@@ -294,7 +321,9 @@ consist of the values in those columns.  So `uniq af` will remove all rows with
 duplicate values in column `a` and `f`, so that you are left with just the rows
 where the values in these columns are distinct.
 
-### filter expression - select rows where "expression" is True
+### filter - select rows where "expression" is True
+
+    filter [expression]
 
 In long tables it is sometimes useful to pick out only some of the rows.  You can do this 
 with `filter`.   Say you have a table of rainfall data like this:
@@ -328,14 +357,23 @@ can try `filter j>10` to get
     2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
     2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
 
-Notice that the header row was included.  If the expression causes an error (in this
-case because you can't compare a string to a number) then the row will always be included.
-The expressions can use the same subset of built-in and maths functions as the
-normal row arrangements with `arr`, and single letters refer to the value of the
-cells in the way described for `arr` above.
+Notice that the header row was included.  If the expression causes an error (in
+this case because you can't compare a string to a number) then the row will
+always be included.  The expressions should be valid bits of Python and can use
+the same subset of built-in and maths functions as the normal row arrangements
+with `arr`, and single letters refer to the value of the cells in the way
+described for `arr` above.  Again like `arr` you can use the variables `rows`
+and `row_number` in the expression: `rows` is the count of rows in your table, and 
+`row_number` starts at 1 and is incremented by 1 on successive rows.
+You could use this to pick out every other row: `filter row_number % 2`. 
+(If you are calling tabulate from the Vim command line, use `row_number \% 2`.)
+
+The default is to do nothing.  
 
 
-### arr [arrange-expression] - rearrange the columns
+### arr - rearrange the columns
+
+    arr [arrange-expression] 
 
 At it simplest `arr` lets you rearrange, duplicate, or delete columns.  So if you have a
 four column table then:
@@ -408,8 +446,13 @@ which you might find more convenient.
 
 You can also use "?" in a formula to get a random number, but you can't use "."
 or ";" because it makes a mess of the parsing.  If you want the current row
-number or the total number of rows use the pre-defined variables `row_count`
-and `rows` in your formula.
+number or the total number of rows use the pre-defined variables `row_number`
+and `rows` in your formula. So with the simple table from above, 
+`arr ~(f'{row_number}/{rows}')` should produce this:
+
+    First   1  1  1/3
+    Second  2  3  2/3
+    Third   3  6  3/3
 
 There are also some simple date routines included.  `base` returns the number
 of days since 1 Jan in the year 1 (assuming the Gregorian calendar extended
@@ -479,7 +522,9 @@ libraries.
 There are also useful functions to convert HH:MM:SS to fractional hours, minutes or seconds.
 `hms()` takes fractional hours and produces `hh:mm:ss`, while `hr`, `mins`, and `secs` go the other way.
 
-### tap x-expression - apply a function to each numerical value
+### tap - apply a function to each numerical value
+
+    tap [x-expression]
 
 This is useful for adjusting all the numeric values in your table at once,
 perhaps for making byte values into megabytes etc.  Given values with headings like this
@@ -503,33 +548,57 @@ and then `tap log(x)` produces
     First     6.94119005507  6.92853781816
     Second    6.96413561242  6.97728134163
 
-if you omit `x` from your "x-expression", it will be added to the front.
+if you omit `x` from your "x-expression", it will be added to the front, this means the default is to
+replace each cell by itself.  If your expression is not valid Python or includes undefined names, the cells 
+will be unchanged.
 
-### dp [nnnnn...] - round numbers to n decimal places
+### dp - round numbers to n decimal places
 
-As delivered tabulate calculates with 12 decimal places, so you might need to round your answers a bit.
+    dp [nnnnn...]
+
+As delivered, tabulate calculates with 12 decimal places, so you might need to round your answers a bit.
 This is what `dp` does.  The required argument is a string of digits indicating how many decimal places
 between 0 and 9 you want for each column.  There's no default, it just does nothing with no argument, but
 if your string is too short the last digit is repeated as necessary.  So to round everything to a whole number
 do `dp 0`.  To round the first col to 0, the second to 3 and the rest to 4 do `dp 034`, and so on.
+Cells that contain values that are not numbers are not changed, so applying `dp 4` to a table like this:
 
-### make [plain|tex|latex|csv|tsv] - set the output format
+    Category         Type A         Type B
+    --------------------------------------
+    First     6.94119005507  6.92853781816
+    Second    6.96413561242  6.97728134163
 
-`make` sets the output format.   Normally this happens automagically, but if, for example, you want to separate
-your input data by single spaces, you might find it helpful to do `:Table 1 make plain` to line everything up
-with the default two spaces.   Or you might want explicitly to make a plain table into TeX format.
+should produce
 
-Note that this only affects the rows, it won't magically generate the TeX or LaTeX table preamble.
+    Category  Type A  Type B
+    ------------------------
+    First     6.9412  6.9285
+    Second    6.9641  6.9773
+
+
+### make - set the output format
+
+    make [plain|pipe|tex|latex|csv|tsv]
+
+`make` sets the output format. 
+
+- `plain` is the default, where each cell is separate by two or more spaces, and there is no EOL mark
+- `pipe` will attempt to make a markdown table
+- `tex` will use `&` to separate the cells and put `\cr` at the end
+- `latex` is the same except the EOL is `\\`
+
+Note that these last two only affect the rows, tabulate won't magically generate the TeX or LaTeX table preamble.
 
 The `make csv` option should produce something that you can easily import into Excel
 or similar spreadsheets.  The output is produced with the standard Python CSV writer,
-so double quotes will be added around cell values where needed.  To get back to the
-plain data just do `:Table ,`.
+so double quotes will be added around cell values where needed.  
 
-The TSV option can be used when you want to import into Word -- you can use Table.. Convert Text to Table...
-using tabs as the column separator.
+The `make tsv` option can be used when you want to import into Word -- you can
+use Table... Convert Text to Table...  using tabs as the column separator.
 
-### pivot [long|wide] - expand or condense data tables for R
+### pivot - expand or condense data tables for R
+
+    pivot [long|wide]
 
 This is used to take a square table and make it a long one.  It's best explained with an example.
 
@@ -574,9 +643,17 @@ Notice that parts of the headings may get lost in transposition.
 Notice also that you *need* a heading so some sort, otherwise `pivot wide` will
 mangle the first row of your data.  So you might like to use `label` before `pivot`.
 
-### wrap [n] | unwrap [n]
+The `pivot wide` function assumes that the right hand column contains numeric values 
+and the second-from-the-right column contains the names you want as new column headings.
+Any non-numeric value in the values column is treated as 0.  If you have duplicate names
+in the names column then the corresponding values will be added together.
 
-Another way to reshape a table.  Given
+### wrap and unwrap - reshape table in blocks
+
+    wrap [n] 
+    unwrap [n]
+
+Here is another way to reshape a table.  Given
 
     East  Q1  1200
     East  Q2  1100
@@ -603,7 +680,10 @@ while `wrap 3` gives
 `unwrap` does the opposite - the option is the number of columns you want in the new output, and defaults
 to half the number of columns in the input.
 
-### zip [n] | unzip [n]
+### zip and unzip - reshape a table by rows
+    
+    zip [n] 
+    unzip [n]
 
 Re-shape a table row by row.  Given
 
@@ -626,7 +706,11 @@ as input, `zip` gives you
 `unzip` does the opposite.  The option is the number of rows to combine.  The default is 2, so that
 you zip every other row, and unzip the table in half (as it were).
 
-### normalize [table|row] - adjust values so that they sum to one
+### normalize - adjust values so that they sum to one
+
+    normalize [table] 
+
+Given this table
 
     Exposure category     Lung cancer  No lung cancer
     -------------------------------------------------
@@ -640,7 +724,14 @@ you zip every other row, and unzip the table in half (as it were).
     Asbestos exposure      0.105263157895  0.894736842105
     No asbestos exposure  0.0523665659617  0.947633434038
 
-which you might like to tidy up with `tap` or `dp`....
+Each value has been divided by the row total so that each row now adds to 1.
+You can combine this with other functions to get percentages or neater values.
+For example, with the original table you could do `normalize tap *100 dp 1` to get   
+
+    Exposure category     Lung cancer  No lung cancer
+    -------------------------------------------------
+    Asbestos exposure            10.5            89.5
+    No asbestos exposure          5.2            94.8
 
 If you want the whole table to add to 1 then do `normalize table`:
 
@@ -659,15 +750,26 @@ If you want the columns to add to 1 then use `xp normalize xp`:
 (But note that `xp` gets rid of your rules, so I actually did that with
 `xp normalize xp rule 1`)
 
-### rule n - add a rule after line n
+### rule - add a rule
 
-`rule n` adds a string of '-' characters after line `n`.
+    rule [n]
+
+Adds a rule after line `n` where the top line is line 1.  If `n` is larger than
+the number of rows in the table, the rule will be added after the last line, however it will not get 
+shown when the table is tabulated unless you have added more data by then.
+To add a line just before the last line (to show a total or a footer) use `rule -1`
 
 ### label - add alphabetic labels to all the columns
 
-`label` simply adds an alphabetic label at the top of the
-columns to help you work out which is which when rearranging, or to
-give you a temporary header before you `pivot wide`.
+    label [name name ...]
+
+`label` adds labels at the top of each column.  You can supply zero or more
+names that you would like to use as single words separated by blanks.  The only
+restriction is that you can't use any of the DSL verbs.  If you supply too many
+the excess are just ignored, if you don't supply enough, then the labels
+default to single letters of the alphabet.  This means that if you don't supply
+any names, the columns will be labeled `a`, `b`, `c`, etc which might help you
+work out which is which when rearranging.
 
 ### gen - generate new rows
 

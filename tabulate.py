@@ -13,6 +13,7 @@ import argparse
 import collections
 import csv
 import decimal
+import io
 import itertools
 import math
 import os
@@ -184,6 +185,27 @@ class Table:
         self.cols = 0
         self.indent = 0
 
+    def parse_tex(self, lines_thing, append=False):
+        "Read lines from an iterable thing of TeX source, and append to self"
+
+        if not append:
+            self.clear() 
+        self.indent = 0
+        eol_pattern = re.compile(r'\s*\\(cr|\\)\Z')
+        amp_pattern = re.compile(r'\s*&\s*')
+        for line in lines_thing:
+            line = eol_pattern.sub('', line.strip())
+            if line == "\\noalign{\\medskip}":
+                self.add_blank()
+            elif line == "\\hline":
+                self.add_rule()
+            elif line == "\\noalign{\\vskip2pt\\hrule\\vskip4pt}":
+                self.add_rule()
+            elif line.startswith('%'):
+                self.add_comment(line[1:].strip())
+            else:
+                self.append(amp_pattern.split(line))
+
     def parse_lines(self, lines_thing, splitter=re.compile(r'\s\s+'), splits=0, append=False):
         "Read lines from an iterable thing, and append to self"
 
@@ -277,9 +299,15 @@ class Table:
 
             self.operations[op](' '.join(argument))
 
-    def _label_columns(self, _):
-        "add some labels in alphabetical order"
-        self.data.insert(0, list(string.ascii_lowercase[:self.cols])) # make the string into a list
+    def _label_columns(self, names=None):
+        "add some labels"
+
+        labels = list(string.ascii_lowercase) # make the string into a list
+
+        if names:
+            labels = names.split() + labels
+
+        self.data.insert(0, labels[:self.cols])
 
     def column(self, i):
         "get a column from the table - zero indexed"
@@ -298,10 +326,17 @@ class Table:
 
     def add_rule(self, n=None):
         "mark a rule"
+        rows = len(self.data)
         try:
-            i = int(n) % len(self.data)
+            i = int(n)
         except (TypeError, ValueError) as e:
-            i = len(self.data)
+            i = rows
+        if i > rows:
+            i = rows
+        if i < 0:
+            i = max(0, i+rows)
+
+        assert 0 <= i <= rows
         self.extras[i].add("rule")
 
     def add_comment(self, contents, n=None):
@@ -326,15 +361,25 @@ class Table:
     def _select_matching_rows(self, expression):
         '''Filter the table to rows where expression is true
         '''
-        cc = compile(_decimalize(expression), "<string>", 'eval')
+        if not expression:
+            return
+
+        try:
+            cc = compile(_decimalize(expression), "<string>", 'eval')
+        except SyntaxError:
+            print('?', expression)
+            return
+
         old_data = self.data[:]
         self.data.clear()
         identity = string.ascii_lowercase[:self.cols]
         value_dict = {}
+        value_dict['rows'] = len(old_data)
         for k in identity:
             value_dict[k.upper()] = 0 # accumulators
 
-        for r in old_data:
+        for i, r in enumerate(old_data):
+            value_dict['row_number'] = i + 1
             for k, v in zip(identity, r):
                 try:
                     value_dict[k] = int(v) if v.isdigit() else decimal.Decimal(v)
@@ -344,7 +389,7 @@ class Table:
 
             try:
                 wanted = eval(cc, Panther, value_dict)
-            except TypeError:
+            except (TypeError, NameError):
                 wanted = True  # default to keeping the row
             if wanted:
                 self.append(r)
@@ -391,7 +436,12 @@ class Table:
         '''
         if "x" not in fstring:
             fstring = "x" + fstring
-        cc = compile(_decimalize(fstring), "<string>", 'eval')
+
+        try:
+            cc = compile(_decimalize(fstring), "<string>", 'eval')
+        except SyntaxError:
+            print('?', fstring)
+            return
 
         old_rows = self.data[:]
         self.data.clear()
@@ -400,11 +450,15 @@ class Table:
             for cell in row:
                 is_numeric, old_value = is_as_decimal(cell)
                 if is_numeric:
-                    new_value = eval(cc, Panther, {"x": old_value})
-                    if isinstance(new_value, tuple):
-                        new_row.extend(new_value)
+                    try:
+                        new_value = eval(cc, Panther, {"x": old_value})
+                    except NameError:
+                        new_row.append(old_value)
                     else:
-                        new_row.append(new_value)
+                        if isinstance(new_value, tuple):
+                            new_row.extend(new_value)
+                        else:
+                            new_row.append(new_value)
                 else:
                     new_row.append(cell)
             self.append(new_row)
@@ -751,8 +805,6 @@ class Table:
         ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '(d/e)']
         >>> t._get_expr_list("(a:c/2)")
         ['(a/2)', '(b/2)', '(c/2)']
-
-
         '''
         identity = string.ascii_lowercase[:self.cols]
         in_parens = 0
@@ -883,7 +935,6 @@ class Table:
 
             return failed_expression
 
-
         identity = string.ascii_lowercase[:self.cols]
         # make it into a list tuples
         desiderata = list((compile(_decimalize(x), "<string>", 'eval'), x) for x in desiderata)
@@ -956,7 +1007,7 @@ class Table:
         assert 0 <= c < self.cols
         return (c, flag)
 
-    def _sort_rows_by_col(self, col_spec):
+    def _sort_rows_by_col(self, col_spec=None):
         '''Sort the table
         By default sort by all columns left to right.
 
@@ -1022,24 +1073,20 @@ class Table:
             return (alpha, x)
 
         identity = string.ascii_lowercase[:self.cols]
-        if col_spec is None:
+        if not col_spec:
             col_spec = identity
 
         try:
             i = int(col_spec)
         except ValueError:
-            i = None
-
-        if i is not None:
+            for col in col_spec[::-1]:
+                c, want_reverse = self._fancy_col_index(col)
+                if c is None:
+                    continue
+                self.data.sort(key=lambda row: _as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
+        else:
             if -self.cols <= i < self.cols:
                 self.data.sort(key=lambda row: _as_numeric_tuple(row[i], False))
-            return
-
-        for col in col_spec[::-1]:
-            c, want_reverse = self._fancy_col_index(col)
-            if c is None:
-                continue
-            self.data.sort(key=lambda row: _as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
 
     def _remove_duplicates_by_col(self, col_spec):
         '''like uniq, remove row if key cols match the row above
@@ -1081,7 +1128,6 @@ class Table:
                 self.extras[i].add("blank")
             last_tag = this_tag
 
-
     def _roll_by_col(self, col_spec):
         '''Roll columns, up, or down
         '''
@@ -1107,6 +1153,7 @@ class Table:
             w.writerows(self.data)
             return
 
+        
         eol_marker = ''
         separator = '  '
         blank_line = None
@@ -1178,22 +1225,44 @@ if __name__ == "__main__":
     # Join the agenda args into one string, remove any backslash (for Vim), and split into a list
     agenda = ' '.join(args.agenda).replace('\\', '').split(None)
 
-    # Get the delimiter from the agenda (which might be empty), default to "2"
+    # Get the delimiter from the agenda if possible
     try:
         delim = agenda.pop(0)
     except IndexError:
-        delim = '2'
-
-    # If the removed delim starts with alphabetic, put it back and default to "2"
-    if re.match(r'^[a-zA-Z]', delim):
-        agenda.insert(0, delim)
-        delim = '2'
-
-    fh = sys.stdin if args.file is None else open(args.file)
+        delim = None
+    else:
+        # If the removed delim is starts with alphabetic, put it back
+        if re.match(r'^[a-zA-Z]', delim):
+            agenda.insert(0, delim)
+        delim = None
 
     table = Table()
-    if delim == ',':
+
+    fh = io.StringIO(sys.stdin.read()) if args.file is None else open(args.file)
+    if delim is None:
+        first_line = fh.readline().strip()
+        fh.seek(0)
+        # guess delim from content: csv , tex & latex & pipe |
+        if first_line.count(' ') == 0 and first_line.count(',') > 2:
+            table.parse_lol(csv.reader(fh))
+
+        elif first_line.count('&') > 2 and first_line.endswith("\\cr"):
+            table.parse_tex(fh)
+            table._set_output_form('tex')
+
+        elif first_line.count('&') > 2 and first_line.endswith("\\\\"):
+            table.parse_tex(fh)
+            table._set_output_form('latex')
+
+        elif first_line.count('|') > 3:
+            table.parse_lines(fh, splitter=re.compile(r'\s*\|\s*'))
+
+        else:
+            table.parse_lines(fh, splitter=re.compile(r'\s{2,}'))
+
+    elif delim == ',':
         table.parse_lol(csv.reader(fh))
+
     else:
         # check for a maxsplit spec ".3", "2.4" etc
         mm = re.match(r'(\d*)\.(\d+)', delim)
