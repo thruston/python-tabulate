@@ -213,17 +213,17 @@ all the defined verbs.  Like this:
 The following thematic tables summarize the ones you are likely to use most.
 Then they are all described in more detail below, in alphabetical order.
 
-- Rearrange the columns 
+Rearrange the columns 
 
-    arr col-list     rearrange/insert/delete cols and/or do calculations on column values.
-    wrap n           wrap columns in long table n times (default=2)
-    unwrap n         unwrap cols in wide table (default=half number of cols)
-    zip n            zip n rows together into a single row with n * more columns
-    unzip n          unzip into n * the current number of rows & 1/n columns
-    pivot wide|long  reshape, tidyr, melt/cast, simple tables
-    xp               transpose rows and cells
+- arr col-list     rearrange/insert/delete cols and/or do calculations on column values.
+- wrap n           wrap columns in long table n times (default=2)
+- unwrap n         unwrap cols in wide table (default=half number of cols)
+- zip n            zip n rows together into a single row with n * more columns
+- unzip n          unzip into n * the current number of rows & 1/n columns
+- pivot wide|long  reshape, tidyr, melt/cast, simple tables
+- [xp](#xp)        transpose rows and cells
 
-- Rearrange or filter the rows
+Rearrange or filter the rows
 
     sort [col]       sort by value of columns in the order given, use UPPERCASE to reverse
     uniq [col]       remove rows where the value of col is the same as the row above
@@ -231,7 +231,7 @@ Then they are all described in more detail below, in alphabetical order.
     filter expr      select rows where "expr" evaluates to True
     pop [n]          remove row n, where n is 0-indexed and defaults to -1 
 
-- Decorate / adjust the whole table
+Decorate / adjust the whole table
 
     label            add alphabetic labels at the top
     add [function]   add sum, mean, var, sd etc to foot of each column
