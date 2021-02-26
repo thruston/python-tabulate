@@ -34,7 +34,7 @@ First  Second  Third
    12      34     56
    78      90    120''')
 
-        self.tab.do("add")
+        self.tab.do("rule add")
         self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 First  Second  Third
@@ -43,7 +43,7 @@ First  Second  Third
 --------------------
    90     124    176
 ''')
-        self.tab.do("xp add")
+        self.tab.do("xp rule add")
         self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 First    12   78   90
@@ -52,16 +52,14 @@ Third    56  120  176
 ---------------------
 Total   102  288  390
 ''')
-        self.tab.do("add mean")
+        self.tab.do("pop add mean")
         self.assertEqual("\n" + str(self.tab) + "\n",
 '''
-First    12   78   90
-Second   34   90  124
-Third    56  120  176
----------------------
-Total   102  288  390
----------------------
-Mean     51  144  195
+First   12   78   90
+Second  34   90  124
+Third   56  120  176
+--------------------
+Mean    34   96  130
 ''')
 
     def test_parselines(self):
@@ -448,7 +446,7 @@ Q  Q  Q  Q
 '''.strip()
         self.assertEqual(str(self.tab), expected)
 
-        self.tab.do("label pivot count add")
+        self.tab.do("label pivot count rule add")
         expected = '''
 a      b      P  Q
 P      P      2  2

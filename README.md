@@ -203,74 +203,58 @@ reinserted in the right places on output.
 
 ## Verbs in the DSL
 
-If you do `help`, then tabulate will print "Try one of these:" followed by a list of 
+If you do `help`, then tabulate will print "Try one of these:" followed by a list of
 all the defined verbs.  Like this:
 
-    Try one of these: add arr cdiff ditto dp filter gen group help label make
-    noblanks normalize nospace pivot pop roll rule sf shuffle sort tap uniq unwrap
+    Try one of these: add arr ditto dp filter gen group help label make
+    normalize nospace pivot pop roll rule sf shuffle sort tap uniq unwrap
     unzip wrap xp zip
 
 The following thematic tables summarize the ones you are likely to use most.
 Then they are all described in more detail below, in alphabetical order.
 
-Rearrange the columns 
+Rearrange the columns
 
-- arr col-list     rearrange/insert/delete cols and/or do calculations on column values.
-- wrap n           wrap columns in long table n times (default=2)
-- unwrap n         unwrap cols in wide table (default=half number of cols)
-- zip n            zip n rows together into a single row with n * more columns
-- unzip n          unzip into n * the current number of rows & 1/n columns
-- pivot wide|long  reshape, tidyr, melt/cast, simple tables
-- [xp](#xp---transpose-the-table)        transpose rows and cells
+- [xp](#xp---transpose-the-table) - transpose the table
+- [arr](#arr---rearrange-the-columns) - rearrange the columns and/or calculate new columns
+- [pivot](#pivot---expand-or-condense-data-tables) - expand or condense data tables
+- [wrap](#wrap-and-unwrap---reshape-table-in-blocks) and unwrap - reshape table in blocks
+- [zip](#zip-and-unzip---reshape-a-table-by-rows) and unzip - reshape a table by rows
+- [roll](#roll---roll-the-values-in-one-or-more-colum) - roll the values in one or more colum
 
 Rearrange or filter the rows
 
-    sort [col]       sort by value of columns in the order given, use UPPERCASE to reverse
-    uniq [col]       remove rows where the value of col is the same as the row above
-    group [col]      insert special blank rows between different values in given col
-    filter expr      select rows where "expr" evaluates to True
-    pop [n]          remove row n, where n is 0-indexed and defaults to -1 
+- [sort](#sort---sort-on-column) - sort on column
+- [group](#group---insert-special-blank-rows-between-different-values-in-given-column) - insert special blank rows between different values in given col
+- [uniq](#uniq---filter-out-duplicated-rows) - filter out duplicated rows
+- [filter](#filter---select-rows) - select rows
+- [shuffle](#shuffle---rearrange-the-rows-with-a-Fisher-Yates-shuffle) - rearrange the rows with a Fisher-Yates shuffle.
+- [ditto](#ditto---copy-down-from-cell-above) - copy down from cell above
+- [gen](#gen---generate-new-rows) - generate new rows
+- [pop](#pop---remove-a-row) - remove a row, by default the last
 
 Decorate / adjust the whole table
 
-    label            add alphabetic labels at the top
-    add [function]   add sum, mean, var, sd etc to foot of each column
-    normalize        normalize the numeric values so that they add to 1
-    tap x-expr       adjust the numeric values with the given expression
-    dp dp-list       round numbers in each col to specified decimal places
-    sf sf-list       round numbers in each col to specified significant figures
-    make tex | latex | plain | csv | tsv | md   output in tex etc form
+- [add](#add---insert-the-sum-at-the-bottom-of-each-column) - insert the sum at the bottom of each column
+- [dp](#dp---round-numbers-to-n-decimal-places) - round numbers to n decimal places
+- [sf](#sf---round-numbers-to-given-significant-figures) - round numbers to n signficant figures
+- [label](#label---add-alphabetic-labels-to-all-the-columns) - add alphabetic labels to all the columns
+- [make](#make---set-the-output-format) - set the output format
+- [normalize](#normalize---adjust-values-so-that-they-sum-to-one) - adjust values so that they sum to one
+- [nospace](#nospace---remove-spaces-from-cell-values) - remove spaces from cell values
+- [rule](#rule---add-a-rule) - add a rule
+- [tap](#tap---apply-a-function-to-each-numerical-value) - apply a function to each numerical value
 
 You can string together as many verbs (plus optional arguments) as you like.
 
+### add - insert the sum at the bottom of each column
 
-*TODO* -- put this in order....
-
-### xp - transpose the table
-
-`xp` just transposes the entire table. It takes no options.
-
-    First   100
-    Second  200
-    Third   300
-
-becomes
-
-    First  Second  Third
-    100    200     300
-
-It's often useful in combination with verbs that operate on columns like `sort` or `add`.
-So the sequence `xp add xp` will give you row totals, for example.
-
-### add - insert the sum|mean|etc at the bottom of a column
-
-    add [sum|mean|median|q95|...] 
+    add [sum|mean|median|q95|...]
 
 `add` adds the total to the foot of a column.  The default option is `sum`, but
 it can be any method from the Python3 `statistics` library: `mean`, `median`,
 `mode`, `stdev`, `variance`, and so on, plus `q95` for the 95%-ile.
-Non-numerical entries in a column are ignored.  A rule is added before the
-total row.  Given this:
+Non-numerical entries in a column are ignored. So given this:
 
     First   100
     Second  200
@@ -281,12 +265,21 @@ then `add` produces:
     First   100
     Second  200
     Third   300
+    Total   600
+
+If you would like to mark the total line with a rule above it, then do `rule add`
+which will produce:
+
+    First   100
+    Second  200
+    Third   300
     -----------
     Total   600
 
-If you want to change the function, or if you have changed a value and you want to update
-the total, then you need to get rid of the total line first.  There is a slick way to do this.
-Given a table like the one immediately above with a total row, try `pop add mean`:
+If you want to change the function, or if you have changed a value and you want
+to update the total, then you need to get rid of the total line first.  There
+is a slick way to do this.  Given a table like the one immediately above with a
+total row, try `pop add mean`:
 
     First   100
     Second  200
@@ -294,86 +287,16 @@ Given a table like the one immediately above with a total row, try `pop add mean
     -----------
     Mean    200
 
-The `pop` removes the last row before adding the new function.  You can use the same trick
-if you change one or more of the values and want to update the total.
+The `pop` removes the last row before adding the new function.  You can use the
+same trick if you change one or more of the values and want to update the
+total.  Note that if you have already added the rule there is no need to add it
+again.
 
-### sort - sort on column
-
-    sort [a|b|c|...] 
-
-`sort` sorts the table on the given column.  `a` is the first, `b` the second, etc.
-If you use upper case letters, `A`, `B`, etc the sort direction is reversed.
-An index beyond the last column is automatically adjusted so `sort z` sorts on the last column
-assuming you have fewer than 26 columns).
-
-You can sort on a sequence of columns by just giving a longer string.
-So `sort abc` is the same as `sort c sort b sort a` (but slightly quicker).
-
-The default is to sort by all columns from right to left.
-
-### uniq - filter out duplicated rows
-
-    uniq [a|b|c|...]
-
-`uniq` removes duplicate rows from the table.  With no argument the first
-column is used as the key.  But if you provide a list of columns the key will
-consist of the values in those columns.  So `uniq af` will remove all rows with
-duplicate values in column `a` and `f`, so that you are left with just the rows
-where the values in these columns are distinct.
-
-### filter - select rows where "expression" is True
-
-    filter [expression]
-
-In long tables it is sometimes useful to pick out only some of the rows.  You can do this 
-with `filter`.   Say you have a table of rainfall data like this:
-
-    Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
-    2019-12-30     1  0.0  0.2   0.0  0.0  1.2   0.0   0.0    1.4
-    2020-01-06     2  0.5  0.0   0.0  6.4  0.0   0.1   1.7    8.7
-    2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
-    2020-01-20     4  0.0  0.0   0.0  0.0  0.0   0.1   2.3    2.4
-    2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
-    2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
-    2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
-    2020-02-17     8  0.2  3.3   1.0  3.8  0.0   0.5   1.0    9.8
-    2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
-    2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
-    2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
-    2020-03-16    12  3.6  1.3   0.0  0.0  0.0   0.5   0.0    5.4
-    2020-03-23    13  0.0  0.0   0.0  0.0  0.0   0.0   0.0    0.0
-    2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
-
-and you want only to keep the rows where the Total value is greater than 10, then you
-can try `filter j>10` to get
-
-    Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
-    2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
-    2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
-    2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
-    2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
-    2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
-    2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
-    2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
-    2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
-
-Notice that the header row was included.  If the expression causes an error (in
-this case because you can't compare a string to a number) then the row will
-always be included.  The expressions should be valid bits of Python and can use
-the same subset of built-in and maths functions as the normal row arrangements
-with `arr`, and single letters refer to the value of the cells in the way
-described for `arr` above.  Again like `arr` you can use the variables `rows`
-and `row_number` in the expression: `rows` is the count of rows in your table, and 
-`row_number` starts at 1 and is incremented by 1 on successive rows.
-You could use this to pick out every other row: `filter row_number % 2`. 
-(If you are calling tabulate from the Vim command line, use `row_number \% 2`.)
-
-The default is to do nothing.  
 
 
 ### arr - rearrange the columns
 
-    arr [arrange-expression] 
+    arr [arrange-expression]
 
 At it simplest `arr` lets you rearrange, duplicate, or delete columns.  So if you have a
 four column table then:
@@ -447,7 +370,7 @@ which you might find more convenient.
 You can also use "?" in a formula to get a random number, but you can't use "."
 or ";" because it makes a mess of the parsing.  If you want the current row
 number or the total number of rows use the pre-defined variables `row_number`
-and `rows` in your formula. So with the simple table from above, 
+and `rows` in your formula. So with the simple table from above,
 `arr ~(f'{row_number}/{rows}')` should produce this:
 
     First   1  1  1/3
@@ -522,35 +445,30 @@ libraries.
 There are also useful functions to convert HH:MM:SS to fractional hours, minutes or seconds.
 `hms()` takes fractional hours and produces `hh:mm:ss`, while `hr`, `mins`, and `secs` go the other way.
 
-### tap - apply a function to each numerical value
+### ditto - copy down from cell above
 
-    tap [x-expression]
+    ditto [marker]
 
-This is useful for adjusting all the numeric values in your table at once,
-perhaps for making byte values into megabytes etc.  Given values with headings like this
+This verb helps you create a regular table from headings and lists.  It is only really useful from within an editor.
+Given input like this (note the double spaces after the - marker).
 
-    Category  Type A  Type B
-    ------------------------
-    First         34      21
-    Second        58      72
+    First group
+    -  one thing
+    -  another thing
+    Second group
+    -  something else
+    -  more of it
 
-`tap +1000` will produce
+then `ditto -` will produce:
 
-    Category  Type A  Type B
-    ------------------------
-    First       1034    1021
-    Second      1058    1072
+    First group
+    First group   one thing
+    First group   another thing
+    Second group
+    Second group  something else
+    Second group  more of it
 
-and then `tap log(x)` produces
-
-    Category         Type A         Type B
-    --------------------------------------
-    First     6.94119005507  6.92853781816
-    Second    6.96413561242  6.97728134163
-
-if you omit `x` from your "x-expression", it will be added to the front, this means the default is to
-replace each cell by itself.  If your expression is not valid Python or includes undefined names, the cells 
-will be unchanged.
+The default marker is the " character, hence the name of the verb.
 
 ### dp - round numbers to n decimal places
 
@@ -576,11 +494,135 @@ should produce
     Second    6.9641  6.9773
 
 
+
+
+### filter - select rows
+
+    filter [expression]
+
+This verb selects rows where "expression" is True.  In long tables it is
+sometimes useful to pick out only some of the rows.  You can do this with
+`filter`.   Say you have a table of rainfall data like this:
+
+    Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
+    2019-12-30     1  0.0  0.2   0.0  0.0  1.2   0.0   0.0    1.4
+    2020-01-06     2  0.5  0.0   0.0  6.4  0.0   0.1   1.7    8.7
+    2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
+    2020-01-20     4  0.0  0.0   0.0  0.0  0.0   0.1   2.3    2.4
+    2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
+    2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
+    2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
+    2020-02-17     8  0.2  3.3   1.0  3.8  0.0   0.5   1.0    9.8
+    2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
+    2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
+    2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
+    2020-03-16    12  3.6  1.3   0.0  0.0  0.0   0.5   0.0    5.4
+    2020-03-23    13  0.0  0.0   0.0  0.0  0.0   0.0   0.0    0.0
+    2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
+
+and you want only to keep the rows where the Total value is greater than 10, then you
+can try `filter j>10` to get
+
+    Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
+    2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
+    2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
+    2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
+    2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
+    2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
+    2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
+    2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
+    2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
+
+Notice that the header row was included.  If the expression causes an error (in
+this case because you can't compare a string to a number) then the row will
+always be included.  The expressions should be valid bits of Python and can use
+the same subset of built-in and maths functions as the normal row arrangements
+with `arr`, and single letters refer to the value of the cells in the way
+described for `arr` above.  Again like `arr` you can use the variables `rows`
+and `row_number` in the expression: `rows` is the count of rows in your table, and
+`row_number` starts at 1 and is incremented by 1 on successive rows.
+You could use this to pick out every other row: `filter row_number % 2`.
+(If you are calling tabulate from the Vim command line, use `row_number \% 2`.)
+
+The default is to do nothing.
+
+
+### gen - generate new rows
+
+    gen [[a..]b|A-Zn]
+
+`gen a..b` where `a` and `b` are integers, and `..` is any non-numeric character sequence,
+will generate a table with a single column of integers running from `a` to `b`.  `gen 10` is
+interpreted as `gen 1..10`.
+
+If the table already has some data, then the single column will be appended as new rows at the bottom
+of the existing column `a`.
+
+To get more general new rows try `gen` with a pattern like `AB2`, which will produce:
+
+    A  A
+    A  B
+    B  A
+    B  B
+
+or `gen PQR2`
+
+    P  P
+    P  Q
+    P  R
+    Q  P
+    Q  Q
+    Q  R
+    R  P
+    R  Q
+    R  R
+
+The argument should be a string of letters followed by a single digit.  The
+digit controls the number of columns created, and all the required combinations
+of letters in the string will be used to generate rows.
+
+
+### group - insert special blank rows between different values in given column
+
+    group [col]
+
+A bit like `group by` in SQL, `group` will add blank rows between different values
+in the given column.  This works best if the table is sorted on the same column.
+Given this:
+
+    A  A  871  819
+    A  B  934  319
+    B  A  363  470
+    B  B  121  219
+
+Then `group a` would produce
+
+    A  A  871  819
+    A  B  934  319
+
+    B  A  363  470
+    B  B  121  219
+
+
+### label - add alphabetic labels to all the columns
+
+    label [name name ...]
+
+`label` adds labels at the top of each column.  You can supply zero or more
+names that you would like to use as single words separated by blanks.  The only
+restriction is that you can't use any of the DSL verbs.  If you supply too many
+the excess are just ignored, if you don't supply enough, then the labels
+default to single letters of the alphabet.  This means that if you don't supply
+any names, the columns will be labeled `a`, `b`, `c`, etc which might help you
+work out which is which when rearranging.
+
+
+
 ### make - set the output format
 
     make [plain|pipe|tex|latex|csv|tsv]
 
-`make` sets the output format. 
+`make` sets the output format.
 
 - `plain` is the default, where each cell is separate by two or more spaces, and there is no EOL mark
 - `pipe` will attempt to make a markdown table
@@ -591,12 +633,97 @@ Note that these last two only affect the rows, tabulate won't magically generate
 
 The `make csv` option should produce something that you can easily import into Excel
 or similar spreadsheets.  The output is produced with the standard Python CSV writer,
-so double quotes will be added around cell values where needed.  
+so double quotes will be added around cell values where needed.
 
 The `make tsv` option can be used when you want to import into Word -- you can
 use Table... Convert Text to Table...  using tabs as the column separator.
 
-### pivot - expand or condense data tables for R
+
+
+### normalize - adjust values so that they sum to one
+
+    normalize [table]
+
+Given this table
+
+    Exposure category     Lung cancer  No lung cancer
+    -------------------------------------------------
+    Asbestos exposure               6              51
+    No asbestos exposure           52             941
+
+`normalize` produces this
+
+    Exposure category         Lung cancer  No lung cancer
+    -----------------------------------------------------
+    Asbestos exposure      0.105263157895  0.894736842105
+    No asbestos exposure  0.0523665659617  0.947633434038
+
+Each value has been divided by the row total so that each row now adds to 1.
+You can combine this with other functions to get percentages or neater values.
+For example, with the original table you could do `normalize tap *100 dp 1` to get
+
+    Exposure category     Lung cancer  No lung cancer
+    -------------------------------------------------
+    Asbestos exposure            10.5            89.5
+    No asbestos exposure          5.2            94.8
+
+If you want the whole table to add to 1 then do `normalize table`:
+
+    Exposure category          Lung cancer   No lung cancer
+    -------------------------------------------------------
+    Asbestos exposure     0.00571428571429  0.0485714285714
+    No asbestos exposure   0.0495238095238   0.896190476190
+
+If you want the columns to add to 1 then use `xp normalize xp`:
+
+    Exposure category        Lung cancer   No lung cancer
+    -----------------------------------------------------
+    Asbestos exposure     0.103448275862  0.0514112903226
+    No asbestos exposure  0.896551724138   0.948588709677
+
+(But note that `xp` gets rid of your rules, so I actually did that with
+`xp normalize xp rule 1`)
+
+
+
+### nospace - remove spaces from cell values
+
+    nospace [filler]
+
+This is useful for the `read.table` function in R, that by default treats all blanks including
+single ones as delimiters.  Given this table
+
+    Exposure category     Name            Value
+    -------------------------------------------
+    Asbestos exposure     Lung cancer         6
+    Asbestos exposure     No lung cancer     51
+    No asbestos exposure  Lung cancer        52
+    No asbestos exposure  No lung cancer    941
+
+the verb `nospace` will produce:
+
+    Exposurecategory    Name          Value
+    ---------------------------------------
+    Asbestosexposure    Lungcancer        6
+    Asbestosexposure    Nolungcancer     51
+    Noasbestosexposure  Lungcancer       52
+    Noasbestosexposure  Nolungcancer    941
+
+Since that's a litte hard to read you can also specify an optional filler
+character, so `nospace .` would have produced this:
+
+    Exposure.category     Name            Value
+    -------------------------------------------
+    Asbestos.exposure     Lung.cancer         6
+    Asbestos.exposure     No.lung.cancer     51
+    No.asbestos.exposure  Lung.cancer        52
+    No.asbestos.exposure  No.lung.cancer    941
+
+so that all spaces are replaced by periods.  Now you can read that into R
+without an error.
+
+
+### pivot - expand or condense data tables
 
     pivot [long|wide]
 
@@ -643,184 +770,30 @@ Notice that parts of the headings may get lost in transposition.
 Notice also that you *need* a heading so some sort, otherwise `pivot wide` will
 mangle the first row of your data.  So you might like to use `label` before `pivot`.
 
-The `pivot wide` function assumes that the right hand column contains numeric values 
+The `pivot wide` function assumes that the right hand column contains numeric values
 and the second-from-the-right column contains the names you want as new column headings.
 Any non-numeric value in the values column is treated as 0.  If you have duplicate names
 in the names column then the corresponding values will be added together.
 
-### wrap and unwrap - reshape table in blocks
+### pop - remove a row
 
-    wrap [n] 
-    unwrap [n]
+    pop [i]
 
-Here is another way to reshape a table.  Given
+This verb provides an equivalent of the normal Python3 list method `pop` for
+the table.  By default `pop` removes the last row, but you can use it to remove
+any row with the appropriate integer argument.  For the purposes of `pop` the
+rows are zero indexed, so `pop 0` will remove the top row, and the usual
+convention of negative indexes applies, so `pop -1` will remove the last.
+Indexes that are too large are just ignored.
 
-    East  Q1  1200
-    East  Q2  1100
-    East  Q3  1500
-    East  Q4  2200
-    West  Q1  2200
-    West  Q2  2500
-    West  Q3  1990
-    West  Q4  2600
+Obviously if you are using tabulate from an editor you could just delete the
+row directly instead of use this command, but it is handy in certain idioms.
+For example, to update a total row that you have created with `add` you can use
+`pop add` so that the old total is removed and then replaced with a new one.
 
-as input, `wrap` gives you
+### roll - roll the values in one or more colum
 
-    East  Q1  1200  West  Q1  2200
-    East  Q2  1100  West  Q2  2500
-    East  Q3  1500  West  Q3  1990
-    East  Q4  2200  West  Q4  2600
-
-while `wrap 3` gives
-
-    East  Q1  1200  East  Q4  2200  West  Q3  1990
-    East  Q2  1100  West  Q1  2200  West  Q4  2600
-    East  Q3  1500  West  Q2  2500
-
-`unwrap` does the opposite - the option is the number of columns you want in the new output, and defaults
-to half the number of columns in the input.
-
-### zip and unzip - reshape a table by rows
-    
-    zip [n] 
-    unzip [n]
-
-Re-shape a table row by row.  Given
-
-    Q1  East  1200
-    Q1  West  2200
-    Q2  East  1100
-    Q2  West  2500
-    Q3  East  1500
-    Q3  West  1990
-    Q4  East  2200
-    Q4  West  2600
-
-as input, `zip` gives you
-
-    Q1  East  1200  Q1  West  2200
-    Q2  East  1100  Q2  West  2500
-    Q3  East  1500  Q3  West  1990
-    Q4  East  2200  Q4  West  2600
-
-`unzip` does the opposite.  The option is the number of rows to combine.  The default is 2, so that
-you zip every other row, and unzip the table in half (as it were).
-
-### normalize - adjust values so that they sum to one
-
-    normalize [table] 
-
-Given this table
-
-    Exposure category     Lung cancer  No lung cancer
-    -------------------------------------------------
-    Asbestos exposure               6              51
-    No asbestos exposure           52             941
-
-`normalize` produces this
-
-    Exposure category         Lung cancer  No lung cancer
-    -----------------------------------------------------
-    Asbestos exposure      0.105263157895  0.894736842105
-    No asbestos exposure  0.0523665659617  0.947633434038
-
-Each value has been divided by the row total so that each row now adds to 1.
-You can combine this with other functions to get percentages or neater values.
-For example, with the original table you could do `normalize tap *100 dp 1` to get   
-
-    Exposure category     Lung cancer  No lung cancer
-    -------------------------------------------------
-    Asbestos exposure            10.5            89.5
-    No asbestos exposure          5.2            94.8
-
-If you want the whole table to add to 1 then do `normalize table`:
-
-    Exposure category          Lung cancer   No lung cancer
-    -------------------------------------------------------
-    Asbestos exposure     0.00571428571429  0.0485714285714
-    No asbestos exposure   0.0495238095238   0.896190476190
-
-If you want the columns to add to 1 then use `xp normalize xp`:
-
-    Exposure category        Lung cancer   No lung cancer
-    -----------------------------------------------------
-    Asbestos exposure     0.103448275862  0.0514112903226
-    No asbestos exposure  0.896551724138   0.948588709677
-
-(But note that `xp` gets rid of your rules, so I actually did that with
-`xp normalize xp rule 1`)
-
-### rule - add a rule
-
-    rule [n]
-
-Adds a rule after line `n` where the top line is line 1.  If `n` is larger than
-the number of rows in the table, the rule will be added after the last line, however it will not get 
-shown when the table is tabulated unless you have added more data by then.
-To add a line just before the last line (to show a total or a footer) use `rule -1`
-
-### label - add alphabetic labels to all the columns
-
-    label [name name ...]
-
-`label` adds labels at the top of each column.  You can supply zero or more
-names that you would like to use as single words separated by blanks.  The only
-restriction is that you can't use any of the DSL verbs.  If you supply too many
-the excess are just ignored, if you don't supply enough, then the labels
-default to single letters of the alphabet.  This means that if you don't supply
-any names, the columns will be labeled `a`, `b`, `c`, etc which might help you
-work out which is which when rearranging.
-
-### gen - generate new rows
-
-`gen a..b` where `a` and `b` are integers, and `..` is any non-numeric character sequence,
-will generate a table with a single column of integers running from `a` to `b`.  `gen 10` is
-interpreted as `gen 1..10`.
-
-If the table already has some data, then the single column will be appended as new rows at the bottom
-of the existing column `a`.
-
-To get more general new rows try `gen` with a pattern like `AB2`, which will produce:
-
-    A  A
-    A  B
-    B  A
-    B  B
-
-or `gen PQR2`
-
-    P  P
-    P  Q
-    P  R
-    Q  P
-    Q  Q
-    Q  R
-    R  P
-    R  Q
-    R  R
-
-The argument should be a string of letters followed by a single digit.  The
-digit controls the number of columns created, and all the required combinations
-of letters in the string will be used to generate rows.
-
-### shuffle - rearrange the rows with a Fisher-Yates shuffle.
-
-This is implemented using `random.shuffle`
-
-Here's a one liner to generate a random 4x4 arrangement of the numbers 1 to 16:
-(start with a blank file)
-
-    :Table gen 16 shuffle wrap 4
-
-produces (for example):
-
-     5   7   4   9
-    13   2   3   8
-    15   1   6  16
-    12  11  10  14
-
-
-### roll [col-list] - roll the values in one or more colum
+    roll [col-list]
 
 Roll like the stack on an HP RPN calculator.  So with the shuffled table above, `roll b`
 would produce this:
@@ -860,39 +833,215 @@ You can find that with `arr abb roll c arr ab(b-c)` to get:
 The negative number at the top shows you the difference between
 the last and the first. (And hence the new column sums to zero).
 
-### nospace [filler] - remove spaces from cell values
 
-This is useful for the `read.table` function in R, that by default treats all blanks including
-single ones as delimiters.  Given this table
 
-    Exposure category     Name            Value
-    -------------------------------------------
-    Asbestos exposure     Lung cancer         6
-    Asbestos exposure     No lung cancer     51
-    No asbestos exposure  Lung cancer        52
-    No asbestos exposure  No lung cancer    941
+### rule - add a rule
 
-`:Table nospace` will produce:
+    rule [n]
 
-    Exposurecategory    Name          Value
-    ---------------------------------------
-    Asbestosexposure    Lungcancer        6
-    Asbestosexposure    Nolungcancer     51
-    Noasbestosexposure  Lungcancer       52
-    Noasbestosexposure  Nolungcancer    941
+Adds a rule after line `n` where the top line is line 1.  If `n` is larger than
+the number of rows in the table, the rule will be added after the last line, however it will not get
+shown when the table is tabulated unless you have added more data by then.
+To add a line just before the last line (to show a total or a footer) use `rule -1`
 
-since that's a litte hard to read you can also specify an optional filler character.  `:Table nospace .` would have
-produced this:
 
-    Exposure.category     Name            Value
-    -------------------------------------------
-    Asbestos.exposure     Lung.cancer         6
-    Asbestos.exposure     No.lung.cancer     51
-    No.asbestos.exposure  Lung.cancer        52
-    No.asbestos.exposure  No.lung.cancer    941
 
-so that all spaces are replaced by periods.  Now you can read that into R
-without an error.
+### shuffle - rearrange the rows with a Fisher-Yates shuffle
+
+    shuffle
+
+Shuffle the rows in the table.  This is implemented using `random.shuffle`.
+Here's a one liner to generate a random 4x4 arrangement of the numbers 1 to 16:
+(start with a blank file)
+
+    gen 16 shuffle wrap 4
+
+produces (for example):
+
+     5   7   4   9
+    13   2   3   8
+    15   1   6  16
+    12  11  10  14
+
+### sf - round numbers to given significant figures
+
+    sf [sf-list]
+
+This verb works like `dp` but instead of fixing the decimal places, it sets the number of
+significant figures for each column to the corresponding figure in `sf-list`.  As with `dp` the
+list of figures is extend as needed. So `sf 3` will adjust all columns to three sigfig, while
+`sf 445` will adjust the first two columns to 4 figures, and the remaining columns to 5.
+For example, given this:
+
+    Name     a     b     c     d
+    a      142    86    77    70
+    b     1464   806   871   701
+    c     5474  3352  3185  2964
+    d     1281   860   790   722
+
+the action `sf 04444` will produce
+
+    Name      a      b      c      d
+    a     142.0  86.00  77.00  70.00
+    b      1464  806.0  871.0  701.0
+    c      5474   3352   3185   2964
+    d      1281  860.0  790.0  722.0
+
+while `sf 02` produces
+
+    Name     a     b     c     d
+    a      140    86    77    70
+    b     1500   810   870   700
+    c     5500  3400  3200  3000
+    d     1300   860   790   720
+
+The most number of figures you can have is 9 in each column.  This is because if you do
+`sf 10` it is interpreted as 1 for column one, and zero for all the others.
+
+### sort - sort on column
+
+    sort [a|b|c|...]
+
+`sort` sorts the table on the given column.  `a` is the first, `b` the second, etc.
+If you use upper case letters, `A`, `B`, etc the sort direction is reversed.
+An index beyond the last column is automatically adjusted so `sort z` sorts on the last column
+assuming you have fewer than 26 columns).
+
+You can sort on a sequence of columns by just giving a longer string.
+So `sort abc` is the same as `sort c sort b sort a` (but slightly quicker).
+
+The default is to sort by all columns from right to left.
+
+
+
+### tap - apply a function to each numerical value
+
+    tap [x-expression]
+
+This is useful for adjusting all the numeric values in your table at once,
+perhaps for making byte values into megabytes etc.  Given values with headings like this
+
+    Category  Type A  Type B
+    ------------------------
+    First         34      21
+    Second        58      72
+
+`tap +1000` will produce
+
+    Category  Type A  Type B
+    ------------------------
+    First       1034    1021
+    Second      1058    1072
+
+and then `tap log(x)` produces
+
+    Category         Type A         Type B
+    --------------------------------------
+    First     6.94119005507  6.92853781816
+    Second    6.96413561242  6.97728134163
+
+if you omit `x` from your "x-expression", it will be added to the front, this means the default is to
+replace each cell by itself.  If your expression is not valid Python or includes undefined names, the cells
+will be unchanged.
+
+
+
+### uniq - filter out duplicated rows
+
+    uniq [a|b|c|...]
+
+`uniq` removes duplicate rows from the table.  With no argument the first
+column is used as the key.  But if you provide a list of columns the key will
+consist of the values in those columns.  So `uniq af` will remove all rows with
+duplicate values in column `a` and `f`, so that you are left with just the rows
+where the values in these columns are distinct.
+
+
+
+### wrap and unwrap - reshape table in blocks
+
+    wrap [n]
+    unwrap [n]
+
+Here is another way to reshape a table.  Given
+
+    East  Q1  1200
+    East  Q2  1100
+    East  Q3  1500
+    East  Q4  2200
+    West  Q1  2200
+    West  Q2  2500
+    West  Q3  1990
+    West  Q4  2600
+
+as input, `wrap` gives you
+
+    East  Q1  1200  West  Q1  2200
+    East  Q2  1100  West  Q2  2500
+    East  Q3  1500  West  Q3  1990
+    East  Q4  2200  West  Q4  2600
+
+while `wrap 3` gives
+
+    East  Q1  1200  East  Q4  2200  West  Q3  1990
+    East  Q2  1100  West  Q1  2200  West  Q4  2600
+    East  Q3  1500  West  Q2  2500
+
+`unwrap` does the opposite - the option is the number of columns you want in the new output, and defaults
+to half the number of columns in the input.
+
+
+
+### xp - transpose the table
+
+`xp` just transposes the entire table. It takes no options.
+
+    First   100
+    Second  200
+    Third   300
+
+becomes
+
+    First  Second  Third
+    100    200     300
+
+It's often useful in combination with verbs that operate on columns like `sort`
+or `add`.  So the sequence `xp add xp` will give you row totals, for example,
+while `xp normalize row xp` will normalize the table by columns.
+
+Running `xp` resets all the special rows (blanks, rules, comments), so the
+apparent no-op sequence `xp xp` is sometimes useful to clear all the specials.
+
+
+
+### zip and unzip - reshape a table by rows
+
+    zip [n]
+    unzip [n]
+
+Re-shape a table row by row.  Given
+
+    Q1  East  1200
+    Q1  West  2200
+    Q2  East  1100
+    Q2  West  2500
+    Q3  East  1500
+    Q3  West  1990
+    Q4  East  2200
+    Q4  West  2600
+
+as input, `zip` gives you
+
+    Q1  East  1200  Q1  West  2200
+    Q2  East  1100  Q2  West  2500
+    Q3  East  1500  Q3  West  1990
+    Q4  East  2200  Q4  West  2600
+
+`unzip` does the opposite.  The option is the number of rows to combine.  The default is 2, so that
+you zip every other row, and unzip the table in half (as it were).
+
+
+
 
 ## Methods available for a Table object
 

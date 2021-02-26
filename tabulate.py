@@ -458,7 +458,7 @@ class Table:
                         if isinstance(new_value, tuple):
                             new_row.extend(new_value)
                         else:
-                            new_row.append(new_value)
+                            new_row.append('{:f}'.format(new_value)) # get rid of any E formats...
                 else:
                     new_row.append(cell)
             self.append(new_row)
@@ -528,9 +528,10 @@ class Table:
                 return s
 
             if x.is_zero():
-                return 0
+                return '0'
 
-            return '{:f}'.format(round(x, n - int(math.floor(math.log10(abs(x)))) - 1))
+            figs =  n - math.floor(abs(x).log10()) - 1
+            return '{:f}'.format(round(x, figs))
 
         self.data = list(list(_siggy(c, sf) for c, sf in zip(r, sf_values)) for r in self.data)
 
@@ -552,18 +553,20 @@ class Table:
             return
 
         # Labels * Cols...
-        m = re.match(r'([A-Z]+)(\d)$', count_or_range)
+        m = re.match(r'([A-Za-z]+)(\d)$', count_or_range)
         if m is not None:
             labels = m.group(1)
             columns = int(m.group(2))
             self.parse_lol(list([*x] for x in itertools.product(labels, repeat=columns)), append=True)
             return
 
-    def _copy_down(self, _):
+    def _copy_down(self, marker):
         '''Fix up ditto marks'''
+        if marker.strip() == "":
+            marker = '"'
         for i, row in enumerate(self.data):
             for j, cell in enumerate(row):
-                if cell == '"' and i > 0:
+                if cell == marker and i > 0:
                     self.data[i][j] = self.data[i-1][j]
 
     def _zipper(self, n):
@@ -689,7 +692,6 @@ class Table:
             else:
                 footer.append(func(itertools.compress(decimals, booleans)))
 
-        self.add_rule()
         self.append(footer)
 
     def _wrangle(self, shape):
@@ -1231,10 +1233,10 @@ if __name__ == "__main__":
     except IndexError:
         delim = None
     else:
-        # If the removed delim is starts with alphabetic, put it back
+        # If the removed delim is starts with alphabetic, put it back and reset delim to None
         if re.match(r'^[a-zA-Z]', delim):
             agenda.insert(0, delim)
-        delim = None
+            delim = None
 
     table = Table()
 
