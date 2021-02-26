@@ -84,7 +84,7 @@ To use tabulate as a filter, you need first to add a line to your `.vimrc` file 
 
     :command! -nargs=* -range=% Table <line1>,<line2>!python3 ~/python-tabulate/tabulate.py <q-args>
 
-which you should adjust appropriately so your python3 can find where you put
+which you should adjust appropriately so your Python3 can find where you put
 tabulate.  You can of course use some word other than `Table` as the command
 name. Perhaps `Tbl` ?  Take your pick, you can choose anything, except that Vim
 insists on the name starting with an uppercase letter.
@@ -237,7 +237,7 @@ Decorate / adjust the whole table
 
 - [add](#add---insert-the-sum-at-the-bottom-of-each-column) - insert the sum at the bottom of each column
 - [dp](#dp---round-numbers-to-n-decimal-places) - round numbers to n decimal places
-- [sf](#sf---round-numbers-to-given-significant-figures) - round numbers to n signficant figures
+- [sf](#sf---round-numbers-to-given-significant-figures) - round numbers to n significant figures
 - [label](#label---add-alphabetic-labels-to-all-the-columns) - add alphabetic labels to all the columns
 - [make](#make---set-the-output-format) - set the output format
 - [normalize](#normalize---adjust-values-so-that-they-sum-to-one) - adjust values so that they sum to one
@@ -306,19 +306,25 @@ four column table then:
 - `arr cd` deletes the first two columns
 - `arr abc` keeps only the first three columns
 
-and so on.  If you want to keep everything and simply add an extra column at
-the end, there's a shortcut to save you typing lots of column letters: `arr
-~a` will keep *all* the columns and then add a copy of the first one
-on the end.  If you want to do more complicated things with lots of columns,
-you might find it easier to transpose the table first with `xp` and then use
-the regular line editing facilities in Vim to rearrange the rows, before
-transposing them back to columns.   You might also use the `label` verb to add
-alphabetic labels to the bottom of all the columns before you start.
+and so on.  Astute readers may spot a problem here.  The sequence `arr add`
+meaning `delete cols b and c and duplicate col d` won't work because `add` is a
+valid verb.  In this case (as similar ones) just put a pair of empty braces on
+the end, like so `arr add{}`.
 
-Note: Astute readers may spot a problem here.  The sequence `arr add` meaning
-`delete cols b and c and duplicate col d` won't work because `add` is a
-valid verb.  In this case (as similar ones) just put a pair of empty braces
-on the end, like so `arr add{}`.
+If you want to keep everything and simply add an extra column at
+the end, there are two shortcuts to save you typing lots of column letters: 
+
+- `arr ~a` will keep *all* the columns and then add a copy of the first one on the end.  
+- `add -b` will remove column `b` but keep all the others
+
+If you are working in an editor, and  you want to do more complicated things
+with lots of columns, you might find it easier to transpose the table first
+with `xp` and then use the regular line editing facilities rearrange the rows,
+before transposing them back to columns.   
+
+If you have trouble keeping track of which column is now (say) column `h`, then
+you might like to use the `label` verb to add alphabetic labels to the top each
+column before you start.
 
 Besides letters to identify column values you can use `?` to insert a random number,
 and `.` to insert the current row number and `;` to insert the total number of rows.
@@ -348,24 +354,21 @@ You can also insert arbitrary calculated columns by putting an expression in cur
 
 and so on.  Each single letter `a`, `b`, etc is changed into the corresponding
 cell value and then the resulting expression is evaluated. You can use a subset of the
-normal built-in or `math` functions; besides all the BIFs you get `log`, `log10`, `exp`
-and `sqrt`, as shown above.
+normal built-in or `math` functions such as `log` and `sqrt`, as shown above.
 
 Curly braces are only treated as parentheses at the top level (and this only for compatibility
 with the old Perl version of tabulate), so you can put them in normal Python expressions like
 
     arr ab('{} {}'.format(c, d))
 
-which (incidentally) shows one way to concatenate two columns into one.  You can include
-spaces in your formula;  The argument to `arr` ends at the next operation or the end
-of the command line.  The access to Python in (more or less) entirely general, but is
-only really intended for simple manipulation of a few values, so don't expect too much.
-But (assuming you are using Python 3.6 or better by now) you could also write the above
-example as
+or
 
     arr ab(f"{c} {d}")
 
-which you might find more convenient.
+which show how to concatenate two columns into one.  
+
+You can also include spaces in your formula as the argument to `arr` continues
+to the next verb or the end of the command line.  
 
 You can also use "?" in a formula to get a random number, but you can't use "."
 or ";" because it makes a mess of the parsing.  If you want the current row
@@ -419,8 +422,8 @@ will give you the date three months ago, and so on.  `date()` produces today's
 date.  If the number you give date is large, it will be interpreted as epoch
 seconds, and if it is very large, epoch milliseconds.
 
-Note: `base()` will actually recognize dates in several different (mainly ISO or British) forms
-as well as `yyyy-mm-dd`, as follows:
+Note: `base()` will actually recognize dates in several different (mainly ISO
+or British) forms as well as `yyyy-mm-dd`, as follows:
 
     Example                   strftime format used
     ----------------------------------------------
@@ -442,8 +445,14 @@ This table shows the strftime formats used.  This is not as clever as using
 `dateutil.parser` but it does mean that tabulate only uses the standard Python3
 libraries.
 
-There are also useful functions to convert HH:MM:SS to fractional hours, minutes or seconds.
-`hms()` takes fractional hours and produces `hh:mm:ss`, while `hr`, `mins`, and `secs` go the other way.
+There are also useful functions to convert HH:MM:SS to fractional hours,
+minutes or seconds.  `hms()` takes fractional hours and produces `hh:mm:ss`,
+while `hr`, `mins`, and `secs` go the other way.
+
+The access to Python3 is not entirely general, as it is only really intended for
+simple manipulation of a few values, and therefore tabulate tries to prevent
+you accidentally loading the `sys` module and deleting your disk. 
+
 
 ### ditto - copy down from cell above
 
@@ -940,10 +949,9 @@ and then `tap log(x)` produces
     First     6.94119005507  6.92853781816
     Second    6.96413561242  6.97728134163
 
-if you omit `x` from your "x-expression", it will be added to the front, this means the default is to
-replace each cell by itself.  If your expression is not valid Python or includes undefined names, the cells
-will be unchanged.
-
+If you omit `x` from your "x-expression", it will be added to the front, this
+means the default is to replace each cell by itself.  If your expression is not
+valid Python or includes undefined names, the cells will be unchanged.
 
 
 ### uniq - filter out duplicated rows
@@ -955,7 +963,6 @@ column is used as the key.  But if you provide a list of columns the key will
 consist of the values in those columns.  So `uniq af` will remove all rows with
 duplicate values in column `a` and `f`, so that you are left with just the rows
 where the values in these columns are distinct.
-
 
 
 ### wrap and unwrap - reshape table in blocks
