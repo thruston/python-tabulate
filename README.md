@@ -148,7 +148,7 @@ import tabulate
 data = [('Item', 'Amount'), ('First label', 23), ('Second thing', 45), ('Third one', 55)]
 tt = tabulate.Table()
 tt.parse_lol(data)
-tt.do("add")
+tt.do("rule add")
 print(tt)
 ```
 
