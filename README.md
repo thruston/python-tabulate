@@ -311,11 +311,10 @@ meaning `delete cols b and c and duplicate col d` won't work because `add` is a
 valid verb.  In this case (as similar ones) just put a pair of empty braces on
 the end, like so `arr add{}`.
 
-If you want to keep everything and simply add an extra column at
-the end, there are two shortcuts to save you typing lots of column letters: 
+There are two shortcuts to save you typing lots of column letters: 
 
 - `arr ~a` will keep *all* the columns and then add a copy of the first one on the end.  
-- `add -b` will remove column `b` but keep all the others
+- `arr -b` will remove column `b` but keep all the others
 
 If you are working in an editor, and  you want to do more complicated things
 with lots of columns, you might find it easier to transpose the table first
