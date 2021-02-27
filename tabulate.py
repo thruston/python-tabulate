@@ -449,11 +449,11 @@ class Table:
         self.data.clear()
         for i, row in enumerate(old_rows):
             new_row = []
-            for cell in row:
+            for j, cell in enumerate(row):
                 is_numeric, old_value = is_as_decimal(cell)
                 if is_numeric:
                     try:
-                        new_value = eval(cc, Panther, {"x": old_value, "rows": len(old_rows), "row_number": i+1})
+                        new_value = eval(cc, Panther, {"x": old_value, "rows": len(old_rows), "row_number": i+1, "cols": self.cols, "col_number": j+1})
                     except NameError:
                         new_row.append(old_value)
                     else:
