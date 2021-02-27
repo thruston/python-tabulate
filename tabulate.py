@@ -34,6 +34,8 @@ Panther = {
     'chr': chr,
     'divmod': divmod,
     'format': format,
+    'hex': tab_fun_maths.decimal_to_hex,
+    'oct': tab_fun_maths.decimal_to_oct,
     'int': int,
     'ord': ord,
     'pow': pow,
@@ -442,23 +444,24 @@ class Table:
         except SyntaxError:
             print('?', fstring)
             return
-
+        
         old_rows = self.data[:]
         self.data.clear()
-        for row in old_rows:
+        for i, row in enumerate(old_rows):
             new_row = []
             for cell in row:
                 is_numeric, old_value = is_as_decimal(cell)
                 if is_numeric:
                     try:
-                        new_value = eval(cc, Panther, {"x": old_value})
+                        new_value = eval(cc, Panther, {"x": old_value, "rows": len(old_rows), "row_number": i+1})
                     except NameError:
                         new_row.append(old_value)
                     else:
                         if isinstance(new_value, tuple):
                             new_row.extend(new_value)
                         else:
-                            new_row.append('{:f}'.format(new_value)) # get rid of any E formats...
+                            #new_row.append('{:f}'.format(new_value)) # get rid of any E formats...
+                            new_row.append(new_value)
                 else:
                     new_row.append(cell)
             self.append(new_row)
