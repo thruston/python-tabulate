@@ -20,17 +20,8 @@ class TestTableParsing(unittest.TestCase):
             "2020-03-09 11 0.0 4.3 6.3 1.3 1.0 1.0 0.0 13.9".split(),
             "2020-03-30 14 0.1 0.1 10.9 0.0 0.0 0.0 0.0 11.1".split()
         ]
-
-    def test_lol(self):
-        "create table from lol"
         self.tab.parse_lol(self.rain)
-        
-        self.assertTrue(self.tab)
-        self.assertEqual(len(self.tab), 9)
-        self.assertEqual(self.tab.cols, 10)
-        self.assertEqual(self.tab[-1], self.rain[-1])
-
-        expected = '''
+        self.expected = '''
 Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
 -------------------------------------------------------------
 2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
@@ -43,4 +34,28 @@ Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
 2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
 2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
 '''.strip()
-        self.assertEqual(str(self.tab), expected)
+
+    def test_lol(self):
+        "create table from lol"
+        
+        self.assertTrue(self.tab)
+        self.assertEqual(len(self.tab), 9)
+        self.assertEqual(self.tab.cols, 10)
+        self.assertEqual(self.tab[-1], self.rain[-1])
+        self.assertEqual(str(self.tab), self.expected)
+
+    def test_copy_data(self):
+        "copy and create new table"
+        self.bat = tabulate.Table()
+        self.bat.parse_lol(self.tab.copy())
+
+        self.assertTrue(self.bat)
+        self.assertEqual(len(self.bat), 9)
+        self.assertEqual(self.bat.cols, 10)
+        self.assertEqual(self.bat[-1], self.rain[-1])
+
+        # extras are not copied...
+        self.bat.add_rule(1)
+        self.bat.add_blank(5)
+        self.assertEqual(str(self.bat), self.expected)
+
