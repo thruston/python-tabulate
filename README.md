@@ -14,11 +14,11 @@ the facilities for arranging code and paragraphs of plain text.  Eventually you
 will need to create a table of data or other information, something like this
 
     event  eruption  waiting
-        1     3.600       79
-        2     1.800       54
-        3     3.333       74
-        4     2.283       62
-        5     4.533       85
+    A         3.600       79
+    B         1.800       54
+    C         3.333       74
+    D         2.283       62
+    E         4.533       85
 
 and you may find that your editor has some useful facilities for working in "block"
 mode that help to manage the table.  But you might also find that the facilities are
@@ -28,20 +28,16 @@ R; you just want the simple totals.   That's what tabulate is for.  If you set i
 in Vim (see below) as a user command, then you can just say `:Table add` to get this:
 
     event  eruption  waiting
-        1     3.600       79
-        2     1.800       54
-        3     3.333       74
-        4     2.283       62
-        5     4.533       85
-    ------------------------
-       15    15.549      354
+    A         3.600       79
+    B         1.800       54
+    C         3.333       74
+    D         2.283       62
+    E         4.533       85
+    Total    15.549      354
 
-OK, that's not perfect, but all you have to do now is change that 15 to `Total` (or just
-undo the last change to get rid of the new lines or whatever).
+Tabulate also lets you transpose your table (to get this...)
 
-Tabulate also lets you transpose a table (to get this...)
-
-    event         1      2      3      4      5
+    event         A      B      C      D      E
     eruption  3.600  1.800  3.333  2.283  4.533
     waiting      79     54     74     62     85
 
@@ -56,7 +52,7 @@ Vim just so I could tidy it up with `tabulate`.  So I have re-written the origin
 Perl version of tabulate as a Python module that can be imported, and used to
 tidy up a list of lists of data for printing directly as part of a script.
 
-Toby Thurston -- 19 Feb 2021
+Toby Thurston -- 01 Mar 2021
 
 ## Usage and set up
 
@@ -174,11 +170,12 @@ and a maximum number of splits to make, where 0 means "as many as there are".
 You could also add lines one at a time using the Table.append() method.  So the example
 above could be done as
 ```python
+import tabulate
 data = [('Item', 'Amount'), ('First label', 23), ('Second thing', 45), ('Third one', 55)]
 tt = tabulate.Table()
 for row in data:
     tt.append(row)
-tt.do("add")
+tt.do("rule add")
 print(tt)
 ```
 The appended `row` is treated as an iterable. If you append a single string it will be
@@ -311,15 +308,15 @@ meaning `delete cols b and c and duplicate col d` won't work because `add` is a
 valid verb.  In this case (as similar ones) just put a pair of empty braces on
 the end, like so `arr add{}`.
 
-There are two shortcuts to save you typing lots of column letters: 
+There are two shortcuts to save you typing lots of column letters:
 
-- `arr ~a` will keep *all* the columns and then add a copy of the first one on the end.  
+- `arr ~a` will keep *all* the columns and then add a copy of the first one on the end.
 - `arr -b` will remove column `b` but keep all the others
 
 If you are working in an editor, and  you want to do more complicated things
 with lots of columns, you might find it easier to transpose the table first
 with `xp` and then use the regular line editing facilities rearrange the rows,
-before transposing them back to columns.   
+before transposing them back to columns.
 
 If you have trouble keeping track of which column is now (say) column `h`, then
 you might like to use the `label` verb to add alphabetic labels to the top each
@@ -364,10 +361,10 @@ or
 
     arr ab(f"{c} {d}")
 
-which show how to concatenate two columns into one.  
+which show how to concatenate two columns into one.
 
 You can also include spaces in your formula as the argument to `arr` continues
-to the next verb or the end of the command line.  
+to the next verb or the end of the command line.
 
 You can also use "?" in a formula to get a random number, but you can't use "."
 or ";" because it makes a mess of the parsing.  If you want the current row
@@ -448,9 +445,10 @@ There are also useful functions to convert HH:MM:SS to fractional hours,
 minutes or seconds.  `hms()` takes fractional hours and produces `hh:mm:ss`,
 while `hr`, `mins`, and `secs` go the other way.
 
-The access to Python3 is not entirely general, as it is only really intended for
-simple manipulation of a few values, and therefore tabulate tries to prevent
-you accidentally loading the `sys` module and deleting your disk. 
+The access to Python3 is not entirely general, as it is only really intended
+for simple manipulation of a few values, and therefore tabulate tries quite
+hard to prevent you accidentally loading the `sys` module and deleting your
+disk.
 
 
 ### ditto - copy down from cell above
@@ -1054,16 +1052,16 @@ you zip every other row, and unzip the table in half (as it were).
 The `Table` class defined by `tabulate` provides the following instance methods.
 To use them you need to instantiate a table, then call the methods on that
 instance.
-
+```python
     t = tabulate.Table()
     t.parse_lol(data_rows)
     t.do("add")
     print(t)
-
+```
 An instance of a `Table` is essentially an augmented list of lists, so
 it implements most of the normal Python list interface, except that you
 can't assign to it directly.  Instead you should use one of the two
-data parsing methods to insert data.
+data parsing methods to insert data, or `append`, or `insert`.
 
 ### `parse_lol(list_of_iterables, append=False, filler='')`
 
