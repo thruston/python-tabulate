@@ -19,10 +19,12 @@ class TestTable(unittest.TestCase):
         self.tab.append("First Second Third".split())
         self.tab.append("12 34 56".split())
         self.tab.append("78 90 120".split())
-
-        self.assertTrue(self.tab.data)
-        self.assertTrue(len(self.tab.data) == 3)
         self.assertTrue(self.tab.cols == 3)
+
+        # verify list like behaviour
+        self.assertTrue(self.tab)
+        self.assertTrue(len(self.tab) == 3)
+        self.assertTrue(self.tab[-1] == ['78', '90', '120'])
 
     def test_tabulate(self):
         self.tab.append("First Second Third".split())
@@ -87,6 +89,7 @@ Mean    34   96  130
         self.assertEqual(self.tab.indent, 4)
 
     def test_arrange(self):
+        self.maxDiff = None
         self.tab.parse_lines('''
     2020-05-19  09:18:00  30.3  30.2  30.1  28.9  29.8  29.6  29.9  30.2   135   4.5
     2020-05-19  09:18:10  29.2  29.1  29.4  30.5  30.2  30.3  30.0  29.5   132   4.5
@@ -509,41 +512,6 @@ Asbestos exposure              11              89
 No asbestos exposure            5              95
 '''.strip()
         self.assertEqual(str(self.tab), expected)
-
-    def test_filter(self):
-        "Select matching rows"
-        self.tab.parse_lines('''
-Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
-2019-12-30     1  0.0  0.2   0.0  0.0  1.2   0.0   0.0    1.4
-2020-01-06     2  0.5  0.0   0.0  6.4  0.0   0.1   1.7    8.7
-2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
-2020-01-20     4  0.0  0.0   0.0  0.0  0.0   0.1   2.3    2.4
-2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
-2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
-2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
-2020-02-17     8  0.2  3.3   1.0  3.8  0.0   0.5   1.0    9.8
-2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
-2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
-2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
-2020-03-16    12  3.6  1.3   0.0  0.0  0.0   0.5   0.0    5.4
-2020-03-23    13  0.0  0.0   0.0  0.0  0.0   0.0   0.0    0.0
-2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
-'''.strip().splitlines())
-        self.tab.do('filter j>10')
-        expected = '''
-Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
-2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
-2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
-2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
-2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
-2020-02-24     9  6.1  0.5   0.1  8.6  5.9   7.1   0.2   28.5
-2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
-2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
-2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
-'''.strip()
-        self.maxDiff = None
-        self.assertEqual(str(self.tab), expected)
-
 
     def test_nothing(self):
         some_lines = '''

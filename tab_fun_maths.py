@@ -5,8 +5,6 @@ import re
 
 # pylint: disable=C0103
 
-decimal.DefaultContext.prec = 12
-
 PIC = ''.join('''3.1415926535 8979323846 2643383279 5028841971
 6939937510 5820974944 5923078164 0628620899 8628034825 3421170679'''.split())
 PI = 0+decimal.Decimal(PIC)

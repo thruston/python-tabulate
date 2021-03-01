@@ -128,6 +128,7 @@ class Table:
 
     def __init__(self):
         " empty data and no rows or cols "
+        decimal.getcontext().prec = 12
         self.data = []
         self.cols = 0
         self.indent = 0
@@ -395,6 +396,11 @@ class Table:
                 wanted = True  # default to keeping the row
             if wanted:
                 self.append(r)
+            elif i > 1:
+                self.extras.pop(i) # remove extras if line not wanted (unless we are at the top)
+
+        if not self.data:
+            self.cols = 0
 
     def _shuffle_rows(self, _):
         '''Re-arrange the data at random'''
@@ -976,7 +982,7 @@ class Table:
                         new_row.extend(new_value)
                     else:
                         new_row.append(new_value)
-                except (ValueError, TypeError, NameError, AttributeError):
+                except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation):
                     new_row.append(_replace_values(literal_code, value_dict))
                 except ZeroDivisionError:
                     new_row.append("-")
