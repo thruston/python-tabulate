@@ -622,6 +622,9 @@ default to single letters of the alphabet.  This means that if you don't supply
 any names, the columns will be labeled `a`, `b`, `c`, etc which might help you
 work out which is which when rearranging.
 
+If you want to replace the existing labels try
+
+    pop 0 label [name name...]
 
 
 ### make - set the output format

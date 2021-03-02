@@ -1,10 +1,8 @@
 #! /usr/bin/env python3
-'''
-Tabulate
+'''Tabulate
 
 A module to line up text tables.
 Toby Thurston -- 19 Feb 2021
-
 '''
 
 # pylint: disable=C0103, C0301
@@ -22,6 +20,7 @@ import re
 import statistics
 import string
 import sys
+import tokenize
 
 import tab_fun_dates
 import tab_fun_useful
@@ -102,10 +101,6 @@ def _decimalize(expr):
     module.
 
     '''
-
-    import tokenize
-    import io
-
     out = []
     for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(expr).readline):
         if tn == tokenize.NUMBER and '.' in tv:
@@ -192,7 +187,7 @@ class Table:
         "Read lines from an iterable thing of TeX source, and append to self"
 
         if not append:
-            self.clear() 
+            self.clear()
         self.indent = 0
         eol_pattern = re.compile(r'\s*\\(cr|\\)\Z')
         amp_pattern = re.compile(r'\s*&\s*')
@@ -308,7 +303,8 @@ class Table:
         labels = list(string.ascii_lowercase) # make the string into a list
 
         if names:
-            labels = names.split() + labels
+            for i, name in enumerate(names.split()):
+                labels[i] = name
 
         self.data.insert(0, labels[:self.cols])
 
@@ -332,7 +328,7 @@ class Table:
         rows = len(self.data)
         try:
             i = int(n)
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError):
             i = rows
         if i > rows:
             i = rows
@@ -346,7 +342,7 @@ class Table:
         "stash a comment line"
         try:
             i = int(n) % len(self.data)
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError):
             i = len(self.data)
         self.extras[i].add('#' + contents.lstrip('#'))
 
@@ -450,7 +446,7 @@ class Table:
         except SyntaxError:
             print('?', fstring)
             return
-        
+
         old_rows = self.data[:]
         self.data.clear()
         for i, row in enumerate(old_rows):
@@ -1164,7 +1160,6 @@ class Table:
             w.writerows(self.data)
             return
 
-        
         eol_marker = ''
         separator = '  '
         blank_line = None
@@ -1259,11 +1254,11 @@ if __name__ == "__main__":
 
         elif first_line.count('&') > 2 and first_line.endswith("\\cr"):
             table.parse_tex(fh)
-            table._set_output_form('tex')
+            table.do('make tex')
 
         elif first_line.count('&') > 2 and first_line.endswith("\\\\"):
             table.parse_tex(fh)
-            table._set_output_form('latex')
+            table.do('make latex')
 
         elif first_line.count('|') > 3:
             table.parse_lines(fh, splitter=re.compile(r'\s*\|\s*'))
