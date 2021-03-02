@@ -1,9 +1,12 @@
 '''Mathematical functions for tabulate's decimal numbers
 '''
 import decimal
+import math
 import re
 
 # pylint: disable=C0103
+
+decimal.getcontext().prec = 12
 
 PIC = ''.join('''3.1415926535 8979323846 2643383279 5028841971
 6939937510 5820974944 5923078164 0628620899 8628034825 3421170679'''.split())
@@ -11,23 +14,7 @@ PI = 0+decimal.Decimal(PIC)
 TAU = PI + PI
 ONE = decimal.Decimal('1')
 ZERO = decimal.Decimal('0')
-
-def adjust(x):
-    ''' Reduce x to the range -pi to pi
-
-    >>> adjust(7)
-    Decimal('0.71681469282')
-    >>> adjust(PI)
-    Decimal('3.14159265359')
-    >>> adjust(-PI)
-    Decimal('3.14159265359')
-
-    '''
-    x = x % TAU
-    if not -PI < x <= PI:
-        x -= TAU.copy_sign(x)
-    assert -PI < x <= PI
-    return x
+one = decimal.Decimal('1.0000000000')
 
 def degrees(x):
     '''return radians -> degrees
@@ -50,53 +37,67 @@ def radians(x):
     Decimal('0')
     '''
     if not x:
-        return decimal.Decimal('0')
+        return ZERO
     return x * PI / 180
 
-def expand_series(x, s, t):
-    '''Used for sin and cos
-    '''
-    decimal.getcontext().prec += 2
-    f = y = s
-    x = x*x
-    old = y
-    n = 0
-    while True:
-        n += 2
-        f = -f * x / (n * (n + t))
-        y = y + f
-        if y==old:
-            break
-        old = y
-    decimal.getcontext().prec -= 2
-    return +y
-
 def sin(x):
-    "sin in radians"
-    x = adjust(x)
-    return expand_series(x, x, 1)
+    '''sine
+
+    >>> sin(0)
+    Decimal('0')
+    >>> sin(PI/6)
+    Decimal('0.5')
+    >>> sin(PI/2)
+    Decimal('1')
+    '''
+    return decimal.Decimal(math.sin(x)).quantize(one).normalize()
 
 def cos(x):
-    "cosine in radians"
-    x = adjust(x)
-    return expand_series(x, 1, -1)
+    '''cosine 
+
+    >>> cos(PI/2)
+    Decimal('-0')
+    >>> cos(PI/3)
+    Decimal('0.5')
+    >>> cos(0)
+    Decimal('1')
+    '''
+    return decimal.Decimal(math.cos(x)).quantize(one).normalize()
 
 def tan(x):
-    "tangent in radians"
-    x = adjust(x)
-    return expand_series(x, x, 1) / expand_series(x, 1, -1)
+    '''tangent
+    >>> tan(PI/4)
+    Decimal('1')
+    '''
+    return decimal.Decimal(math.tan(x)).quantize(one).normalize()
 
 def sind(x):
-    "sin in degrees"
-    return sin(x * PI / 180)
+    '''sin in degrees
+
+    >>> sind(0)
+    Decimal('0')
+    >>> sind(30)
+    Decimal('0.5')
+    >>> sind(90)
+    Decimal('1')
+    '''
+    return decimal.Decimal(math.sin(math.radians(x))).quantize(one).normalize()
 
 def cosd(x):
-    "cos in degrees"
-    return cos(x * PI / 180)
+    '''cosine in degrees
+
+    >>> cosd(90)
+    Decimal('0')
+    >>> cosd(60)
+    Decimal('0.5')
+    >>> cosd(0)
+    Decimal('1')
+    '''
+    return decimal.Decimal(math.cos(math.radians(x))).quantize(one).normalize()
 
 def tand(x):
     "tan in degrees"
-    return tan(x * PI / 180)
+    return decimal.Decimal(math.tan(math.radians(x))).quantize(one).normalize()
 
 def pyth_add(a, b):
     "Pythagorean addition"

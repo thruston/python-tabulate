@@ -348,7 +348,7 @@ a  b   c   d
         self.tab.do("arr a{dow(a)}")
         self.assertEqual("\n" + str(self.tab) + "\n",
 '''
-Date        dow
+Date        %a
 2011-01-17  Mon
 2011-02-23  Wed
 2011-03-19  Sat

@@ -34,6 +34,8 @@ def dow(sss, date_format="%a"):
     'Mon'
     >>> dow("1 January 2001", "%A")
     'Monday'
+    >>> dow("date")
+    '%a'
 
     You can actually use this to produce any strftime format...
 
@@ -44,7 +46,7 @@ def dow(sss, date_format="%a"):
     try:
         return parse_date(sss).strftime(date_format)
     except (TypeError, ValueError):
-        return "dow"
+        return date_format
 
 def base(sss=None):
     '''Get today's date as "base" number, or whatever date you give
@@ -60,6 +62,8 @@ def base(sss=None):
     0
     >>> datetime.date.today().toordinal() - base(-4) 
     4
+    >>> base('Date')
+    'base(Date)'
     '''
     if sss is None:
         return datetime.date.today().toordinal()
@@ -84,6 +88,14 @@ def date(ordinal=0):
     '5138-11-16T09:46:40'
     >>> date(100000000001)
     '1973-03-03T09:46:40.001000'
+    >>> date(10) == (datetime.date.today() + datetime.timedelta(days=10)).isoformat()
+    True
+    >>> date('ts')
+    'ts'
+    >>> date(-10000000000000000000000000) == date(0)
+    True
+    >>> date(-2000) == date(0)
+    True
     '''
     try:
         ordinal = int(ordinal)
@@ -92,14 +104,14 @@ def date(ordinal=0):
 
     if abs(ordinal) < 1000:
         dt = datetime.date.today() + datetime.timedelta(days=ordinal)
-    elif ordinal > 100000000000: # about 5000 AD as an epoch
+    elif ordinal > 100000000000: # about 5000 AD as an epoch, so assume epoch ms
         dt = datetime.datetime.utcfromtimestamp(ordinal / 1000)
-    elif ordinal > 3652059:  # max date
+    elif ordinal > datetime.date.max.toordinal():  # > max date, so assume epoch seconds
         dt = datetime.datetime.utcfromtimestamp(ordinal)
     else:
         try:
             dt = datetime.date.fromordinal(ordinal)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             dt = datetime.date.today()
 
     return dt.isoformat()
