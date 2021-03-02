@@ -392,7 +392,7 @@ class Table:
                 wanted = True  # default to keeping the row
             if wanted:
                 self.append(r)
-            elif i > 1:
+            elif i > 1 and i in self.extras:
                 self.extras.pop(i) # remove extras if line not wanted (unless we are at the top)
 
         if not self.data:
