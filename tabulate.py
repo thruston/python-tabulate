@@ -200,7 +200,7 @@ class Table:
             elif line == "\\noalign{\\vskip2pt\\hrule\\vskip4pt}":
                 self.add_rule()
             elif line.startswith('%'):
-                self.add_comment(line[1:].strip())
+                self.add_comment(line[1:].rstrip())
             else:
                 self.append(amp_pattern.split(line))
 
