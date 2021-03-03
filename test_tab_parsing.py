@@ -59,3 +59,14 @@ Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
         self.bat.add_blank(5)
         self.assertEqual(str(self.bat), self.expected)
 
+
+    def test_tex(self):
+        "parse TeX source"
+
+        self.tab.parse_tex('''This&3&4\\cr
+The other & 34 & 91 \\cr'''.splitlines())
+
+        self.assertEqual(str(self.tab), '''
+This        3   4
+The other  34  91'''.strip())
+

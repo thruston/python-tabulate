@@ -21,48 +21,57 @@ def t_sorted(*args, reverse=False):
     else:
         return tuple(sorted(it, reverse=reverse))
 
+def t_apply(*args, fun=all):
+    '''Apply fun allowing args to be separate or a tuple
+
+    >>> t_apply(0,1,0,1)
+    False
+    >>> t_apply((True, True, True))
+    True
+    >>> t_apply(0,1,0,1, fun=sum)
+    2
+    >>> t_apply((37, 73, 99), fun=sum)
+    209
+
+    '''
+    try:
+        it = iter(*args)
+    except TypeError:
+        return fun(args)
+    else:
+        return fun(it)
 
 def t_all(*args):
-    '''all allowing list of args or tuple'''  
-    try:
-        it = iter(*args)
-    except TypeError:
-        return all(args)
-    else:
-        return all(it)
+    '''
+    >>> t_all(0,1,1)
+    False
+    '''
+    return t_apply(args) 
 
 def t_any(*args):
-    '''any allowing list of args or tuple''' 
-    try:
-        it = iter(*args)
-    except TypeError:
-        return any(args)
-    else:
-        return any(it)
-
-def t_max(*args):
-    '''max allowing list of args or tuple'''
-    try:
-        it = iter(*args)
-    except TypeError:
-        return max(args)
-    else:
-        return max(it)
+    '''
+    >>> t_any(0,1,1)
+    True
+    '''
+    return t_apply(args, fun=any) 
 
 def t_min(*args):
-    '''min allowing list of args or tuple'''
-    try:
-        it = iter(*args)
-    except TypeError:
-        return min(args)
-    else:
-        return min(it)
+    '''
+    >>> t_min(0,1,1)
+    0
+    '''
+    return t_apply(args, fun=min) 
+
+def t_max(*args):
+    '''
+    >>> t_max(0,1,1)
+    1
+    '''
+    return t_apply(args, fun=max) 
 
 def t_sum(*args):
-    '''sum allowing list of args or tuple'''
-    try:
-        it = iter(*args)
-    except TypeError:
-        return sum(args)
-    else:
-        return sum(it)
+    '''
+    >>> t_sum(0,1,1)
+    2
+    '''
+    return t_apply(args, fun=sum) 

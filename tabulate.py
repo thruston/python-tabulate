@@ -1249,18 +1249,18 @@ if __name__ == "__main__":
         first_line = fh.readline().strip()
         fh.seek(0)
         # guess delim from content: csv , tex & latex & pipe |
-        if first_line.count(' ') == 0 and first_line.count(',') > 2:
+        if (first_line.count(' ') == 0 and first_line.count(',') > 2) or ('","' in first_line):
             table.parse_lol(csv.reader(fh))
 
-        elif first_line.count('&') > 2 and first_line.endswith("\\cr"):
+        elif first_line.count('&') > 0 and first_line.endswith("\\cr"):
             table.parse_tex(fh)
             table.do('make tex')
 
-        elif first_line.count('&') > 2 and first_line.endswith("\\\\"):
+        elif first_line.count('&') > 0 and first_line.endswith("\\\\"):
             table.parse_tex(fh)
             table.do('make latex')
 
-        elif first_line.count('|') > 3:
+        elif first_line.count('|') > 2:
             table.parse_lines(fh, splitter=re.compile(r'\s*\|\s*'))
 
         else:

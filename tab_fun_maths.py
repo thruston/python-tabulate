@@ -96,11 +96,25 @@ def cosd(x):
     return decimal.Decimal(math.cos(math.radians(x))).quantize(one).normalize()
 
 def tand(x):
-    "tan in degrees"
+    '''tan in degrees
+    >>> tand(90)
+    Decimal('Infinity')
+    >>> tand(45)
+    Decimal('1')
+    >>> tand(0)
+    Decimal('0')
+    '''
+    if x % 360 in (90, 270):
+        return decimal.Decimal('Inf')
+
     return decimal.Decimal(math.tan(math.radians(x))).quantize(one).normalize()
 
 def pyth_add(a, b):
-    "Pythagorean addition"
+    '''Pythagorean addition
+
+    >>> pyth_add(5, 12)
+    Decimal('13')
+    '''
     return (ONE * a * a + b * b).sqrt()
 
 def decimal_to_hex(d):
@@ -160,6 +174,8 @@ def si(amount):
     '10.000'
     >>> si('.2 k')
     Decimal('200.0')
+    >>> si('Heading')
+    'Heading'
 
     """
     sips = ' kMGTPE'
