@@ -141,3 +141,8 @@ The other  34   91
 ------------------
 Total      71  186
 '''.strip())
+
+    def test_nothing(self):
+        self.nulltab = tabulate.Table()
+        self.nulltab.parse_lines("")
+        self.assertEqual(str(self.nulltab), '')

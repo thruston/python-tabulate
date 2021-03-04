@@ -397,33 +397,6 @@ Mean  Mean  2  2
 '''.strip()
         self.assertEqual(str(self.tab), expected)
 
-    def test_normalize_and_tap(self):
-        "Test table wide processing..."
-        self.tab.parse_lines('''
-Exposure category     Lung cancer  No lung cancer
--------------------------------------------------
-Asbestos exposure               6              51
-No asbestos exposure           52             941
-'''.strip().splitlines())
-
-        self.tab.do("normalize dp 2")
-        expected = '''
-Exposure category     Lung cancer  No lung cancer
--------------------------------------------------
-Asbestos exposure            0.11            0.89
-No asbestos exposure         0.05            0.95
-'''.strip()
-        self.assertEqual(str(self.tab), expected)
-
-        self.tab.do("tap *100 dp 0")
-        expected = '''
-Exposure category     Lung cancer  No lung cancer
--------------------------------------------------
-Asbestos exposure              11              89
-No asbestos exposure            5              95
-'''.strip()
-        self.assertEqual(str(self.tab), expected)
-
     def test_nothing(self):
         some_lines = '''
 Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat  Sun  Total

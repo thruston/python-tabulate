@@ -132,7 +132,6 @@ class Table:
         self.operations = {
             'add': self._append_reduction,
             'arr': self._arrange_columns,
-            'cdiff': self._cumulative_differences,
             'ditto': self._copy_down,
             'dp': self._fix_decimal_places,
             'filter': self._select_matching_rows,
@@ -141,7 +140,6 @@ class Table:
             'help': self._describe_operations,
             'make': self._set_output_form,
             'label': self._label_columns,
-            'normalize': self._normalize_numeric_values,
             'nospace': self._remove_spaces_from_values,
             'noblanks': self._remove_blank_extras,
             'pivot': self._wrangle,
@@ -297,16 +295,16 @@ class Table:
 
             self.operations[op](' '.join(argument))
 
-    def _label_columns(self, names=None):
+    def _label_columns(self, names=''):
         "add some labels"
-
-        labels = list(string.ascii_lowercase) # make the string into a list
-
-        if names:
-            for i, name in enumerate(names.split()):
-                labels[i] = name
-
-        self.data.insert(0, labels[:self.cols])
+        # make list of pairs like so (word from names or None, letter)
+        # we can then "overlay" the names using the a or b construction
+        # below.  The point of doing this is to make sure that if the
+        # user only gives two names, the 3rd, 4th etc cols will still
+        # be labelled c, d, etc.  If you have more than 26 cols
+        # cols 27+ will get fillers instead of labels
+        pairs = itertools.zip_longest(names.split(), string.ascii_lowercase)
+        self.insert(0, list(a or b for a, b in pairs)[:self.cols])
 
     def column(self, i):
         "get a column from the table - zero indexed"
@@ -414,31 +412,16 @@ class Table:
         for i, row in enumerate(self.data):
             self.data[i] = [joiner.join(cell.split()) for cell in row]
 
-    def _cumulative_differences(self, start_col):
-        '''Insert cumulative differences between adjacent columns of numbers, starting at col x'''
-        if len(start_col) > 1:
-            return
-        identity = string.ascii_lowercase[:self.cols]
-
-        try:
-            k = identity.index(start_col) + 1
-        except ValueError:
-            k = 1
-
-        arrangement = identity[:k]
-        for c in identity[k:]:
-            arrangement += f'({arrangement[-1].upper()}-{c.upper()}){c}'
-
-        self._general_recalculation(self._get_expr_list(arrangement))
-
-
     def _apply_function_to_numeric_values(self, fstring):
         '''fstring should be a maths expression with an x, as x+1 or 2**x etc
         which is to be applied to each numeric value in the table. If there is
         no x in the expression, we add one to the front, so you can write things
         like "+1" or "/4" as fstrings....
         '''
-        if "x" not in fstring:
+        if not fstring:
+            return
+
+        if "x" not in fstring and fstring[0] in ('*', '/', '+', '-', '<', '>', '='):
             fstring = "x" + fstring
 
         try:
@@ -447,15 +430,32 @@ class Table:
             print('?', fstring)
             return
 
+        values = {
+            "x": 0,
+            "rows": len(self.data),
+            "cols": self.cols,
+            "total":  sum(as_decimal(x) for row in self.data for x in row),
+            "row_number": 0,
+            "col_number": 0,
+            "row_total": 0,
+            "col_total": 0,
+        }
+        col_totals = [sum(x[1] for x in self.column(i) if x[0]) for i in range(self.cols)]
+
         old_rows = self.data[:]
         self.data.clear()
         for i, row in enumerate(old_rows):
             new_row = []
+            values['row_number'] = i+1
+            values['row_total'] = sum(as_decimal(x) for x in row)
             for j, cell in enumerate(row):
                 is_numeric, old_value = is_as_decimal(cell)
                 if is_numeric:
+                    values['col_number'] = j+1
+                    values['col_total'] = col_totals[j]
+                    values['x'] = old_value
                     try:
-                        new_value = eval(cc, Panther, {"x": old_value, "rows": len(old_rows), "row_number": i+1, "cols": self.cols, "col_number": j+1})
+                        new_value = eval(cc, Panther, values)
                     except NameError:
                         new_row.append(old_value)
                     else:
@@ -467,34 +467,6 @@ class Table:
                 else:
                     new_row.append(cell)
             self.append(new_row)
-
-    def _normalize_numeric_values(self, dimension):
-        '''Adjust numeric values so that they sum to 1, by row or whole table'''
-        if "row".startswith(dimension.lower()): # default...
-            margin = 1
-        elif "table".startswith(dimension.lower()):
-            margin = 0
-        elif dimension == "1":
-            margin = 1
-        else:
-            margin = 0
-
-        if margin == 0:
-            zztot = sum(as_decimal(x) for row in self.data for x in row)
-
-        for i, row in enumerate(self.data):
-            if margin > 0:
-                zztot = sum(as_decimal(x) for x in row)
-            if zztot == 0:
-                continue
-            new_row = []
-            for cell in row:
-                is_numeric, x = is_as_decimal(cell)
-                if is_numeric:
-                    new_row.append(f'{x/zztot}')
-                else:
-                    new_row.append(cell)
-            self.data[i] = new_row[:]
 
     def _fix_decimal_places(self, dp_string):
         "Round all the numerical fields in each row"

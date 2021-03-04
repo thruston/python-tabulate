@@ -203,9 +203,8 @@ reinserted in the right places on output.
 If you do `help`, then tabulate will print "Try one of these:" followed by a list of
 all the defined verbs.  Like this:
 
-    Try one of these: add arr ditto dp filter gen group help label make
-    normalize nospace pivot pop roll rule sf shuffle sort tap uniq unwrap
-    unzip wrap xp zip
+    Try one of these: add arr ditto dp filter gen group help label make nospace
+    pivot pop roll rule sf shuffle sort tap uniq unwrap unzip wrap xp zip
 
 The following thematic tables summarize the ones you are likely to use most.
 Then they are all described in more detail below, in alphabetical order.
@@ -237,7 +236,6 @@ Decorate / adjust the whole table
 - [sf](#sf---round-numbers-to-given-significant-figures) - round numbers to n significant figures
 - [label](#label---add-alphabetic-labels-to-all-the-columns) - add alphabetic labels to all the columns
 - [make](#make---set-the-output-format) - set the output format
-- [normalize](#normalize---adjust-values-so-that-they-sum-to-one) - adjust values so that they sum to one
 - [nospace](#nospace---remove-spaces-from-cell-values) - remove spaces from cell values
 - [rule](#rule---add-a-rule) - add a rule
 - [tap](#tap---apply-a-function-to-each-numerical-value) - apply a function to each numerical value
@@ -649,52 +647,6 @@ use Table... Convert Text to Table...  using tabs as the column separator.
 
 
 
-### normalize - adjust values so that they sum to one
-
-    normalize [table]
-
-Given this table
-
-    Exposure category     Lung cancer  No lung cancer
-    -------------------------------------------------
-    Asbestos exposure               6              51
-    No asbestos exposure           52             941
-
-`normalize` produces this
-
-    Exposure category         Lung cancer  No lung cancer
-    -----------------------------------------------------
-    Asbestos exposure      0.105263157895  0.894736842105
-    No asbestos exposure  0.0523665659617  0.947633434038
-
-Each value has been divided by the row total so that each row now adds to 1.
-You can combine this with other functions to get percentages or neater values.
-For example, with the original table you could do `normalize tap *100 dp 1` to get
-
-    Exposure category     Lung cancer  No lung cancer
-    -------------------------------------------------
-    Asbestos exposure            10.5            89.5
-    No asbestos exposure          5.2            94.8
-
-If you want the whole table to add to 1 then do `normalize table`:
-
-    Exposure category          Lung cancer   No lung cancer
-    -------------------------------------------------------
-    Asbestos exposure     0.00571428571429  0.0485714285714
-    No asbestos exposure   0.0495238095238   0.896190476190
-
-If you want the columns to add to 1 then use `xp normalize xp`:
-
-    Exposure category        Lung cancer   No lung cancer
-    -----------------------------------------------------
-    Asbestos exposure     0.103448275862  0.0514112903226
-    No asbestos exposure  0.896551724138   0.948588709677
-
-(But note that `xp` gets rid of your rules, so I actually did that with
-`xp normalize xp rule 1`)
-
-
-
 ### nospace - remove spaces from cell values
 
     nospace [filler]
@@ -949,10 +901,36 @@ and then `tap log(x)` produces
     First     6.94119005507  6.92853781816
     Second    6.96413561242  6.97728134163
 
-If you omit `x` from your "x-expression", it will be added to the front, this
-means the default is to replace each cell by itself.  If your expression is not
-valid Python or includes undefined names, the cells will be unchanged.
+The default, if you omit the expression is to do nothing. If your expression
+starts with an operator like + shown above, but does not include `x` in it,
+then `x` will be assumed at the start.  If your expression is not valid Python
+or includes undefined names, the cells will be unchanged.
 
+Besides `x`, there are seven other variables available for your calculation:
+
+- `rows`, `row_number`, `row_total`
+- `cols`, `col_number`, `col_total`
+- `total`
+
+You can use these to normalize the values in the table, or calculate "expected" values
+for a chi-squared test.  So for example, starting with the first table above, `tap /total`
+will give you
+
+    Category          Type A          Type B
+    ----------------------------------------
+    First     0.183783783784  0.113513513514
+    Second    0.313513513514  0.389189189189
+
+which adds to 1, while `tap /row_total` will make all the rows add to 1, and `tap /col_total`
+will make all the columns add to 1.
+
+You can calculate the "expected" values, such as you might use in a chi-squared test, with
+`tap col_total*row_total/total dp 1`
+
+    Category  Type A  Type B
+    ------------------------
+    First       27.4    27.6
+    Second      64.6    65.4
 
 ### uniq - filter out duplicated rows
 
@@ -1014,7 +992,7 @@ becomes
 
 It's often useful in combination with verbs that operate on columns like `sort`
 or `add`.  So the sequence `xp add xp` will give you row totals, for example,
-while `xp normalize row xp` will normalize the table by columns.
+while `xp add xp add` will add totals in both dimensions.
 
 Running `xp` resets all the special rows (blanks, rules, comments), so the
 apparent no-op sequence `xp xp` is sometimes useful to clear all the specials.
