@@ -293,6 +293,8 @@ again.
 
     arr [arrange-expression]
 
+#### Simple permutations
+
 At it simplest `arr` lets you rearrange, duplicate, or delete columns.  So if you have a
 four column table then:
 
@@ -306,10 +308,12 @@ meaning `delete cols b and c and duplicate col d` won't work because `add` is a
 valid verb.  In this case (as similar ones) just put a pair of empty braces on
 the end, like so `arr add{}`.
 
-There are two shortcuts to save you typing lots of column letters:
+There are shortcuts to save you typing lots of column letters:
 
 - `arr ~a` will keep *all* the columns and then add a copy of the first one on the end.
 - `arr -b` will remove column `b` but keep all the others
+- `arr a..e` will keep only columns a, b, c, d, and e
+- `arr abyz` will keep the first two and the last two columns (for tables with up to 22 columns)
 
 If you are working in an editor, and  you want to do more complicated things
 with lots of columns, you might find it easier to transpose the table first
@@ -320,8 +324,7 @@ If you have trouble keeping track of which column is now (say) column `h`, then
 you might like to use the `label` verb to add alphabetic labels to the top each
 column before you start.
 
-Besides letters to identify column values you can use `?` to insert a random number,
-and `.` to insert the current row number and `;` to insert the total number of rows.
+Besides letters to identify column values you can use `?` to insert a random number.
 
 Note that you should use lower case letters only to refer to each column value.
 If you use an upper case letter, `A`, `B`, etc, it will be replaced by the
@@ -338,7 +341,16 @@ values in the column from the top of the table to the current row. So given
     Second  2  3
     Third   3  6
 
-You can also insert arbitrary calculated columns by putting an expression in curly braces or parentheses
+Finally note that while tabulate supports tables with as many columns as
+you like, the `arr` verb will only let you manipulate the first 26 because
+there are only 26 characters in `string.ascii_lowercase`.  If you need to
+manipulate more columns, you should transpose your table with `xp` and
+work on the rows.
+
+#### Rearrangement with calculated columns
+
+The `arr` verb also lets you insert arbitrary calculated columns by putting an
+expression in curly braces or parentheses:
 
 - `arr ab(a+b)` adds a new column that contains the sum of the values in the first two
 
@@ -350,6 +362,23 @@ and so on.  Each single letter `a`, `b`, etc is changed into the corresponding
 cell value and then the resulting expression is evaluated. You can use a subset of the
 normal built-in or `math` functions such as `log` and `sqrt`, as shown above.
 
+The access to Python3 is not entirely general, as it is only intended for
+simple manipulation of a few values, and therefore tabulate tries quite hard to
+prevent you accidentally loading the `sys` module and deleting your disk. Only
+the following names of functions are allowed in a calculation.
+
+- maths functions: abs cos cosd divmod exp hypot log log10 pow round sin sind sqrt tan tand
+- number conversion: bool chr hex int oct ord
+- maths constants: pi tau
+- list functions: all any max min sorted sum
+
+The list functions are enhanced so you can call them with a tuple or a list of
+arguments.  If a function returns more than one value (like `divmod`) the
+values will be inserted in separate columns. The others are the regular BIF or
+`math` functions except for the trig functions for angles in degrees.
+
+You can also use `format` and `f''` strings.
+
 Curly braces are only treated as parentheses at the top level (and this only for compatibility
 with the old Perl version of tabulate), so you can put them in normal Python expressions like
 
@@ -359,28 +388,27 @@ or
 
     arr ab(f"{c} {d}")
 
-which show how to concatenate two columns into one.
+which show how to concatenate two columns into one.  You can also include
+spaces in your formula as the argument to `arr` continues to the next verb or
+the end of the command line.
 
-You can also include spaces in your formula as the argument to `arr` continues
-to the next verb or the end of the command line.
-
-You can also use "?" in a formula to get a random number, but you can't use "."
-or ";" because it makes a mess of the parsing.  If you want the current row
-number or the total number of rows use the pre-defined variables `row_number`
-and `rows` in your formula. So with the simple table from above,
+You can also use "?" in a formula to get a random number.  If you want the
+current row number or the total number of rows use the pre-defined variables
+`row_number` and `rows` in your formula. So with the simple table from above,
 `arr ~(f'{row_number}/{rows}')` should produce this:
 
     First   1  1  1/3
     Second  2  3  2/3
     Third   3  6  3/3
 
-There are also some simple date routines included.  `base` returns the number
-of days since 1 Jan in the year 1 (assuming the Gregorian calendar extended
-backwards).  The argument should be blank for today, or some recognisable form
-of a date.  `date` does the opposite: given a number that represents the number
-of days since the year dot, it returns the date in `yyyy-mm-dd` form.  There's
-also `dow` which takes a date and returns the day of the week, as a three
-letter string.
+There are also some simple date routines included.
+- `base` returns the number of days since 1 Jan in the year 1 (assuming the
+  Gregorian calendar extended backwards).  The argument should be blank for
+  today, or some recognisable form of a date.
+- `date` does the opposite: given a number that represents the number of days
+  since the year dot, it returns the date in `yyyy-mm-dd` form.  There's also
+- `dow` which takes a date and returns the day of the week, as a three letter
+  string.
 
 So given a table with a column of dates, like this
 
@@ -442,11 +470,6 @@ libraries.
 There are also useful functions to convert HH:MM:SS to fractional hours,
 minutes or seconds.  `hms()` takes fractional hours and produces `hh:mm:ss`,
 while `hr`, `mins`, and `secs` go the other way.
-
-The access to Python3 is not entirely general, as it is only really intended
-for simple manipulation of a few values, and therefore tabulate tries quite
-hard to prevent you accidentally loading the `sys` module and deleting your
-disk.
 
 
 ### ditto - copy down from cell above

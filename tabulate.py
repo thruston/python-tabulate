@@ -20,6 +20,7 @@ import re
 import statistics
 import string
 import sys
+import textwrap
 import tokenize
 
 import tab_fun_dates
@@ -228,9 +229,15 @@ class Table:
         "Also like a list..."
         return len(self.data)
 
-    def _describe_operations(self, _):
+    def _describe_operations(self, dsl_verb=''):
         '''What commands are defined?'''
-        print('Try one of these: ' + ' '.join(sorted(self.operations)))
+        if dsl_verb.lower() == 'arr':
+            verbs = sorted(x for x in Panther if x[0] in string.ascii_lowercase)
+            msg = f'Functions for arr: {" ".join(verbs)}'
+        else:
+            msg = f'Try one of these: {" ".join(sorted(self.operations))}'
+        print(textwrap.fill(msg), file=sys.stderr)
+        print(file=sys.stderr)
 
     def clear(self):
         "Clear data etc"
@@ -296,6 +303,8 @@ class Table:
 
     def pop(self, n=None):
         "remove a row"
+        '''#TODO save popped rows on a stack
+        and allow them to be pushed back'''
 
         if n is None or n == '':
             return self.data.pop()
@@ -465,7 +474,7 @@ class Table:
 
     def _remove_spaces_from_values(self, joiner):
         '''Remove spaces from values -- this can make it easier to import into R'''
-        if joiner is None:
+        if not joiner:
             joiner = ''
         for i, row in enumerate(self.data):
             self.data[i] = [joiner.join(cell.split()) for cell in row]
@@ -744,7 +753,7 @@ class Table:
         or "long3" -- numbering from a=1
 
         '''
-        if shape is None or self.cols < 3:
+        if not shape or self.cols < 3:
             return
 
         pivot_function_for = {
@@ -910,7 +919,7 @@ class Table:
     def _arrange_columns(self, perm):
         '''Arrange the columns of the table
         '''
-        if perm is None:
+        if not perm:
             return
 
         # deletions...
@@ -997,7 +1006,7 @@ class Table:
         '''Find me an index, returns index + T/F to say if letter was upper case
         '''
 
-        if col_spec is None:
+        if not col_spec:
             col_spec = 'a'
 
         flag = False
@@ -1128,7 +1137,7 @@ class Table:
     def _add_grouping_blanks(self, col_spec):
         '''Add blanks to show groups in given column
         '''
-        if col_spec is None:
+        if not col_spec:
             col_spec = 'a'
 
         cols_to_check = []
@@ -1147,7 +1156,7 @@ class Table:
     def _roll_by_col(self, col_spec):
         '''Roll columns, up, or down
         '''
-        if col_spec is None:
+        if not col_spec:
             self.data.insert(0, self.data.pop())
         else:
             self.data = list(map(list, zip(*self.data)))
