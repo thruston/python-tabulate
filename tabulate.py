@@ -67,6 +67,37 @@ Panther = {
     '__builtins__': {},
 }
 
+
+def decomma(sss):
+    '''Remove thousand separators, with care...
+    TODO: what about 1,234.56 ?
+    
+    >>> decomma("This is not, a number")
+    'This is not, a number'
+    >>> decomma("12,4")
+    '12,4'
+    >>> decomma("1,342,771,511")
+    '1_342_771_511'
+    >>> decomma("771,511")
+    '771_511'
+    >>> decomma("37")
+    '37'
+    >>> decomma(42)
+    '42'
+    >>> decomma('')
+    ''
+    '''
+    try:
+        t = str(sss)
+    except TypeError:
+        return sss
+    
+    has_commas = list(t[i] == ',' for i in range(-4, -len(t), -4))
+    if has_commas and all(has_commas): # because all([])==True
+        return t.replace(',', '_')
+
+    return t
+
 def is_as_decimal(sss):
     '''Is this a decimal, and if so what is the value?
 
@@ -117,6 +148,33 @@ def _decimalize(expr):
             out.append((tn, tv))
 
     return tokenize.untokenize(out)
+
+def _replace_values(failed_expression, known_variables):
+    '''replace the variables that we know about in the expression
+
+    >>> _replace_values('sin(a)', {'a': 'angle'})
+    'sin(angle)'
+    >>> _replace_values("a/x", {'a': 'count', 'x': 'hide_this'})
+    'count/hide_this'
+    >>> _replace_values("f'{a}'", {'a': 'count', 'x': 'hide_this'})
+    "f'{count}'"
+    >>> _replace_values("f'{a:x}'", {'a': 'count', 'x': 'hide_this'})
+    "f'{count:x}'"
+    >>> _replace_values("f'{a:#b}'", {'a': 'count', 'x': 'hide_this'})
+    "f'{count:#b}'"
+    '''
+
+    for k, v in known_variables.items():  # try not to sub format types
+        failed_expression = re.sub(rf'(?<![:#^0-9_,]){k}\b', str(v), failed_expression)
+
+    if failed_expression[0] == '(' and failed_expression[-1] == ')':
+        failed_expression = failed_expression[1:-1]
+
+    if failed_expression.endswith('+0'):
+        failed_expression = failed_expression[:-2]
+
+    return failed_expression
+
 
 class Table:
     '''A class to hold a table -- and some functions thereon'''
@@ -263,7 +321,7 @@ class Table:
             self.cols = n
 
         # they should all be strings, and normalize space in last column...
-        self.data.insert(i, [str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
+        self.data.insert(i, [decomma(x) for x in row[:-1]] + [' '.join(decomma(row[-1]).split())])
 
     def copy(self):
         "Implement the standard copy method"
@@ -444,6 +502,7 @@ class Table:
 
         old_rows = self.data[:]
         self.data.clear()
+        errors = set()
         for i, row in enumerate(old_rows):
             new_row = []
             values['row_number'] = i+1
@@ -456,7 +515,8 @@ class Table:
                     values['x'] = old_value
                     try:
                         new_value = eval(cc, Panther, values)
-                    except NameError:
+                    except (NameError, ValueError) as e:
+                        errors.add(fstring + '->' + repr(e))
                         new_row.append(old_value)
                     else:
                         if isinstance(new_value, tuple):
@@ -467,6 +527,8 @@ class Table:
                 else:
                     new_row.append(cell)
             self.append(new_row)
+        if errors:
+            print('?', ';'.join(sorted(errors)))
 
     def _fix_decimal_places(self, dp_string):
         "Round all the numerical fields in each row"
@@ -759,20 +821,20 @@ class Table:
         ['a', 'b', 'c', 'e']
         >>> t._get_expr_list("abc(2+2)e")
         ['a', 'b', 'c', '(2+2)', 'e']
-        >>> t._get_expr_list("abc(2+2**(4+5))e")
-        ['a', 'b', 'c', '(2+2**(4+5))', 'e']
+        >>> t._get_expr_list("abc(2+2**(4+3.5))e")
+        ['a', 'b', 'c', '(2+2**(4+3.5))', 'e']
         >>> # allow missing trailing parens
         >>> t._get_expr_list("abc(2+2")
         ['a', 'b', 'c', '(2+2)']
-        >>> t._get_expr_list("a:e")
+        >>> t._get_expr_list("a..e")
         ['a', 'b', 'c', 'd', 'e']
-        >>> t._get_expr_list("a:E")
+        >>> t._get_expr_list("a..E")
         ['a', 'E']
-        >>> t._get_expr_list("a:Z")
+        >>> t._get_expr_list("a..Z")
         ['a', 'H']
-        >>> t._get_expr_list("e:a")
+        >>> t._get_expr_list("e..a")
         ['e', 'd', 'c', 'b', 'a']
-        >>> t._get_expr_list("a:z")
+        >>> t._get_expr_list("a..z")
         ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
         >>> t._get_expr_list("~z")
         ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'h']
@@ -782,7 +844,7 @@ class Table:
         ['h']
         >>> t._get_expr_list("~(d/e)")
         ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '(d/e)']
-        >>> t._get_expr_list("(a:c/2)")
+        >>> t._get_expr_list("(a..c/2)")
         ['(a/2)', '(b/2)', '(c/2)']
         '''
         identity = string.ascii_lowercase[:self.cols]
@@ -813,20 +875,13 @@ class Table:
             else:
                 r = range(a, b+1)
 
-            return ''.join(['(' + prefix + chr(x) + suffix + ')' for x in r])
+            return ''.join([prefix + chr(x) + suffix for x in r])
 
-        given = re.sub(r'\((.*?[^a-z])?([a-z]):([a-z])([^a-z].*?)?\)', replicate, given)
+        given = re.sub(r'(.*?[^a-z])?([a-z])\.\.([a-z])([^a-z].*)?', replicate, given)
 
         for c in given:
             if in_parens == 0:
-                if c.lower() in identity + '?;.':
-                    if last == ':' and out[-1] in identity and c in identity:
-                        a = ord(out[-1])
-                        b = ord(c)
-                        if a < b:
-                            out.extend([chr(x) for x in range(a+1, b)])
-                        elif a > b:
-                            out.extend([chr(x) for x in range(a-1, b, -1)])
+                if c.lower() in identity + '?':
                     out.append(c)
                 elif c in '({':
                     in_parens = 1
@@ -892,27 +947,9 @@ class Table:
         self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
         self.cols = len(perm) # perm can delete and/or add columns
 
-
     def _general_recalculation(self, desiderata):
         '''Do some (decimal) arithmetic on each row...
         '''
-
-        def _replace_values(failed_expression, known_variables):
-            '''replace the variables that we know about in the expression
-
-            >>> _replace_values('sin(a)', {'a': 0.5})
-            'sin(0.5)'
-            '''
-            for k, v in known_variables.items():
-                failed_expression = re.sub(rf'\b{k}\b', str(v), failed_expression)
-
-            if failed_expression[0] == '(' and failed_expression[-1] == ')':
-                failed_expression = failed_expression[1:-1]
-
-            if failed_expression.endswith('+0'):
-                failed_expression = failed_expression[:-2]
-
-            return failed_expression
 
         identity = string.ascii_lowercase[:self.cols]
         # make it into a list tuples
