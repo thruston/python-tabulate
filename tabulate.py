@@ -3,6 +3,10 @@
 
 A module to line up text tables.
 Toby Thurston -- 19 Feb 2021
+
+TODO
+- allow sort to take function same as filter...
+
 '''
 
 # pylint: disable=C0103, C0301
@@ -37,6 +41,7 @@ Panther = {
     'hex': tab_fun_maths.decimal_to_hex,
     'oct': tab_fun_maths.decimal_to_oct,
     'int': int,
+    'len': len,
     'ord': ord,
     'pow': pow,
     'round': round,
@@ -64,58 +69,71 @@ Panther = {
     'log': lambda x: decimal.Decimal(x).ln(),
     'log10': lambda x: decimal.Decimal(x).log10(),
     'sqrt': lambda x: decimal.Decimal(x).sqrt(),
+    'reversed': lambda x: ''.join(reversed(x)),
     'Decimal': decimal.Decimal,
     '__builtins__': {},
 }
 
 
-def decomma(sss):
-    '''Remove thousand separators, with care...
-    TODO: what about 1,234.56 ?
-    
-    >>> decomma("This is not, a number")
-    'This is not, a number'
-    >>> decomma("12,4")
-    '12,4'
-    >>> decomma("1,342,771,511")
-    '1_342_771_511'
-    >>> decomma("771,511")
-    '771_511'
-    >>> decomma("37")
-    '37'
-    >>> decomma(42)
-    '42'
-    >>> decomma('')
-    ''
-    '''
-    try:
-        t = str(sss)
-    except TypeError:
-        return sss
-    
-    has_commas = list(t[i] == ',' for i in range(-4, -len(t), -4))
-    if has_commas and all(has_commas): # because all([])==True
-        return t.replace(',', '_')
 
-    return t
 
-def is_as_decimal(sss):
-    '''Is this a decimal, and if so what is the value?
-
-    >>> is_as_decimal('')
+def is_as_number(sss):
+    '''Input (string) Output (boolean, any)
+    if boolean is True, any is int or Decimal
+    else any is string
+    >>> is_as_number('')
     (False, '')
-    >>> is_as_decimal("Label")
+    >>> is_as_number("Label")
     (False, 'Label')
-    >>> is_as_decimal("3.14")
+    >>> is_as_number("3.14")
     (True, Decimal('3.14'))
-    >>> is_as_decimal('0')
+    >>> is_as_number('0')
     (True, Decimal('0'))
+    >>> is_as_number('0x4F')
+    (True, Decimal('79'))
+    >>> is_as_number('0x40.0')
+    (False, '0x40.0')
+    >>> is_as_number('1,234,567')
+    (True, Decimal('1234567'))
+    >>> is_as_number('43%')
+    (True, Decimal('0.43'))
+    >>> is_as_number('-')
+    (False, '-')
+    >>> is_as_number('-902')
+    (True, Decimal('-902'))
+    >>> is_as_number('£34.00')
+    (True, Decimal('34.00'))
     '''
-    try:
-        return (True, decimal.Decimal(sss))
-    except decimal.InvalidOperation:
+    digits = '1234567890'
+    ignore = '£$,_'
+    signs = '+-'
+    point = '.'
+    alphabetics = 'xoabcdef'
+    suffix = '%'
+
+    if not all((c in digits + point + signs + ignore + alphabetics + suffix) for c in sss.lower()):
         return (False, sss)
 
+    if not any((c in digits) for c in sss):
+        return (False, sss)
+
+    trial_number = ''.join(c for c in sss.lower() if c in digits + point + signs + alphabetics + suffix)
+
+    try:
+        return (True, decimal.Decimal(int(trial_number, 0)))
+    except (ValueError, SyntaxError):
+        pass
+
+    try:
+        if trial_number.endswith('%'):
+            return (True, decimal.Decimal(trial_number[:-1])/100)
+        else:
+            return (True, decimal.Decimal(trial_number))
+    except ArithmeticError:
+        pass
+
+    return (False, sss)
+    
 def as_decimal(n, na_value=decimal.Decimal('0')):
     "Make this a decimal"
     try:
@@ -123,14 +141,14 @@ def as_decimal(n, na_value=decimal.Decimal('0')):
     except decimal.InvalidOperation:
         return na_value
 
-def _decimalize(expr):
-    '''This loop through the expression does several useful things.
+def _compile_as_decimal(expr):
+    '''This function takes as expression give as an argument to
+    one of the verbs like arr or filter or sort or tap, and compiles
+    it so that we can execute it more efficiently.
+    Two little bits of syntactic sugar are applied to the expression:
     First we make all tokens that look like floats (NUMBER and
     contains '.') into Decimals, so that we avoid the normal FP accuracy &
     rounding issues.  Second we translate '?' into a (decimal) random number.
-    Other special characters could be handled here in the same way.  The
-    decimal technique is borrowed from the example in the docs for the Decimal
-    module.
 
     '''
     out = []
@@ -148,7 +166,13 @@ def _decimalize(expr):
         else:
             out.append((tn, tv))
 
-    return tokenize.untokenize(out)
+    try:
+        cc = compile(tokenize.untokenize(out), "<string>", 'eval')
+    except (SyntaxError, ValueError):
+        print('?', expr)
+        return None
+    else:
+        return cc
 
 def _replace_values(failed_expression, known_variables):
     '''replace the variables that we know about in the expression
@@ -188,6 +212,7 @@ class Table:
         self.indent = 0
         self.extras = collections.defaultdict(set)
         self.form = 'plain'
+        self.format_spec = None
         self.operations = {
             'add': self._append_reduction,
             'arr': self._arrange_columns,
@@ -302,7 +327,6 @@ class Table:
                 self.append(r, filler)
 
     def pop(self, n=None):
-        "remove a row"
         '''#TODO save popped rows on a stack
         and allow them to be pushed back'''
 
@@ -330,7 +354,7 @@ class Table:
             self.cols = n
 
         # they should all be strings, and normalize space in last column...
-        self.data.insert(i, [decomma(x) for x in row[:-1]] + [' '.join(decomma(row[-1]).split())])
+        self.data.insert(i, [str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
 
     def copy(self):
         "Implement the standard copy method"
@@ -376,7 +400,7 @@ class Table:
     def column(self, i):
         "get a column from the table - zero indexed"
         try:
-            return [is_as_decimal(r[i]) for r in self.data]
+            return [is_as_number(r[i]) for r in self.data]
         except IndexError:
             return []
 
@@ -428,10 +452,8 @@ class Table:
         if not expression:
             return
 
-        try:
-            cc = compile(_decimalize(expression), "<string>", 'eval')
-        except SyntaxError:
-            print('?', expression)
+        cc = _compile_as_decimal(expression)
+        if cc is None:
             return
 
         old_data = self.data[:]
@@ -491,10 +513,8 @@ class Table:
         if "x" not in fstring and fstring[0] in ('*', '/', '+', '-', '<', '>', '='):
             fstring = "x" + fstring
 
-        try:
-            cc = compile(_decimalize(fstring), "<string>", 'eval')
-        except SyntaxError:
-            print('?', fstring)
+        cc = _compile_as_decimal(fstring)
+        if cc is None:
             return
 
         values = {
@@ -517,24 +537,25 @@ class Table:
             values['row_number'] = i+1
             values['row_total'] = sum(as_decimal(x) for x in row)
             for j, cell in enumerate(row):
-                is_numeric, old_value = is_as_decimal(cell)
-                if is_numeric:
-                    values['col_number'] = j+1
-                    values['col_total'] = col_totals[j]
-                    values['x'] = old_value
-                    try:
-                        new_value = eval(cc, Panther, values)
-                    except (NameError, ValueError) as e:
-                        errors.add(fstring + '->' + repr(e))
-                        new_row.append(old_value)
-                    else:
-                        if isinstance(new_value, tuple):
-                            new_row.extend(new_value)
-                        else:
-                            #new_row.append('{:f}'.format(new_value)) # get rid of any E formats...
-                            new_row.append(new_value)
-                else:
+                flag, old_value = is_as_number(cell)
+                if not flag:
                     new_row.append(cell)
+                    continue 
+
+                values['col_number'] = j+1
+                values['col_total'] = col_totals[j]
+                values['x'] = old_value
+                try:
+                    new_value = eval(cc, Panther, values)
+                except (NameError, ValueError) as e:
+                    errors.add(fstring + '->' + repr(e))
+                    new_row.append(old_value)
+                else:
+                    if isinstance(new_value, tuple):
+                        new_row.extend(new_value)
+                    else:
+                        new_row.append(new_value)
+
             self.append(new_row)
         if errors:
             print('?', ';'.join(sorted(errors)))
@@ -870,7 +891,7 @@ class Table:
                 given = given.replace(a.upper(), b.upper())
 
         # this is a kuldge to attempt to support ranges in calcs...
-        def replicate(mob):
+        def _replicate(mob):
             '''replicate the string from the mob'''
             prefix, a, b, suffix = mob.groups()
             if prefix is None:
@@ -886,7 +907,7 @@ class Table:
 
             return ''.join([prefix + chr(x) + suffix for x in r])
 
-        given = re.sub(r'(.*?[^a-z])?([a-z])\.\.([a-z])([^a-z].*)?', replicate, given)
+        given = re.sub(r'(.*?[^a-z])?([a-z])\.\.([a-z])([^a-z].*)?', _replicate, given)
 
         for c in given:
             if in_parens == 0:
@@ -930,18 +951,11 @@ class Table:
                 self.cols = len(self.data[0])
             return
 
+        perm = self._get_expr_list(perm)
+
         identity = string.ascii_lowercase[:self.cols]
         specials = '.?;'
 
-        perm = self._get_expr_list(perm)
-
-        if all(x in identity + specials for x in perm):
-            self._simple_rearrangement(perm)
-        else:
-            self._general_recalculation(perm)
-
-    def _simple_rearrangement(self, perm):
-        '''Just rearrange the columns... '''
         def _get_value(c, line_number, row):
             '''Find a suitable value given the perm character and a row of data
             '''
@@ -953,16 +967,15 @@ class Table:
                 return str(len(self.data))
             return row[ord(c) - ord('a')]
 
-        self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
-        self.cols = len(perm) # perm can delete and/or add columns
+        if all(x in identity + specials for x in perm):
+            self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
+            self.cols = len(perm) # perm can delete and/or add columns
+            return
 
-    def _general_recalculation(self, desiderata):
-        '''Do some (decimal) arithmetic on each row...
-        '''
-
-        identity = string.ascii_lowercase[:self.cols]
         # make it into a list tuples
-        desiderata = list((compile(_decimalize(x), "<string>", 'eval'), x) for x in desiderata)
+        desiderata = list((_compile_as_decimal(x), x) for x in perm)
+        if any(x[0] is None for x in desiderata):
+            return
 
         old_data = self.data.copy()
         self.data.clear()
@@ -974,11 +987,9 @@ class Table:
 
         for row_number, r in enumerate(old_data):
             for k, v in zip(identity, r):
-                try:
-                    value_dict[k] = int(v) if v.isdigit() else decimal.Decimal(v)
+                flag, value_dict[k] = is_as_number(v)
+                if flag:
                     value_dict[k.upper()] += value_dict[k]
-                except decimal.InvalidOperation:
-                    value_dict[k] = v
 
             # allow xyz to refer to cells counted from the end...
             for j, k in zip("zyxw", reversed(identity)):
