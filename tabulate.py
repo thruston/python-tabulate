@@ -75,7 +75,56 @@ Panther = {
 }
 
 
+def as_numeric_tuple(x, backwards=False):
+    '''return something for sort to work with
+    >>> as_numeric_tuple("a")
+    (-1000000000000.0, 'A')
 
+    >>> as_numeric_tuple("a", True)
+    (1000000000000.0, 'A')
+
+    >>> as_numeric_tuple(None)
+    (1000000000000.0, '')
+
+    >>> as_numeric_tuple("3.14")
+    (3.14, '3.14')
+
+    >>> as_numeric_tuple("2020-05-01")
+    (1588287600, '2020-05-01')
+
+    >>> as_numeric_tuple("2 May 2020")
+    (1588374000, '2 MAY 2020')
+
+    >>> as_numeric_tuple("A19")
+    (-1000000000000.0, 'A000000000000019')
+    '''
+
+    alpha, omega = -1e12, 1e12
+    if backwards:
+        alpha, omega = omega, alpha
+
+    if x is None:
+        return (omega, '') # put it at the bottom
+
+    x = x.upper()
+
+    try:
+        return (float(x), x)
+    except ValueError:
+        pass
+
+    try:
+        return (int(tab_fun_dates.parse_date(x).strftime("%s")), x)
+    except ValueError:
+        pass
+
+    # pad trailing numbers with zeros
+    # Make A1, A2, A10 etc sortable...
+    m = re.match(r'(.*\D)(\d+)\Z', x)
+    if m is not None:
+        return (alpha, m.group(1) + m.group(2).zfill(15))
+
+    return (alpha, x)
 
 def is_as_number(sss):
     '''Input (string) Output (boolean, any)
@@ -127,13 +176,12 @@ def is_as_number(sss):
     try:
         if trial_number.endswith('%'):
             return (True, decimal.Decimal(trial_number[:-1])/100)
-        else:
-            return (True, decimal.Decimal(trial_number))
+        return (True, decimal.Decimal(trial_number))
     except ArithmeticError:
         pass
 
     return (False, sss)
-    
+
 def as_decimal(n, na_value=decimal.Decimal('0')):
     "Make this a decimal"
     try:
@@ -467,11 +515,9 @@ class Table:
         for i, r in enumerate(old_data):
             value_dict['row_number'] = i + 1
             for k, v in zip(identity, r):
-                try:
-                    value_dict[k] = int(v) if v.isdigit() else decimal.Decimal(v)
+                flag, value_dict[k] = is_as_number(v)
+                if flag:
                     value_dict[k.upper()] += value_dict[k]
-                except decimal.InvalidOperation:
-                    value_dict[k] = v
 
             try:
                 wanted = eval(cc, Panther, value_dict)
@@ -540,7 +586,7 @@ class Table:
                 flag, old_value = is_as_number(cell)
                 if not flag:
                     new_row.append(cell)
-                    continue 
+                    continue
 
                 values['col_number'] = j+1
                 values['col_total'] = col_totals[j]
@@ -881,7 +927,6 @@ class Table:
         in_parens = 0
         out = []
         expr = []
-        last = ''
 
         # Allow counting from the right (but only xxyz)
         # only for simple_rearrangement here -- this shold probably refactor to there...
@@ -920,7 +965,6 @@ class Table:
                     out.extend(x for x in identity)
                 else:
                     pass # ignore anything else outside parens
-                last = c
             else:
                 if c == '}' and in_parens == 1: # allow } as ) at top level
                     c = ')'
@@ -1057,56 +1101,10 @@ class Table:
         groups are done right to left...
 
         '''
-        def _as_numeric_tuple(x, backwards=False):
-            '''return something for sort to work with
-            >>> _as_numeric_tuple("a")
-            (-1000000000000.0, 'A')
 
-            >>> _as_numeric_tuple("a", True)
-            (1000000000000.0, 'A')
-
-            >>> _as_numeric_tuple(None)
-            (1000000000000.0, '')
-
-            >>> _as_numeric_tuple("3.14")
-            (3.14, '3.14')
-
-            >>> _as_numeric_tuple("2020-05-01")
-            (1588287600, '2020-05-01')
-
-            >>> _as_numeric_tuple("2 May 2020")
-            (1588374000, '2 MAY 2020')
-
-            >>> _as_numeric_tuple("A19")
-            (-1000000000000.0, 'A000000000000019')
-            '''
-
-            alpha, omega = -1e12, 1e12
-            if backwards:
-                alpha, omega = omega, alpha
-
-            if x is None:
-                return (omega, '') # put it at the bottom
-
-            x = x.upper()
-
-            try:
-                return (float(x), x)
-            except ValueError:
-                pass
-
-            try:
-                return (int(tab_fun_dates.parse_date(x).strftime("%s")), x)
-            except ValueError:
-                pass
-
-            # pad trailing numbers with zeros
-            # Make A1, A2, A10 etc sortable...
-            m = re.match(r'(.*\D)(\d+)\Z', x)
-            if m is not None:
-                return (alpha, m.group(1) + m.group(2).zfill(15))
-
-            return (alpha, x)
+        if any(x in col_spec for x in '(=+-*/'):
+            self.do(f"arr ({col_spec})~ sort a arr -a")
+            return
 
         identity = string.ascii_lowercase[:self.cols]
         if not col_spec:
@@ -1119,10 +1117,10 @@ class Table:
                 c, want_reverse = self._fancy_col_index(col)
                 if c is None:
                     continue
-                self.data.sort(key=lambda row: _as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
+                self.data.sort(key=lambda row: as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
         else:
             if -self.cols <= i < self.cols:
-                self.data.sort(key=lambda row: _as_numeric_tuple(row[i], False))
+                self.data.sort(key=lambda row: as_numeric_tuple(row[i], False))
 
     def _remove_duplicates_by_col(self, col_spec):
         '''like uniq, remove row if key cols match the row above
