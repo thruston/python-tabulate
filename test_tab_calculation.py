@@ -163,3 +163,23 @@ No asbestos exposure        0.025           0.475
 '''.strip()
         self.assertEqual(str(self.tab), expected)
 
+    def test_mistakes(self):
+        "Test capture of errors"
+        sample = '''
+a   1   2   3   4
+b   5   6   7   8
+c   9  10  11  12
+d  13  14  15  16
+'''.strip()
+        self.tab.parse_lines(sample.splitlines())
+        self.tab.do("tap")
+        self.assertEqual(str(self.tab), sample)
+        self.tab.do("arr")
+        self.assertEqual(str(self.tab), sample)
+        self.tab.do("filter")
+        self.assertEqual(str(self.tab), sample)
+
+        self.tab.do("arr ~(2..3)")
+        self.assertEqual(str(self.tab), '?! (2..3)\n' + sample)
+
+

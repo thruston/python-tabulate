@@ -204,7 +204,7 @@ If you do `help`, then tabulate will print "Try one of these:" followed by a lis
 all the defined verbs.  Like this:
 
     Try one of these: add arr ditto dp filter gen group help label make nospace
-    pivot pop roll rule sf shuffle sort tap uniq unwrap unzip wrap xp zip
+    pivot pop push roll rule sf shuffle sort tap uniq unwrap unzip wrap xp zip
 
 The following thematic tables summarize the ones you are likely to use most.
 Then they are all described in more detail below, in alphabetical order.
@@ -228,6 +228,7 @@ Rearrange or filter the rows
 - [ditto](#ditto---copy-down-from-cell-above) - copy down from cell above
 - [gen](#gen---generate-new-rows) - generate new rows
 - [pop](#pop---remove-a-row) - remove a row, by default the last
+- [push](#push---restore-a-row) - put back the last row popped
 
 Decorate / adjust the whole table
 
@@ -775,24 +776,47 @@ row directly instead of use this command, but it is handy in certain idioms.
 For example, to update a total row that you have created with `add` you can use
 `pop add` so that the old total is removed and then replaced with a new one.
 
+### push - restore a row
+
+    push [i]
+
+Any rows removed with `pop` are temporarily stored in each table object, and you
+can put them back with `push`.  You can use this to move a row about, or to temporarily
+exclude a row from some other operation.  So if you would like to keep your total row
+at the bottom when you sort the table in reverse, you could do (say):
+
+    pop sort A push
+
+This removes the last row temporarily, sorts the table on column a in reverse, then
+puts the last row back again.   Or again, if your header row does not automagically stay
+at the top when you sort the table you can do
+
+    pop 0 sort push 0
+
 ### roll - roll the values in one or more colum
 
     roll [col-list]
 
-Roll like the stack on an HP RPN calculator.  So with the shuffled table above, `roll b`
-would produce this:
+Roll like the stack on an HP RPN calculator.  So with a random table like this
 
-     5  11   4   9
-    13   7   3   8
-    15   2   6  16
-    12   1  10  14
+     9   6  2   1
+     8  14  3  15
+     7  10  5  12
+    16  11  4  13
 
-Upper case letters roll up, so `roll B` would have produced
+the DSL `roll d` will produce the following
 
-     5   2   4   9
-    13   1   3   8
-    15  11   6  16
-    12   7  10  14
+     9   6  2  13
+     8  14  3   1
+     7  10  5  15
+    16  11  4  12
+
+Upper case letters roll up, so `roll DD` will now produce
+
+     9   6  2  15
+     8  14  3  12
+     7  10  5  13
+    16  11  4   1
 
 As with `sort` you can string column letters together.
 
@@ -816,7 +840,6 @@ You can find that with `arr abb roll c arr ab(b-c)` to get:
 
 The negative number at the top shows you the difference between
 the last and the first. (And hence the new column sums to zero).
-
 
 
 ### rule - add a rule

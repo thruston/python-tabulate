@@ -189,7 +189,7 @@ def as_decimal(n, na_value=decimal.Decimal('0')):
     except decimal.InvalidOperation:
         return na_value
 
-def _compile_as_decimal(expr):
+def compile_as_decimal(expr):
     '''This function takes as expression give as an argument to
     one of the verbs like arr or filter or sort or tap, and compiles
     it so that we can execute it more efficiently.
@@ -217,10 +217,9 @@ def _compile_as_decimal(expr):
     try:
         cc = compile(tokenize.untokenize(out), "<string>", 'eval')
     except (SyntaxError, ValueError):
-        print('?', expr)
-        return None
+        return (False, '?! ' +  expr)
     else:
-        return cc
+        return (True, cc)
 
 def _replace_values(failed_expression, known_variables):
     '''replace the variables that we know about in the expression
@@ -229,13 +228,23 @@ def _replace_values(failed_expression, known_variables):
     'sin(angle)'
     >>> _replace_values("a/x", {'a': 'count', 'x': 'hide_this'})
     'count/hide_this'
-    >>> _replace_values("f'{a}'", {'a': 'count', 'x': 'hide_this'})
+    >>> _replace_values("a*3+0", {'a': 'count', 'x': 'hide_this'})
+    'count*3'
+    >>> _replace_values("(a/x)", {'a': 'count', 'x': 'hide_this'})
+    'count/hide_this'
+    >>> _replace_values("f'{a}'", {'a': 'count', 'x': 'hide_this', 'f': 'and this'})
     "f'{count}'"
-    >>> _replace_values("f'{a:x}'", {'a': 'count', 'x': 'hide_this'})
+    >>> _replace_values("f'{a:x}'", {'a': 'count', 'x': 'hide_this', 'f': 'and this'})
     "f'{count:x}'"
-    >>> _replace_values("f'{a:#b}'", {'a': 'count', 'x': 'hide_this'})
+    >>> _replace_values("f'{a:#b}'", {'a': 'count', 'b': 'hide_this', 'f': 'and this'})
     "f'{count:#b}'"
     '''
+
+    if failed_expression.startswith("f'") or failed_expression.startswith('f"') :
+        prefix = 'f'
+        failed_expression = failed_expression[1:]
+    else:
+        prefix = ''
 
     for k, v in known_variables.items():  # try not to sub format types
         failed_expression = re.sub(rf'(?<![:#^0-9_,]){k}\b', str(v), failed_expression)
@@ -246,7 +255,7 @@ def _replace_values(failed_expression, known_variables):
     if failed_expression.endswith('+0'):
         failed_expression = failed_expression[:-2]
 
-    return failed_expression
+    return prefix + failed_expression
 
 
 class Table:
@@ -261,6 +270,8 @@ class Table:
         self.extras = collections.defaultdict(set)
         self.form = 'plain'
         self.format_spec = None
+        self.messages = []
+        self.stack = [] # used to cache popped items
         self.operations = {
             'add': self._append_reduction,
             'arr': self._arrange_columns,
@@ -276,6 +287,7 @@ class Table:
             'noblanks': self._remove_blank_extras,
             'pivot': self._wrangle,
             'pop': self.pop,
+            'push': self.push,
             'roll': self._roll_by_col,
             'rule': self.add_rule,
             'tap': self._apply_function_to_numeric_values,
@@ -292,7 +304,10 @@ class Table:
 
     def __str__(self):
         "Print neatly"
-        return "\n".join(self.tabulate())
+
+        out = self.messages + list(self.tabulate())
+        self.messages.clear()
+        return "\n".join(out)
 
     def __getitem__(self, i):
         "Like a list..."
@@ -309,8 +324,7 @@ class Table:
             msg = f'Functions for arr: {" ".join(verbs)}'
         else:
             msg = f'Try one of these: {" ".join(sorted(self.operations))}'
-        print(textwrap.fill(msg), file=sys.stderr)
-        print(file=sys.stderr)
+        self.messages.extend(textwrap.wrap(msg))
 
     def clear(self):
         "Clear data etc"
@@ -375,16 +389,36 @@ class Table:
                 self.append(r, filler)
 
     def pop(self, n=None):
-        '''#TODO save popped rows on a stack
+        '''Remove an entire row, saving it in case we want it later
         and allow them to be pushed back'''
 
         if n is None or n == '':
-            return self.data.pop()
+            r = self.data.pop()
+        else:
+            try:
+                r = self.data.pop(int(n))
+            except (IndexError, ValueError):
+                r = None
 
+        if r is not None:
+            self.stack.append(r)
+
+        return r
+
+    def push(self, n=None):
+        '''Put back a popped row, if possible'''
         try:
-            return self.data.pop(int(n))
+            r = self.stack.pop()
+        except IndexError:
+            return
+
+        if n is None or n == '':
+            n = len(self.data)
+        try:
+            self.insert(int(n), r)
         except (IndexError, ValueError):
-            return None
+            self.messages('?! index ' + n)
+            self.stack.append(r)
 
     def append(self, iterable, filler=''):
         "insert at the end"
@@ -415,7 +449,7 @@ class Table:
         while agenda:
             op = agenda.pop(0)
             if op not in self.operations:
-                print(op, '??')
+                self.messages.append('??' + op)
                 continue
 
             # get any arguments
@@ -500,8 +534,9 @@ class Table:
         if not expression:
             return
 
-        cc = _compile_as_decimal(expression)
-        if cc is None:
+        ok, cc = compile_as_decimal(expression)
+        if not ok:
+            self.messages.append(cc)
             return
 
         old_data = self.data[:]
@@ -559,8 +594,9 @@ class Table:
         if "x" not in fstring and fstring[0] in ('*', '/', '+', '-', '<', '>', '='):
             fstring = "x" + fstring
 
-        cc = _compile_as_decimal(fstring)
-        if cc is None:
+        ok, cc = compile_as_decimal(fstring)
+        if not ok:
+            self.messages.append(cc)
             return
 
         values = {
@@ -603,8 +639,9 @@ class Table:
                         new_row.append(new_value)
 
             self.append(new_row)
-        if errors:
-            print('?', ';'.join(sorted(errors)))
+
+        # if errors is null this does nothing...
+        self.messages.extend(sorted(errors))
 
     def _fix_decimal_places(self, dp_string):
         "Round all the numerical fields in each row"
@@ -1017,9 +1054,13 @@ class Table:
             return
 
         # make it into a list tuples
-        desiderata = list((_compile_as_decimal(x), x) for x in perm)
-        if any(x[0] is None for x in desiderata):
-            return
+        desiderata = []
+        for x in perm:
+            ok, cc = compile_as_decimal(x)
+            if not ok:
+                self.messages.append(cc)
+                return
+            desiderata.append((cc, x))
 
         old_data = self.data.copy()
         self.data.clear()
@@ -1075,7 +1116,7 @@ class Table:
         try:
             c = int(col_spec)
         except ValueError:
-            print('?! colspec', col_spec)
+            self.messages.append('?! colspec ' + col_spec)
             return (None, flag)
 
         if c < 0:
