@@ -12,6 +12,7 @@ TODO
 # pylint: disable=C0103, C0301
 
 import argparse
+import builtins
 import collections
 import csv
 import decimal
@@ -74,6 +75,7 @@ Panther = {
     '__builtins__': {},
 }
 
+# various number utils at this level
 
 def as_numeric_tuple(x, backwards=False):
     '''return something for sort to work with
@@ -189,6 +191,37 @@ def as_decimal(n, na_value=decimal.Decimal('0')):
     except decimal.InvalidOperation:
         return na_value
 
+def siggy(s, n):
+    '''Reduce to n sig figs
+    >>> siggy('1,234', 2)
+    '1200'
+    >>> siggy('Text', 1)
+    'Text'
+    >>> siggy('0', 10)
+    '0'
+    '''
+    flag, number = is_as_number(s)
+    if not flag:
+        return s
+    if number.is_zero():
+        return '0'
+    figs =  n - math.floor(abs(number).log10()) - 1
+    return '{:f}'.format(round(number, figs))
+
+def rounders(s, n):
+    '''Round to n fixed places, if possible
+    >>> rounders('4',0)
+    '4'
+    >>> rounders('Text', 1)
+    'Text'
+    >>> rounders('45%', 3)
+    '0.450'
+    >>> rounders('45%', 1)
+    '0.4'
+    '''
+    flag, number = is_as_number(s)
+    return f'{number:.{n}f}' if flag else s
+
 def compile_as_decimal(expr):
     '''This function takes as expression give as an argument to
     one of the verbs like arr or filter or sort or tap, and compiles
@@ -200,24 +233,27 @@ def compile_as_decimal(expr):
 
     '''
     out = []
-    for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(expr).readline):
-        if tn == tokenize.NUMBER and '.' in tv:
-            out.append((tokenize.NAME, 'Decimal'))
-            out.append((tokenize.OP, '('))
-            out.append((tokenize.STRING, repr(tv)))
-            out.append((tokenize.OP, ')'))
-        elif tv == '?':
-            out.append((tokenize.NAME, 'Decimal'))
-            out.append((tokenize.OP, '('))
-            out.append((tokenize.STRING, repr(random.random())))
-            out.append((tokenize.OP, ')'))
-        else:
-            out.append((tn, tv))
+    try:
+        for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(expr).readline):
+            if tn == tokenize.NUMBER and '.' in tv:
+                out.append((tokenize.NAME, 'Decimal'))
+                out.append((tokenize.OP, '('))
+                out.append((tokenize.STRING, repr(tv)))
+                out.append((tokenize.OP, ')'))
+            elif tv == '?':
+                out.append((tokenize.NAME, 'Decimal'))
+                out.append((tokenize.OP, '('))
+                out.append((tokenize.STRING, repr(random.random())))
+                out.append((tokenize.OP, ')'))
+            else:
+                out.append((tn, tv))
+    except tokenize.TokenError:
+        return (False, '?! tokens ' + expr)
 
     try:
         cc = compile(tokenize.untokenize(out), "<string>", 'eval')
     except (SyntaxError, ValueError):
-        return (False, '?! ' +  expr)
+        return (False, '?! syntax ' +  expr)
     else:
         return (True, cc)
 
@@ -277,6 +313,7 @@ class Table:
             'arr': self._arrange_columns,
             'ditto': self._copy_down,
             'dp': self._fix_decimal_places,
+            'dup': self._duplicate_item,
             'filter': self._select_matching_rows,
             'gen': self._generate_new_rows,
             'group': self._add_grouping_blanks,
@@ -332,6 +369,12 @@ class Table:
         self.extras.clear()
         self.cols = 0
         self.indent = 0
+
+    def _duplicate_item(self, n):
+        "Duplicate an item"
+        self.stack.append(self.pop(n)) # pop puts it on the stack first, so this does it twice
+        self.push(n)
+        self.push(n)
 
     def parse_tex(self, lines_thing, append=False):
         "Read lines from an iterable thing of TeX source, and append to self"
@@ -410,15 +453,13 @@ class Table:
         try:
             r = self.stack.pop()
         except IndexError:
-            return
+            return  # do nothing if stack is empty
 
-        if n is None or n == '':
-            n = len(self.data)
         try:
-            self.insert(int(n), r)
-        except (IndexError, ValueError):
-            self.messages('?! index ' + n)
-            self.stack.append(r)
+            n = int(n)
+        except (ValueError, TypeError):
+            n = len(self.data)
+        self.insert(n, r) # the semantics of insert take care of indexes out of bounds
 
     def append(self, iterable, filler=''):
         "insert at the end"
@@ -449,7 +490,7 @@ class Table:
         while agenda:
             op = agenda.pop(0)
             if op not in self.operations:
-                self.messages.append('??' + op)
+                self.messages.append(f'?? {op}')
                 continue
 
             # get any arguments
@@ -486,36 +527,34 @@ class Table:
         except IndexError:
             return []
 
+    def _valid_data_index(self, s):
+        '''turn s into an index for self.data
+        default to len(self.data)
+        '''
+        n = len(self.data)
+        try:
+            i = int(s)
+        except (TypeError, ValueError):
+            return n
+        if i + n < 0:
+            return 0
+        if i < 0:
+            return i + n
+        if i > n:
+            return n
+        return i
+
     def add_blank(self, n=None):
         "flag a blank"
-        try:
-            i = int(n) % len(self.data)
-        except TypeError:
-            i = len(self.data)
-        self.extras[i].add("blank")
+        self.extras[self._valid_data_index(n)].add("blank")
 
     def add_rule(self, n=None):
         "mark a rule"
-        rows = len(self.data)
-        try:
-            i = int(n)
-        except (TypeError, ValueError):
-            i = rows
-        if i > rows:
-            i = rows
-        if i < 0:
-            i = max(0, i+rows)
-
-        assert 0 <= i <= rows
-        self.extras[i].add("rule")
+        self.extras[self._valid_data_index(n)].add("rule")
 
     def add_comment(self, contents, n=None):
         "stash a comment line"
-        try:
-            i = int(n) % len(self.data)
-        except (TypeError, ValueError):
-            i = len(self.data)
-        self.extras[i].add('#' + contents.lstrip('#'))
+        self.extras[self._valid_data_index(n)].add('#' + contents.lstrip('#'))
 
     def _set_output_form(self, form_name):
         "Set the form name, used in `tabulate`"
@@ -577,10 +616,10 @@ class Table:
 
     def _remove_spaces_from_values(self, joiner):
         '''Remove spaces from values -- this can make it easier to import into R'''
-        if not joiner:
-            joiner = ''
-        for i, row in enumerate(self.data):
-            self.data[i] = [joiner.join(cell.split()) for cell in row]
+        if joiner:
+            self.data = [[joiner.join(cell.split()) for cell in row] for row in self.data]
+        else:
+            self.data = [[''.join(cell.title().split()) for cell in row] for row in self.data]
 
     def _apply_function_to_numeric_values(self, fstring):
         '''fstring should be a maths expression with an x, as x+1 or 2**x etc
@@ -630,7 +669,7 @@ class Table:
                 try:
                     new_value = eval(cc, Panther, values)
                 except (NameError, ValueError) as e:
-                    errors.add(fstring + '->' + repr(e))
+                    errors.add(f'?! {fstring} <- {e!r}')
                     new_row.append(old_value)
                 else:
                     if isinstance(new_value, tuple):
@@ -643,49 +682,21 @@ class Table:
         # if errors is null this does nothing...
         self.messages.extend(sorted(errors))
 
+    def _apply_formats(self, f_string, f_function):
+        "Used for DP and SF"
+        if f_string is None or not f_string.isdigit():
+            return
+        # extend as needed (you could use zip_longest, but this just as simple)
+        f_values = list(int(x) for x in f_string) + [int(f_string[-1])] * (self.cols - len(f_string))
+        self.data = list(list(f_function(c, dp) for c, dp in zip(r, f_values)) for r in self.data)
+
     def _fix_decimal_places(self, dp_string):
         "Round all the numerical fields in each row"
-        if dp_string is None:
-            return
-
-        if not dp_string.isdigit():
-            return
-
-        # extend as needed (you could use zip_longest, but this just as simple)
-        dp_values = list(int(x) for x in dp_string) + [int(dp_string[-1])] * (self.cols - len(dp_string))
-
-        def _round(s, n):
-            try:
-                return '{:.{n}f}'.format(decimal.Decimal(s), n=n)
-            except decimal.InvalidOperation:
-                return s
-
-        self.data = list(list(_round(c, dp) for c, dp in zip(r, dp_values)) for r in self.data)
+        self._apply_formats(dp_string, rounders)
 
     def _fix_sigfigs(self, sf_string):
         "Round to n sig figs all the numeric fields in each row"
-        if sf_string is None:
-            return
-
-        if not sf_string.isdigit():
-            return
-
-        # extend as needed (you could use zip_longest, but this just as simple)
-        sf_values = list(int(x) for x in sf_string) + [int(sf_string[-1])] * (self.cols - len(sf_string))
-
-        def _siggy(s, n):
-            try:
-                x = decimal.Decimal(s)
-            except decimal.InvalidOperation:
-                return s
-
-            if x.is_zero():
-                return '0'
-
-            figs =  n - math.floor(abs(x).log10()) - 1
-            return '{:f}'.format(round(x, figs))
-
-        self.data = list(list(_siggy(c, sf) for c, sf in zip(r, sf_values)) for r in self.data)
+        self._apply_formats(sf_string, siggy)
 
     def _generate_new_rows(self, count_or_range):
         "Add some more data on the bottom"
@@ -696,7 +707,7 @@ class Table:
             return
 
         # integer range -4:99 etc...
-        m = re.match(r'(-?\d+)\D(-?\d+)$', count_or_range)
+        m = re.match(r'([-+]?\d+)(?:\.\.|:|::|--)([-+]?\d+)$', count_or_range)
         if m is not None:
             alpha, omega = (int(x) for x in m.groups())
             if alpha > omega:
@@ -829,7 +840,7 @@ class Table:
         elif fun == "q95" and hasattr(statistics, "quantiles"):
             func = lambda data: statistics.quantiles(data, n=20)[-1]
         elif fun in "min max all any sum".split():
-            func = getattr(__builtins__, fun)
+            func = getattr(builtins, fun)
         elif fun == "prod":
             func = math.prod
         else:
@@ -1223,10 +1234,16 @@ class Table:
     def tabulate(self):
         '''Generate nicely lined up rows
         '''
+        # this roundabout approach makes tabulate more consistent
+        # for speed you could make csv write directly to sys.stdout
         if self.form == 'csv':
-            w = csv.writer(sys.stdout, lineterminator=os.linesep)
+            out = io.StringIO()
+            w = csv.writer(out, lineterminator=os.linesep)
             w.writerows(self.data)
-            return
+            for line in out.getvalue().splitlines():
+                yield line
+            out.close()
+            return 
 
         eol_marker = ''
         separator = '  '

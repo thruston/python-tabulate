@@ -26,43 +26,14 @@ class TestTable(unittest.TestCase):
         self.assertTrue(len(self.tab) == 3)
         self.assertTrue(self.tab[-1] == ['78', '90', '120'])
 
-    def test_tabulate(self):
-        self.tab.append("First Second Third".split())
-        self.tab.append("12 34 56".split())
-        self.tab.append("78 90 120".split())
-        self.assertEqual("\n" + str(self.tab),
-'''
-First  Second  Third
-   12      34     56
-   78      90    120''')
+        # check column management
+        self.tab.append([21])
+        self.assertTrue(self.tab[-1] == ['21', '', ''])
 
-        self.tab.do("rule add")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
-First  Second  Third
-   12      34     56
-   78      90    120
---------------------
-   90     124    176
-''')
-        self.tab.do("xp rule add")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
-First    12   78   90
-Second   34   90  124
-Third    56  120  176
----------------------
-Total   102  288  390
-''')
-        self.tab.do("pop add mean")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
-First   12   78   90
-Second  34   90  124
-Third   56  120  176
---------------------
-Mean    34   96  130
-''')
+        self.tab.append([1,2,3,4,5])
+        self.assertTrue(self.tab.cols == 5)
+        self.assertTrue(self.tab[0] == ['First', 'Second', 'Third', '', ''])
+        
 
     def test_arrange(self):
         self.maxDiff = None
@@ -167,6 +138,33 @@ Mean    34   96  130
 
 
     def test_gen_and_wrap_and_zip(self):
+        self.tab.do("gen -7:8 wrap 4")
+        self.assertEqual("\n" + str(self.tab) + "\n",
+'''
+-7  -3  1  5
+-6  -2  2  6
+-5  -1  3  7
+-4   0  4  8
+''')
+        self.tab.clear()
+        self.tab.do("gen -7..8 wrap 4")
+        self.assertEqual("\n" + str(self.tab) + "\n",
+'''
+-7  -3  1  5
+-6  -2  2  6
+-5  -1  3  7
+-4   0  4  8
+''')
+        self.tab.clear()
+        self.tab.do("gen 8:-7 wrap 4")
+        self.assertEqual("\n" + str(self.tab) + "\n",
+'''
+-7  -3  1  5
+-6  -2  2  6
+-5  -1  3  7
+-4   0  4  8
+''')
+        self.tab.clear()
         self.tab.do("gen 16 wrap 4")
         self.assertEqual("\n" + str(self.tab) + "\n",
 '''
@@ -189,9 +187,13 @@ Mean    34   96  130
 2  6  10  14
 4  8  12  16
 ''')
-        self.tab.do("unzip")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.tab.do("wrap")
+        self.assertEqual(str(self.tab), '''
+1  5   9  13  2  6  10  14
+3  7  11  15  4  8  12  16
+'''.strip())
+        self.tab.do("unwrap unzip")
+        self.assertEqual(str(self.tab).strip(), '''
  1   5
  9  13
  3   7
@@ -200,7 +202,7 @@ Mean    34   96  130
 10  14
  4   8
 12  16
-''')
+'''.strip())
         self.tab.do("xp unzip arr acbd label X Y")
         self.assertEqual("\n" + str(self.tab) + "\n",
 '''
@@ -220,16 +222,50 @@ a  b   c   d
 2  4  10  12
 1  3   9  11
 ''')
-        self.tab.add_rule(-1)
+        self.tab.do("dup 0 zip")
         self.assertEqual("\n" + str(self.tab) + "\n",
 '''
-a  b   c   d
-6  8  14  16
-5  7  13  15
-2  4  10  12
-------------
-1  3   9  11
+a  b   c   d  a  b   c   d
+6  8  14  16  5  7  13  15
+2  4  10  12  1  3   9  11
 ''')
+        self.tab.add_rule(-1)
+        self.assertEqual(str(self.tab),
+'''
+a  b   c   d  a  b   c   d
+6  8  14  16  5  7  13  15
+--------------------------
+2  4  10  12  1  3   9  11
+'''.strip())
+        self.tab.do("zip 1") # < 2 is a nop
+        self.assertEqual(str(self.tab),
+'''
+a  b   c   d  a  b   c   d
+6  8  14  16  5  7  13  15
+--------------------------
+2  4  10  12  1  3   9  11
+'''.strip())
+
+        abba = '''
+A  A  A
+A  A  B
+A  B  A
+A  B  B
+B  A  A
+B  A  B
+B  B  A
+B  B  B
+'''.strip()
+        oddly_wrapped = '''
+A  A  A  A  B  B  B  B  A
+A  A  B  B  A  A  B  B  B
+A  B  A  B  A  B
+'''.strip()
+        self.tab.parse_lines(abba.splitlines())
+        self.assertEqual(str(self.tab), abba)
+        self.tab.do("wrap 3")
+        self.assertEqual(str(self.tab), oddly_wrapped)
+
 
 
     def test_ditto(self):
@@ -285,20 +321,51 @@ Date        %a
 ''')
 
     def test_pivot(self):
-        self.tab.parse_lines('''
-    Exposure category     Lung cancer  No lung cancer
-    -------------------------------------------------
-    Asbestos exposure               6              51
-    No asbestos exposure           52             941'''.splitlines())
+        self.asbo = '''
+Exposure category     Lung cancer  No lung cancer
+-------------------------------------------------
+Asbestos exposure               6              51
+No asbestos exposure           52             941
+'''.strip()
+        self.longer = '''
+Exposure category     Name            Value
+-------------------------------------------
+Asbestos exposure     Lung cancer         6
+Asbestos exposure     No lung cancer     51
+No asbestos exposure  Lung cancer        52
+No asbestos exposure  No lung cancer    941
+'''.strip()
+        self.for_camels = '''
+ExposureCategory    Name          Value
+---------------------------------------
+AsbestosExposure    LungCancer        6
+AsbestosExposure    NoLungCancer     51
+NoAsbestosExposure  LungCancer       52
+NoAsbestosExposure  NoLungCancer    941
+'''.strip()
+        self.for_pirates = '''
+Exposure.category     Lung.cancer  No.lung.cancer
+-------------------------------------------------
+Asbestos.exposure               6              51
+No.asbestos.exposure           52             941
+'''.strip()
+
+        self.tab.parse_lines(self.asbo.splitlines())
+        self.assertEqual(str(self.tab), self.asbo)
 
         self.tab.do("pivot long")
-        self.assertEqual(str(self.tab), '''
-    Exposure category     Name            Value
-    -------------------------------------------
-    Asbestos exposure     Lung cancer         6
-    Asbestos exposure     No lung cancer     51
-    No asbestos exposure  Lung cancer        52
-    No asbestos exposure  No lung cancer    941''')
+        self.assertEqual(str(self.tab), self.longer)
+
+        self.tab.do("nospace")
+        self.assertEqual(str(self.tab), self.for_camels)
+
+        self.tab.parse_lines(self.asbo.splitlines())
+        self.assertEqual(str(self.tab), self.asbo)
+
+        self.tab.do("nospace .")
+        self.assertEqual(str(self.tab), self.for_pirates)
+
+
 
 
     def test_pivot_wide(self):
@@ -407,6 +474,21 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat  Sun  Total
         self.assertEqual(str(self.tab), some_lines)
         self.tab.do()
         self.assertEqual(str(self.tab), some_lines)
+
+        self.tab.do("dp") # missing predicate == nop
+        self.assertEqual(str(self.tab), some_lines)
+
+        self.tab.do("undefined verb")
+        self.assertEqual(str(self.tab), '?? undefined\n?? verb\n' + some_lines)
+
+        self.assertEqual(self.tab.column(99), [])
+
+        self.tab.add_comment("at top", -999)
+        self.assertEqual(str(self.tab), '#at top\n' + some_lines)
+
+        self.tab.add_comment("at bottom", 999)
+        self.assertEqual(str(self.tab), '#at top\n' + some_lines)
+        # note that the comment won't actually be printed unless another line were added
 
 
 if __name__ == "__main__":

@@ -687,15 +687,15 @@ single ones as delimiters.  Given this table
 
 the verb `nospace` will produce:
 
-    Exposurecategory    Name          Value
+    ExposureCategory    Name          Value
     ---------------------------------------
-    Asbestosexposure    Lungcancer        6
-    Asbestosexposure    Nolungcancer     51
-    Noasbestosexposure  Lungcancer       52
-    Noasbestosexposure  Nolungcancer    941
+    AsbestosExposure    LungCancer        6
+    AsbestosExposure    NoLungCancer     51
+    NoAsbestosExposure  LungCancer       52
+    NoAsbestosExposure  NoLungCancer    941
 
-Since that's a litte hard to read you can also specify an optional filler
-character, so `nospace .` would have produced this:
+Since that's a little hard to read unless you are a camel, you can also specify
+an optional filler character, so `nospace .` would have produced this:
 
     Exposure.category     Name            Value
     -------------------------------------------

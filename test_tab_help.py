@@ -8,9 +8,9 @@ class TestTableHelp(unittest.TestCase):
     def setUp(self):
         self.tab = tabulate.Table()
         self.help = '''
-Try one of these: add arr ditto dp filter gen group help label make
-noblanks nospace pivot pop push roll rule sf shuffle sort tap uniq
-unwrap unzip wrap xp zip
+Try one of these: add arr ditto dp dup filter gen group help label
+make noblanks nospace pivot pop push roll rule sf shuffle sort tap
+uniq unwrap unzip wrap xp zip
 '''.strip()
         self.verbs = '''
 Functions for arr: abs all any base bool chr cos cosd date divmod dow

@@ -29,8 +29,16 @@ Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
     def test_filter(self):
         "Select matching rows"
         self.tab.parse_lines(self.rain.splitlines())
+        
         self.tab.do('filter') # missing predicate does nothing
         self.assertEqual(str(self.tab), self.rain)
+        
+        self.tab.do('filter True') # True predicate does nothing
+        self.assertEqual(str(self.tab), self.rain)
+
+        self.tab.do('filter b<>4') # Syntax error make message
+        self.assertEqual(str(self.tab), '?! syntax b<>4\n' + self.rain)
+
         self.tab.do('filter j > 10.0')
         expected = '''
 Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
@@ -45,5 +53,6 @@ Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
 2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
 '''.strip()
         self.assertEqual(str(self.tab), expected)
+
         self.tab.do('filter False')
         self.assertEqual(str(self.tab), "")

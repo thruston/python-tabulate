@@ -64,6 +64,28 @@ Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
 18.1  1375  48.6  3.13830269817  1.25767857487
 23.0  1428  50.5  3.15472820744  1.36172783602
 '''.strip())
+        self.tab.do("arr abc(divmod(b, 37))")
+        self.assertEqual(str(self.tab),
+'''
+30.2   135   4.5   3  24
+29.5   132   4.5   3  21
+28.8   136   4.7   3  25
+29.3   155   5.0   4   7
+27.8   208   6.3   5  23
+18.1  1375  48.6  37   6
+23.0  1428  50.5  38  22
+'''.strip())
+        self.tab.do("arr abc(sum(c,d,e))")
+        self.assertEqual(str(self.tab),
+'''
+30.2   135   4.5   31.5
+29.5   132   4.5   28.5
+28.8   136   4.7   32.7
+29.3   155   5.0   16.0
+27.8   208   6.3   34.3
+18.1  1375  48.6   91.6
+23.0  1428  50.5  110.5
+'''.strip())
 
 
         self.tab.parse_lines('''
@@ -163,6 +185,13 @@ No asbestos exposure        0.025           0.475
 '''.strip()
         self.assertEqual(str(self.tab), expected)
 
+        self.tab.do("xp xp pop 0 tap divmod(x*1000, 37)")
+        expected = '''
+Asbestos exposure     1  18.000  12   1.000
+No asbestos exposure  0  25.000  12  31.000
+'''.strip()
+        self.assertEqual(str(self.tab), expected)
+
     def test_mistakes(self):
         "Test capture of errors"
         sample = '''
@@ -180,6 +209,13 @@ d  13  14  15  16
         self.assertEqual(str(self.tab), sample)
 
         self.tab.do("arr ~(2..3)")
-        self.assertEqual(str(self.tab), '?! (2..3)\n' + sample)
+        self.assertEqual(str(self.tab), '?! syntax (2..3)\n' + sample)
 
+        self.tab.do("tap x<>4)")
+        self.assertEqual(str(self.tab), '?! tokens x<>4)\n' + sample)
 
+        self.tab.do("tap x<>4")
+        self.assertEqual(str(self.tab), '?! syntax x<>4\n' + sample)
+
+        self.tab.do("tap x*undefined")
+        self.assertEqual(str(self.tab), "?! x*undefined <- NameError(\"name 'undefined' is not defined\")\n" + sample)
