@@ -64,3 +64,9 @@ March 2020     2020-03-30  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
 
         self.tab.do('group a') 
         self.assertEqual(str(self.tab), self.grouped)
+
+        self.tab.do('noblanks')
+        self.assertEqual(str(self.tab), self.rain)
+
+        self.tab.do('group ?') 
+        self.assertEqual(str(self.tab), '?! colspec ?\n' + self.rain)

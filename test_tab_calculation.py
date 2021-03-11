@@ -7,18 +7,6 @@ class TestTableCalculation(unittest.TestCase):
 
     def setUp(self):
         self.tab = tabulate.Table()
-        self.rain = '''
-Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
--------------------------------------------------------------
-2019-12-30     1  0.0  0.2   0.0  0.0  1.2   0.0   0.0    1.4
-2020-01-06     2  0.5  0.0   0.0  6.4  0.0   0.1   1.7    8.7
-2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0   0.0   20.8
-2020-01-20     4  0.0  0.0   0.0  0.0  0.0   0.1   2.3    2.4
-2020-01-27     5  8.4  2.1   0.0  0.5  1.0   0.0   7.1   19.1
-2020-02-03     6  0.1  0.0   0.0  0.0  0.0   1.5  10.6   12.2
-2020-02-10     7  5.5  0.0   0.5  6.6  0.0   4.9  15.6   33.1
-2020-02-17     8  0.2  3.3   1.0  3.8  0.0   0.5   1.0    9.8
-'''.strip()
         self.simple = '''
 30.2   135   4.5
 29.5   132   4.5
@@ -219,3 +207,38 @@ d  13  14  15  16
 
         self.tab.do("tap x*undefined")
         self.assertEqual(str(self.tab), "?! x*undefined <- NameError(\"name 'undefined' is not defined\")\n" + sample)
+
+    def test_with_non_numbers(self):
+        "Make sure subs work ok"
+        data_with_header = '''
+Name    Temp   Press     Vol
+A     0.9757  0.8464  0.7741
+B     0.0761  0.5375  0.7719
+C     0.9557  0.3545  0.6033
+D     0.7476  0.9234  0.8035
+'''.strip()
+
+        multiplied = '''
+Name    Temp   Press     Vol   Press*Vol
+A     0.9757  0.8464  0.7741  0.65519824
+B     0.0761  0.5375  0.7719  0.41489625
+C     0.9557  0.3545  0.6033  0.21386985
+D     0.7476  0.9234  0.8035  0.74195190
+'''.strip()
+        z_err = '''
+Name    Temp   Press     Vol       Vol/(1-2)
+A     0.9757  0.8464  0.7741               -
+B     0.0761  0.5375  0.7719          0.7719
+C     0.9557  0.3545  0.6033         0.30165
+D     0.7476  0.9234  0.8035  0.267833333333
+'''.strip()
+
+        self.tab.parse_lines(data_with_header.splitlines())
+        self.assertEqual(str(self.tab), data_with_header)
+        self.tab.do("arr abcd(c*d)")
+        self.assertEqual(str(self.tab), multiplied)
+        self.tab.do("arr abcd(d/(row_number-2))")
+        self.assertEqual(str(self.tab), z_err)
+
+
+

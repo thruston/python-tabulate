@@ -36,7 +36,6 @@ class TestTable(unittest.TestCase):
         
 
     def test_arrange(self):
-        self.maxDiff = None
         self.tab.parse_lines('''
     2020-05-19  09:18:00  30.3  30.2  30.1  28.9  29.8  29.6  29.9  30.2   135   4.5
     2020-05-19  09:18:10  29.2  29.1  29.4  30.5  30.2  30.3  30.0  29.5   132   4.5
@@ -58,6 +57,17 @@ class TestTable(unittest.TestCase):
     2020-05-19  09:20:40  28.3  28.6  22.5  22.3  24.1  23.7  19.7  23.0  1428  50.5
 ''')
         self.tab.do("arr xyz")
+        self.assertEqual(str(self.tab) + "\n",
+'''
+    30.2   135   4.5
+    29.5   132   4.5
+    28.8   136   4.7
+    29.3   155   5.0
+    27.8   208   6.3
+    18.1  1375  48.6
+    23.0  1428  50.5
+''')
+        self.tab.do("arr abc.;")
         self.assertEqual(str(self.tab) + "\n",
 '''
     30.2   135   4.5
@@ -319,75 +329,6 @@ Date        %a
 2011-03-19  2011-08-06
 2011-07-05  2011-11-22
 ''')
-
-    def test_pivot(self):
-        self.asbo = '''
-Exposure category     Lung cancer  No lung cancer
--------------------------------------------------
-Asbestos exposure               6              51
-No asbestos exposure           52             941
-'''.strip()
-        self.longer = '''
-Exposure category     Name            Value
--------------------------------------------
-Asbestos exposure     Lung cancer         6
-Asbestos exposure     No lung cancer     51
-No asbestos exposure  Lung cancer        52
-No asbestos exposure  No lung cancer    941
-'''.strip()
-        self.for_camels = '''
-ExposureCategory    Name          Value
----------------------------------------
-AsbestosExposure    LungCancer        6
-AsbestosExposure    NoLungCancer     51
-NoAsbestosExposure  LungCancer       52
-NoAsbestosExposure  NoLungCancer    941
-'''.strip()
-        self.for_pirates = '''
-Exposure.category     Lung.cancer  No.lung.cancer
--------------------------------------------------
-Asbestos.exposure               6              51
-No.asbestos.exposure           52             941
-'''.strip()
-
-        self.tab.parse_lines(self.asbo.splitlines())
-        self.assertEqual(str(self.tab), self.asbo)
-
-        self.tab.do("pivot long")
-        self.assertEqual(str(self.tab), self.longer)
-
-        self.tab.do("nospace")
-        self.assertEqual(str(self.tab), self.for_camels)
-
-        self.tab.parse_lines(self.asbo.splitlines())
-        self.assertEqual(str(self.tab), self.asbo)
-
-        self.tab.do("nospace .")
-        self.assertEqual(str(self.tab), self.for_pirates)
-
-
-
-
-    def test_pivot_wide(self):
-        self.tab.parse_lines('''
-    Region  Quarter  Sales
-    ----------------------
-    East    Q1        1200
-    East    Q2        1100
-    East    Q3        1500
-    East    Q4        2200
-    West    Q1        2200
-    West    Q2        2500
-    West    Q3        1990
-    West    Q4        2600'''.splitlines())
-
-        self.tab.do("pivot wide")
-        self.assertEqual(str(self.tab), '''
-    Region    Q1    Q2    Q3    Q4
-    ------------------------------
-    East    1200  1100  1500  2200
-    West    2200  2500  1990  2600''')
-
 
     def test_sigs(self):
         self.tab.parse_lines('''

@@ -34,18 +34,16 @@ import tab_fun_maths
 
 # A great cat of functions for column maths, using the Decimal versions...
 Panther = {
-    'abs': abs,
-    'bool': bool,
-    'chr': chr,
-    'divmod': divmod,
-    'format': format,
-    'hex': tab_fun_maths.decimal_to_hex,
-    'oct': tab_fun_maths.decimal_to_oct,
-    'int': int,
-    'len': len,
-    'ord': ord,
-    'pow': pow,
-    'round': round,
+    'abs': builtins.abs,
+    'bool': builtins.bool,
+    'chr': builtins.chr,
+    'divmod': builtins.divmod,
+    'format': builtins.format,
+    'int': builtins.int,
+    'len': builtins.len,
+    'ord': builtins.ord,
+    'pow': builtins.pow,
+    'round': builtins.round,
     'base': tab_fun_dates.base,
     'date': tab_fun_dates.date,
     'dow': tab_fun_dates.dow,
@@ -53,13 +51,14 @@ Panther = {
     'hr': tab_fun_dates.hr,
     'mins': tab_fun_dates.mins,
     'secs': tab_fun_dates.secs,
-    'pi': tab_fun_maths.PI,
-    'tau': tab_fun_maths.TAU,
     'cos': tab_fun_maths.cos, 'cosd': tab_fun_maths.cosd,
     'sin': tab_fun_maths.sin, 'sind': tab_fun_maths.sind,
     'tan': tab_fun_maths.cos, 'tand': tab_fun_maths.tand,
+    'hex': tab_fun_maths.decimal_to_hex,
+    'oct': tab_fun_maths.decimal_to_oct,
+    'pi': tab_fun_maths.PI,
+    'tau': tab_fun_maths.TAU,
     'hypot': tab_fun_maths.pyth_add,
-    'si': tab_fun_maths.si,
     'all': tab_fun_useful.t_all,
     'any': tab_fun_useful.t_any,
     'max': tab_fun_useful.t_max,
@@ -221,6 +220,26 @@ def rounders(s, n):
     '''
     flag, number = is_as_number(s)
     return f'{number:.{n}f}' if flag else s
+    
+def looks_like_formula(expression):
+    '''Is this a formula?
+
+    >>> looks_like_formula('Abc?')
+    False
+    >>> looks_like_formula('-1')
+    False
+    >>> looks_like_formula('a-1')
+    True
+    '''
+    if all(x in string.ascii_letters + '?' for x in expression):
+        return False
+    try:
+        int(expression)
+    except (TypeError, ValueError):
+        pass
+    else:
+        return False
+    return True
 
 def compile_as_decimal(expr):
     '''This function takes as expression give as an argument to
@@ -688,7 +707,7 @@ class Table:
             return
         # extend as needed (you could use zip_longest, but this just as simple)
         f_values = list(int(x) for x in f_string) + [int(f_string[-1])] * (self.cols - len(f_string))
-        self.data = list(list(f_function(c, dp) for c, dp in zip(r, f_values)) for r in self.data)
+        self.data = list(list(f_function(c, v) for c, v in zip(r, f_values)) for r in self.data)
 
     def _fix_decimal_places(self, dp_string):
         "Round all the numerical fields in each row"
@@ -872,10 +891,11 @@ class Table:
             return
 
         pivot_function_for = {
-            'wide': sum,
-            'count': len,
+            'wide': builtins.sum,
+            'sum': builtins.sum,
+            'count': builtins.len,
             'mean':  lambda a: statistics.mean(a) if a else 'NA',
-            'any': any,
+            'any': builtins.any,
         }
 
         for k in pivot_function_for:
@@ -883,7 +903,7 @@ class Table:
                 self._wrangle_wide(pivot_function_for[k])
                 return
 
-        m = re.match(r'long([1-9a-o])?', shape)
+        m = re.match(r'long([1-9a-o])?$', shape)
         if m is None:
             return
 
@@ -1044,23 +1064,15 @@ class Table:
             return
 
         perm = self._get_expr_list(perm)
-
         identity = string.ascii_lowercase[:self.cols]
-        specials = '.?;'
 
-        def _get_value(c, line_number, row):
+        def _get_value(row, c):
             '''Find a suitable value given the perm character and a row of data
             '''
-            if c == '.':
-                return str(line_number)
-            if c == '?':
-                return str(random.random())
-            if c == ';':
-                return str(len(self.data))
-            return row[ord(c) - ord('a')]
+            return str(random.random()) if c == '?' else row[ord(c) - ord('a')]
 
-        if all(x in identity + specials for x in perm):
-            self.data = list(list(_get_value(x, i + 1, r) for x in perm) for i, r in enumerate(self.data))
+        if all(x in identity + '?' for x in perm):
+            self.data = list(list(_get_value(r, x) for x in perm) for r in self.data)
             self.cols = len(perm) # perm can delete and/or add columns
             return
 
@@ -1112,9 +1124,7 @@ class Table:
     def _fancy_col_index(self, col_spec):
         '''Find me an index, returns index + T/F to say if letter was upper case
         '''
-
-        if not col_spec:
-            col_spec = 'a'
+        assert col_spec
 
         flag = False
         if col_spec in string.ascii_uppercase:
@@ -1130,11 +1140,7 @@ class Table:
             self.messages.append('?! colspec ' + col_spec)
             return (None, flag)
 
-        if c < 0:
-            c += self.cols
-        if c < 0:
-            c = 0
-        elif c >= self.cols:
+        if c >= self.cols:
             c = self.cols - 1
         assert 0 <= c < self.cols
         return (c, flag)
@@ -1153,13 +1159,12 @@ class Table:
         groups are done right to left...
 
         '''
-
-        if any(x in col_spec for x in '(=+-*/'):
+        if looks_like_formula(col_spec):
             self.do(f"arr ({col_spec})~ sort a arr -a")
             return
 
         identity = string.ascii_lowercase[:self.cols]
-        if not col_spec:
+        if col_spec is None or col_spec == '':
             col_spec = identity
 
         try:
@@ -1177,12 +1182,19 @@ class Table:
     def _remove_duplicates_by_col(self, col_spec):
         '''like uniq, remove row if key cols match the row above
         '''
-        cols_to_check = []
-        for c in col_spec:
-            i, _ = self._fancy_col_index(c)
-            if i is None:
-                continue
-            cols_to_check.append(i)
+        if col_spec is None or col_spec == '':
+            cols_to_check = list(range(self.cols))
+        else:
+            cols_to_check = []
+            for c in col_spec:
+                i, _ = self._fancy_col_index(c)
+                if i is None:
+                    continue
+                cols_to_check.append(i)
+
+        if not cols_to_check:
+            return
+
         rows_to_delete = []
         previous_t = ''
         for i, row in enumerate(self.data):
@@ -1305,7 +1317,6 @@ class Table:
                 out.append(f'{cell:{aligns[j]}{widths[j]}}')
 
             yield ' ' * self.indent + separator.join(out).rstrip() + eol_marker # no trailing blanks
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

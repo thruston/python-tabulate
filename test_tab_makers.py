@@ -82,6 +82,18 @@ Monday     & Week & Mon & Tue & Wed & Thu & Fri & Sat &  Sun & Total \\
 2020-02-24 &    9 & 6.1 & 0.5 & 0.1 & 8.6 & 5.9 & 7.1 &  0.2 &  28.5 \\
 '''.strip()
 
+        self.as_tsv = '''
+Monday    \tWeek\tMon\tTue\tWed\tThu\tFri\tSat\t Sun\tTotal
+2019-12-30\t   1\t0.0\t0.2\t0.0\t0.0\t1.2\t0.0\t 0.0\t  1.4
+2020-01-06\t   2\t0.5\t0.0\t0.0\t6.4\t0.0\t0.1\t 1.7\t  8.7
+2020-01-13\t   3\t5.3\t1.7\t9.1\t3.0\t1.7\t0.0\t 0.0\t 20.8
+2020-01-20\t   4\t0.0\t0.0\t0.0\t0.0\t0.0\t0.1\t 2.3\t  2.4
+2020-01-27\t   5\t8.4\t2.1\t0.0\t0.5\t1.0\t0.0\t 7.1\t 19.1
+2020-02-03\t   6\t0.1\t0.0\t0.0\t0.0\t0.0\t1.5\t10.6\t 12.2
+2020-02-10\t   7\t5.5\t0.0\t0.5\t6.6\t0.0\t4.9\t15.6\t 33.1
+2020-02-17\t   8\t0.2\t3.3\t1.0\t3.8\t0.0\t0.5\t 1.0\t  9.8
+2020-02-24\t   9\t6.1\t0.5\t0.1\t8.6\t5.9\t7.1\t 0.2\t 28.5
+'''.strip()
 
     def test_form(self):
         "try out some outputs"
@@ -91,6 +103,9 @@ Monday     & Week & Mon & Tue & Wed & Thu & Fri & Sat &  Sun & Total \\
 
         self.tab.do("make csv")
         self.assertEqual(str(self.tab), self.as_csv)
+
+        self.tab.do("make tsv")
+        self.assertEqual(str(self.tab), self.as_tsv)
 
         self.tab.do("make tex")
         self.assertEqual(str(self.tab), self.as_tex)

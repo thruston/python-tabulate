@@ -15,7 +15,7 @@ uniq unwrap unzip wrap xp zip
         self.verbs = '''
 Functions for arr: abs all any base bool chr cos cosd date divmod dow
 exp format hex hms hr hypot int len log log10 max min mins oct ord pi
-pow reversed round secs si sin sind sorted sqrt sum tan tand tau
+pow reversed round secs sin sind sorted sqrt sum tan tand tau
 '''.strip()
 
     def test_help(self):
