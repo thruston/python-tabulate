@@ -1,12 +1,8 @@
 #! /usr/bin/env python3
 '''Tabulate
 
-A module to line up text tables.
-Toby Thurston -- 19 Feb 2021
-
-TODO
-- allow sort to take function same as filter...
-
+A module/script to line up text tables.
+Toby Thurston -- 11 Mar 2021
 '''
 
 # pylint: disable=C0103, C0301
@@ -220,7 +216,7 @@ def rounders(s, n):
     '''
     flag, number = is_as_number(s)
     return f'{number:.{n}f}' if flag else s
-    
+
 def looks_like_formula(expression):
     '''Is this a formula?
 
@@ -324,7 +320,6 @@ class Table:
         self.indent = 0
         self.extras = collections.defaultdict(set)
         self.form = 'plain'
-        self.format_spec = None
         self.messages = []
         self.stack = [] # used to cache popped items
         self.operations = {
@@ -504,8 +499,10 @@ class Table:
 
     def do(self, agenda=None):
         "Do what we've been asked..."
-        if agenda and isinstance(agenda, str):
-            agenda = agenda.split()
+        if agenda is None:
+            return
+        if not isinstance(agenda, list):
+            agenda = str(agenda).split()
         while agenda:
             op = agenda.pop(0)
             if op not in self.operations:
@@ -514,17 +511,8 @@ class Table:
 
             # get any arguments
             argument = []
-            while True:
-                this = agenda.pop(0) if agenda else None
-                # put it back if it is really the next op
-                if this in self.operations:
-                    agenda.insert(0, this)
-                    this = None
-
-                if this is None:
-                    break
-
-                argument.append(this)
+            while agenda and agenda[0] not in self.operations:
+                argument.append(agenda.pop(0))
 
             self.operations[op](' '.join(argument))
 
@@ -672,24 +660,22 @@ class Table:
         old_rows = self.data[:]
         self.data.clear()
         errors = set()
-        for i, row in enumerate(old_rows):
+        for row in old_rows:
             new_row = []
-            values['row_number'] = i+1
+            values['row_number'] += 1
             values['row_total'] = sum(as_decimal(x) for x in row)
-            for j, cell in enumerate(row):
-                flag, old_value = is_as_number(cell)
-                if not flag:
+            for i, cell in enumerate(row):
+                values['col_number'] = i + 1
+                values['col_total'] = col_totals[i]
+                ok, values['x'] = is_as_number(cell)
+                if not ok:
                     new_row.append(cell)
                     continue
-
-                values['col_number'] = j+1
-                values['col_total'] = col_totals[j]
-                values['x'] = old_value
                 try:
                     new_value = eval(cc, Panther, values)
                 except (NameError, ValueError) as e:
                     errors.add(f'?! {fstring} <- {e!r}')
-                    new_row.append(old_value)
+                    new_row.append(cell)
                 else:
                     if isinstance(new_value, tuple):
                         new_row.extend(new_value)
@@ -1255,7 +1241,7 @@ class Table:
             for line in out.getvalue().splitlines():
                 yield line
             out.close()
-            return 
+            return
 
         eol_marker = ''
         separator = '  '
@@ -1318,7 +1304,7 @@ class Table:
 
             yield ' ' * self.indent + separator.join(out).rstrip() + eol_marker # no trailing blanks
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("agenda", nargs='*', help="[delimiter.maxsplit] [verb [option]]...")
     parser.add_argument("--file", help="Source file name, defaults to STDIN")
@@ -1339,7 +1325,6 @@ if __name__ == "__main__":
             delim = None
 
     table = Table()
-
     fh = io.StringIO(sys.stdin.read()) if args.file is None else open(args.file)
     if delim is None:
         first_line = fh.readline().strip()
