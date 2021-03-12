@@ -5,8 +5,9 @@ Line up tabular material neatly.
 
 An exportable module that will line up tabular material automatically, and so
 save you hours of time faffing about with format and alignment.  As a script it
-provides a filter with a simple DSL that can be used to make and manipulate
-tables in editors that support external filters (such as Vim).
+provides a filter with a simple DSL (domain-specific language) that can be used
+to make and manipulate tables in editors that support external filters (such as
+Vim).
 
 If your work involves editing lots of plain text you will get familiar with a
 plain text editor such as Vim or Emacs or similar. You will get familiar with
@@ -250,7 +251,7 @@ You can string together as many verbs (plus optional arguments) as you like.
 `add` adds the total to the foot of a column.  The default option is `sum`, but
 it can be any method from the Python3 `statistics` library: `mean`, `median`,
 `mode`, `stdev`, `variance`, and so on, plus `q95` for the 95%-ile.
-Non-numerical entries in a column are ignored. So given this:
+So given this:
 
     First   100
     Second  200
@@ -288,7 +289,8 @@ same trick if you change one or more of the values and want to update the
 total.  Note that if you have already added the rule there is no need to add it
 again.
 
-
+Note that non-numeric cells in a column are ignored, but if there are no numeric entries
+at all in a column, then the value of the total is the name of the function.
 
 ### arr - rearrange the columns
 
@@ -507,21 +509,19 @@ This is what `dp` does.  The required argument is a string of digits indicating 
 between 0 and 9 you want for each column.  There's no default, it just does nothing with no argument, but
 if your string is too short the last digit is repeated as necessary.  So to round everything to a whole number
 do `dp 0`.  To round the first col to 0, the second to 3 and the rest to 4 do `dp 034`, and so on.
-Cells that contain values that are not numbers are not changed, so applying `dp 4` to a table like this:
+Cells that contain values that are not numbers are not changed, so given this table
 
     Category         Type A         Type B
     --------------------------------------
     First     6.94119005507  6.92853781816
     Second    6.96413561242  6.97728134163
 
-should produce
+applying `dp 4` should produce
 
     Category  Type A  Type B
     ------------------------
     First     6.9412  6.9285
     Second    6.9641  6.9773
-
-
 
 
 ### filter - select rows
@@ -570,9 +570,14 @@ described for `arr` above.  Again like `arr` you can use the variables `rows`
 and `row_number` in the expression: `rows` is the count of rows in your table, and
 `row_number` starts at 1 and is incremented by 1 on successive rows.
 You could use this to pick out every other row: `filter row_number % 2`.
-(If you are calling tabulate from the Vim command line, use `row_number \% 2`.)
 
-The default is to do nothing.
+NB. If you are calling tabulate from the Vim command line, you need to escape
+the `%` character, like so: `row_number \% 2`.  But you can also write
+`row_number mod 2`. Similarly to avoid having to escape `!=` you can write `<>`
+instead.  And if you write `a=b` it will be interpreted as `a==b` since
+assignment makes no sense here.
+
+The default action is to do nothing.
 
 
 ### gen - generate new rows
@@ -1071,8 +1076,42 @@ as input, `zip` gives you
 `unzip` does the opposite.  The option is the number of rows to combine.  The default is 2, so that
 you zip every other row, and unzip the table in half (as it were).
 
+## What counts as a number?
 
+Tabulate reads and writes everything as strings, but it has a fairly broad definition of which of them count as numbers.
 
+- Any string like '4' or '-2.17' that is a valid input to the `decimal.Decimal` constructor
+- Any string with '_' or ',' as separators like '1,234' or '0.456_789'
+- Any string that looks like a number but ends with '%' is treated as a percentage, so '45%' is interpreted as 0.45
+- Binary, octal, and hex strings with leading '0b', '0o' or '0x' are converted to decimal integers
+- The strings 'True' and 'False' count as 1 and 0
+
+Here is a sampler, given this
+
+    First example   True  42  3.1415  1,234  0.123_245  32%  0b1111  0xdead
+    Another one    False  39  2.7185  4,537  0.892_244  67%    0o63  0xBEEF
+
+then `rule add` will produce
+
+    First example   True  42  3.1415  1,234  0.123_245   32%  0b1111  0xdead
+    Another one    False  39  2.7185  4,537  0.892_244   67%    0o63  0xBEEF
+    ------------------------------------------------------------------------
+    Total              1  81  5.8600   5771   1.015489  0.99      66  105884
+
+Notice that the results are always given as decimals, but you can use `tap` or `arr` to
+set a common format.  You can reset them all to "normal" decimals with `tap +0`:
+
+    First example  1  42  3.1415  1234  0.123245  0.32  15   57005
+    Another one    0  39  2.7185  4537  0.892244  0.67  51   48879
+    --------------------------------------------------------------
+    Total          1  81  5.8600  5771  1.015489  0.99  66  105884
+
+while `tap f'{x:,}'` gives you:
+
+    First example  1  42  3.1415  1,234  0.123245  0.32  15   57,005
+    Another one    0  39  2.7185  4,537  0.892244  0.67  51   48,879
+    ----------------------------------------------------------------
+    Total          1  81  5.8600  5,771  1.015489  0.99  66  105,884
 
 ## Methods available for a Table object
 

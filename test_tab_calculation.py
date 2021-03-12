@@ -199,11 +199,11 @@ d  13  14  15  16
         self.tab.do("arr ~(2..3)")
         self.assertEqual(str(self.tab), '?! syntax (2..3)\n' + sample)
 
-        self.tab.do("tap x<>4)")
-        self.assertEqual(str(self.tab), '?! tokens x<>4)\n' + sample)
+        self.tab.do("tap x==4)")
+        self.assertEqual(str(self.tab), '?! tokens x==4)\n' + sample)
 
-        self.tab.do("tap x<>4")
-        self.assertEqual(str(self.tab), '?! syntax x<>4\n' + sample)
+        self.tab.do("tap x!4")
+        self.assertEqual(str(self.tab), '?! syntax x!4\n' + sample)
 
         self.tab.do("tap x*undefined")
         self.assertEqual(str(self.tab), "?! x*undefined <- NameError(\"name 'undefined' is not defined\")\n" + sample)

@@ -131,6 +131,8 @@ def is_as_number(sss):
     (False, '')
     >>> is_as_number("Label")
     (False, 'Label')
+    >>> is_as_number("False")
+    (True, False)
     >>> is_as_number("3.14")
     (True, Decimal('3.14'))
     >>> is_as_number('0')
@@ -156,6 +158,9 @@ def is_as_number(sss):
     point = '.'
     alphabetics = 'xoabcdef'
     suffix = '%'
+
+    if sss in ('True', 'False'):
+        return (True, sss=='True')
 
     if not all((c in digits + point + signs + ignore + alphabetics + suffix) for c in sss.lower()):
         return (False, sss)
@@ -246,10 +251,16 @@ def compile_as_decimal(expr):
     contains '.') into Decimals, so that we avoid the normal FP accuracy &
     rounding issues.  Second we translate '?' into a (decimal) random number.
 
+    There are two bits of syntax sugar to help when calling tab from Vi, to avoid
+    the need to escape ! and % you can write <> for != and ' mod ' for %.
+
     '''
+    clean_expression = expr.replace('<>', '!=')
+    clean_expression = re.sub(r'\bmod\b', '%', clean_expression)
+    clean_expression = re.sub(r'(?<!!)=+', '==', clean_expression) # also allow a=b
     out = []
     try:
-        for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(expr).readline):
+        for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(clean_expression).readline):
             if tn == tokenize.NUMBER and '.' in tv:
                 out.append((tokenize.NAME, 'Decimal'))
                 out.append((tokenize.OP, '('))
@@ -593,6 +604,13 @@ class Table:
         for k in identity:
             value_dict[k.upper()] = 0 # accumulators
 
+        # the idea here is that we treat unknown names as strings, to allow you to say b=whatever 
+        # instead of having to write b='whatever'.  The co_names attribute of the compiled code
+        # is a list of the names in the compiled object
+        for n in cc.co_names:
+            if n not in identity and n not in Panther and n not in value_dict:
+                value_dict[n] = n
+
         for i, r in enumerate(old_data):
             value_dict['row_number'] = i + 1
             for k, v in zip(identity, r):
@@ -602,7 +620,7 @@ class Table:
 
             try:
                 wanted = eval(cc, Panther, value_dict)
-            except (TypeError, NameError):
+            except (TypeError, NameError, ArithmeticError):
                 wanted = True  # default to keeping the row
             if wanted:
                 self.append(r)

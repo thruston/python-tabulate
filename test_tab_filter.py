@@ -36,8 +36,8 @@ Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
         self.tab.do('filter True') # True predicate does nothing
         self.assertEqual(str(self.tab), self.rain)
 
-        self.tab.do('filter b<>4') # Syntax error make message
-        self.assertEqual(str(self.tab), '?! syntax b<>4\n' + self.rain)
+        self.tab.do('filter b=>4') # Syntax error make message
+        self.assertEqual(str(self.tab), '?! syntax b=>4\n' + self.rain)
 
         self.tab.do('filter j > 10.0')
         expected = '''
@@ -51,6 +51,12 @@ Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
 2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4   0.0   19.7
 2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0   0.0   13.9
 2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
+'''.strip()
+        self.assertEqual(str(self.tab), expected)
+
+        self.tab.do('filter i=Sun') # treats unknown name as string...
+        expected = '''
+Monday  Week  Mon  Tue  Wed  Thu  Fri  Sat  Sun  Total
 '''.strip()
         self.assertEqual(str(self.tab), expected)
 

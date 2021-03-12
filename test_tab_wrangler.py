@@ -3,7 +3,7 @@
 import unittest
 import tabulate
 
-class TestTableWranger(unittest.TestCase):
+class TestTableWrangler(unittest.TestCase):
 
     def setUp(self):
         self.tab = tabulate.Table()
@@ -79,7 +79,7 @@ East     1   1   1   1
 West     1   1   1   1
 '''.strip()
         gotter = '''
-Region  Q1    Q2    Q3    Q4
+Region    Q1    Q2    Q3    Q4
 ------------------------------
 East    True  True  True  True
 West    True  True  True  True
