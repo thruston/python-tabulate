@@ -257,7 +257,7 @@ def compile_as_decimal(expr):
     '''
     clean_expression = expr.replace('<>', '!=')
     clean_expression = re.sub(r'\bmod\b', '%', clean_expression)
-    clean_expression = re.sub(r'(?<!!)=+', '==', clean_expression) # also allow a=b
+    clean_expression = re.sub(r'(?<![<>!])=+', '==', clean_expression) # also allow a=b
     out = []
     try:
         for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(clean_expression).readline):
@@ -492,7 +492,7 @@ class Table:
 
     def insert(self, i, iterable, filler=''):
         "add a row, maintaining cols"
-        row = list(iterable)
+        row = list(filler if x=='' else x for x in iterable)
         n = len(row)
         if n < self.cols:
             row.extend([filler] * (self.cols - n))
@@ -669,15 +669,11 @@ class Table:
             "cols": self.cols,
             "total":  sum(as_decimal(x) for row in self.data for x in row),
             "row_number": 0,
-            "col_number": 0,
-            "row_total": 0,
-            "col_total": 0,
         }
         col_totals = [sum(x[1] for x in self.column(i) if x[0]) for i in range(self.cols)]
 
         old_rows = self.data[:]
         self.data.clear()
-        errors = set()
         for row in old_rows:
             new_row = []
             values['row_number'] += 1
@@ -685,25 +681,21 @@ class Table:
             for i, cell in enumerate(row):
                 values['col_number'] = i + 1
                 values['col_total'] = col_totals[i]
-                ok, values['x'] = is_as_number(cell)
-                if not ok:
-                    new_row.append(cell)
-                    continue
+                flag, values['x'] = is_as_number(cell)
                 try:
                     new_value = eval(cc, Panther, values)
-                except (NameError, ValueError) as e:
-                    errors.add(f'?! {fstring} <- {e!r}')
+                except (ArithmeticError, NameError, TypeError, ValueError) as e:
                     new_row.append(cell)
                 else:
                     if isinstance(new_value, tuple):
                         new_row.extend(new_value)
+                    elif not flag and new_value.count(cell) > 2:
+                        # this was probably 'string'*9 or similar
+                        new_row.append(cell)
                     else:
                         new_row.append(new_value)
 
             self.append(new_row)
-
-        # if errors is null this does nothing...
-        self.messages.extend(sorted(errors))
 
     def _apply_formats(self, f_string, f_function):
         "Used for DP and SF"
@@ -1322,6 +1314,7 @@ class Table:
 
             yield ' ' * self.indent + separator.join(out).rstrip() + eol_marker # no trailing blanks
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("agenda", nargs='*', help="[delimiter.maxsplit] [verb [option]]...")
@@ -1343,13 +1336,14 @@ if __name__ == '__main__':
             delim = None
 
     table = Table()
-    fh = io.StringIO(sys.stdin.read()) if args.file is None else open(args.file)
+    fh = open(args.file) if args.file else io.StringIO("" if sys.stdin.isatty() else sys.stdin.read())
+
     if delim is None:
         first_line = fh.readline().strip()
         fh.seek(0)
         # guess delim from content: csv , tex & latex & pipe |
-        if (first_line.count(' ') == 0 and first_line.count(',') > 2) or ('","' in first_line):
-            table.parse_lol(csv.reader(fh))
+        if first_line and csv.Sniffer().sniff(first_line).delimiter == ',':
+            table.parse_lol(csv.reader(fh), filler='-')
 
         elif first_line.count('&') > 0 and first_line.endswith("\\cr"):
             table.parse_tex(fh)
@@ -1366,7 +1360,7 @@ if __name__ == '__main__':
             table.parse_lines(fh, splitter=re.compile(r'\s{2,}'))
 
     elif delim == ',':
-        table.parse_lol(csv.reader(fh))
+        table.parse_lol(csv.reader(fh), filler='-')
 
     else:
         # check for a maxsplit spec ".3", "2.4" etc

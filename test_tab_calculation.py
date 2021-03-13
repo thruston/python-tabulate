@@ -205,8 +205,8 @@ d  13  14  15  16
         self.tab.do("tap x!4")
         self.assertEqual(str(self.tab), '?! syntax x!4\n' + sample)
 
-        self.tab.do("tap x*undefined")
-        self.assertEqual(str(self.tab), "?! x*undefined <- NameError(\"name 'undefined' is not defined\")\n" + sample)
+        self.tab.do("tap x*undefined") # undefined names are treated as strings
+        self.assertEqual(str(self.tab), sample)
 
     def test_with_non_numbers(self):
         "Make sure subs work ok"
