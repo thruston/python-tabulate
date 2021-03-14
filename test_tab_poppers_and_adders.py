@@ -24,7 +24,27 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri   Sat   Sun  Total
 2020-02-24     9  6.1  0.5  0.1  8.6  5.9   7.1   0.2   28.5
 2020-03-02    10  0.0  0.0  4.3  0.0  3.0  12.4   0.0   19.7
 '''.strip()
-        self.ruler = '-------------------------------------------------------------'
+        self.rain_summary = '''
+Monday      Week  Mon  Tue  Wed  Thu  Fri   Sat   Sun  Total
+------------------------------------------------------------
+2019-12-30     1  0.0  0.2  0.0  0.0  1.2   0.0   0.0    1.4
+2020-01-06     2  0.5  0.0  0.0  6.4  0.0   0.1   1.7    8.7
+2020-01-13     3  5.3  1.7  9.1  3.0  1.7   0.0   0.0   20.8
+2020-01-20     4  0.0  0.0  0.0  0.0  0.0   0.1   2.3    2.4
+2020-01-27     5  8.4  2.1  0.0  0.5  1.0   0.0   7.1   19.1
+2020-02-03     6  0.1  0.0  0.0  0.0  0.0   1.5  10.6   12.2
+2020-02-10     7  5.5  0.0  0.5  6.6  0.0   4.9  15.6   33.1
+2020-02-17     8  0.2  3.3  1.0  3.8  0.0   0.5   1.0    9.8
+2020-02-24     9  6.1  0.5  0.1  8.6  5.9   7.1   0.2   28.5
+2020-03-02    10  0.0  0.0  4.3  0.0  3.0  12.4   0.0   19.7
+------------------------------------------------------------
+Min            1  0.0  0.0  0.0  0.0  0.0   0.0   0.0    1.4
+Q25            2  0.0  0.0  0.0  0.0  0.0   0.0   0.0    2.4
+Median         4  0.2  0.0  0.0  0.2  0.0   0.1   0.6   11.0
+Mean           5  2.0  0.6  1.2  2.2  1.0   2.1   3.0   13.1
+Q75            7  5.4  0.9  1.0  4.4  1.3   2.8   4.0   20.0
+Max           10  8.4  3.3  9.1  8.6  5.9  12.4  15.6   33.1
+'''.strip()
         self.total_rain = '''
 Monday      Week   Mon  Tue   Wed   Thu   Fri   Sat   Sun  Total
 ----------------------------------------------------------------
@@ -179,6 +199,16 @@ Mean         5.5  2.61  0.78  1.5  2.89  1.28  2.66  3.85  15.57
 
         self.tab.do("pop add prod")
         self.assertEqual(str(self.tab), self.prod_rain)
+
+        self.tab.do("pop add summary dp 001")
+        self.assertEqual(str(self.tab), self.rain_summary)
+
+    def test_unknown_function(self):
+        self.tab.parse_lines(self.rain.splitlines())
+        self.assertEqual(str(self.tab), self.rain)
+
+        self.tab.do("rule add gmean")
+        self.assertEqual(str(self.tab), '? gmean\n' + self.rain)
 
     def test_poppers(self):
         "Various pop push manoeuvers..."

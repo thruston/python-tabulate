@@ -246,12 +246,12 @@ You can string together as many verbs (plus optional arguments) as you like.
 
 ### add - insert the sum at the bottom of each column
 
-    add [sum|mean|median|q95|...]
+    add [sum|mean|median|q95|...]*
 
 `add` adds the total to the foot of a column.  The default option is `sum`, but
-it can be any method from the Python3 `statistics` library: `mean`, `median`,
-`mode`, `stdev`, `variance`, and so on, plus `q95` for the 95%-ile.
-So given this:
+it also can be any one or more methods from the Python3 `statistics` library:
+`mean`, `median`, `mode`, `stdev`, `variance`, and so on, plus `q95` for the
+95%-ile.  So given this:
 
     First   100
     Second  200
@@ -288,6 +288,15 @@ The `pop` removes the last row before adding the new function.  You can use the
 same trick if you change one or more of the values and want to update the
 total.  Note that if you have already added the rule there is no need to add it
 again.
+
+If you want to see (say) both `min` and `max` then try `rule add min max`:
+
+    First   100
+    Second  200
+    Third   300
+    -----------
+    Min     100
+    Max     300
 
 Note that non-numeric cells in a column are ignored, but if there are no numeric entries
 at all in a column, then the value of the total is the name of the function.

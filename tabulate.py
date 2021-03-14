@@ -604,7 +604,7 @@ class Table:
         for k in identity:
             value_dict[k.upper()] = 0 # accumulators
 
-        # the idea here is that we treat unknown names as strings, to allow you to say b=whatever 
+        # the idea here is that we treat unknown names as strings, to allow you to say b=whatever
         # instead of having to write b='whatever'.  The co_names attribute of the compiled code
         # is a list of the names in the compiled object
         for n in cc.co_names:
@@ -841,36 +841,45 @@ class Table:
                 self.append([r[x] for x in col_list])
 
 
-    def _append_reduction(self, fun):
+    def _append_reduction(self, fun_list):
         '''Reduce column and append result to foot of table
         fun is the name, func is the callable.
         first see if this is the name of something in stats
-        or something else built in that we like, if none of those then use "sum"
+        or something from builtins that we like, if none of those ignore it with msg
         '''
-
-        if hasattr(statistics, fun):
-            func = getattr(statistics, fun)
-        elif fun == "q75" and hasattr(statistics, "quantiles"):
-            func = lambda data: statistics.quantiles(data, n=4)[-1]
-        elif fun == "q95" and hasattr(statistics, "quantiles"):
-            func = lambda data: statistics.quantiles(data, n=20)[-1]
-        elif fun in "min max all any sum".split():
-            func = getattr(builtins, fun)
-        elif fun == "prod":
-            func = math.prod
+        if not fun_list:
+            fun_list = 'total'
         else:
-            func = sum
-            fun = 'total'
+            fun_list = fun_list.replace('summary', 'min q25 median mean q75 max')
 
-        footer = []
-        for c in range(self.cols):
-            booleans, decimals = zip(*self.column(c))
-            if not any(booleans):
-                footer.append(fun.title())
+        for fun in (f.lower() for f in fun_list.split()):
+            if hasattr(statistics, fun):
+                func = getattr(statistics, fun)
+            elif fun == "q25" and hasattr(statistics, "quantiles"):
+                func = lambda data: statistics.quantiles(data, n=4)[0]
+            elif fun == "q75" and hasattr(statistics, "quantiles"):
+                func = lambda data: statistics.quantiles(data, n=4)[2]
+            elif fun == "q95" and hasattr(statistics, "quantiles"):
+                func = lambda data: statistics.quantiles(data, n=20)[-1]
+            elif fun in "min max all any sum".split():
+                func = getattr(builtins, fun)
+            elif fun == "prod" and hasattr(math, "prod"):
+                func = math.prod
+            elif fun == "total":
+                func = builtins.sum
             else:
-                footer.append(func(itertools.compress(decimals, booleans)))
+                self.messages.append(f'? {fun}')
+                continue
 
-        self.append(footer)
+            footer = []
+            for c in range(self.cols):
+                booleans, decimals = zip(*self.column(c))
+                if not any(booleans):
+                    footer.append(fun.title())
+                else:
+                    footer.append(func(itertools.compress(decimals, booleans)))
+
+            self.append(footer)
 
     def _wrangle(self, shape):
         '''Reflow / pivot / reshape from wide to long or long to wide
