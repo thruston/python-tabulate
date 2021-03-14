@@ -43,6 +43,7 @@ US              Europe   510900         156     28494973
         self.levels = '''
 # Country: All distinct.
 # Region: Europe 14, America 8, Asia 5, Africa 1
+# Death rate: Min: 12  Q25: 75.75  Median: 116  Mean: 111.5  Q75: 152.5  Max: 192
 '''.strip()
 
     def test_levels(self):
@@ -52,8 +53,11 @@ US              Europe   510900         156     28494973
         
         self.tab.do('levels') # missing predicate does nothing
         self.assertEqual(str(self.tab), self.covid)
+
+        self.tab.do('levels .') # broken predicate gives error
+        self.assertEqual(str(self.tab), '?! colspec .\n' + self.covid)
         
-        self.tab.do('levels AB')
+        self.tab.do('levels ABD')
         self.assertEqual(str(self.tab), self.levels + '\n' + self.covid)
         
         self.tab.do('levels c')

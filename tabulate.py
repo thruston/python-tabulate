@@ -319,6 +319,43 @@ def _replace_values(failed_expression, known_variables):
 
     return prefix + failed_expression
 
+def statistical_summary(numbers):
+    '''return a 4/6 field summary of a list of numbers
+    >>> statistical_summary([])
+    ''
+    >>> statistical_summary([decimal.Decimal(x) for x in '36.4  67.1  82.7  34.2  96.8  10.9  19.1  71.8  66.0  29.2'.split()])
+    'Min: 10.9  Mean: 51.42  Max: 96.8'
+    >>> statistical_summary([decimal.Decimal(x) for x in '0 1 2 3 4 5 6 8 9 36.4  67.1  82.7  34.2  96.8  10.9  19.1  71.8  66.0  29.2'.split()])
+    'Min: 0  Q25: 4  Median: 10.9  Mean: 29.0631578947  Q75: 66.0  Max: 96.8'
+
+    '''
+    if not numbers:
+        return ''
+
+    min = builtins.min(numbers)
+    max = builtins.max(numbers)
+    mean = statistics.mean(numbers)
+    if hasattr(statistics, "quantiles") and len(numbers) > 10:
+        lq, md, uq = statistics.quantiles(numbers, n=4)
+        return f'Min: {min}  Q25: {lq}  Median: {md}  Mean: {mean}  Q75: {uq}  Max: {max}'
+    
+    return f'Min: {min}  Mean: {mean}  Max: {max}'
+
+def counting_summary(factors, n=5):
+    '''summarize different levels in a factor
+
+    >>> counting_summary('a b c d e f g h a b b b a c w'.split())
+    'b 4, a 3, c 2, d 1, e 1 (and 4 others...)'
+    '''
+    counter = collections.Counter(factors)
+    if all(x==1 for x in counter.values()):
+        analysis = "All distinct."
+    else:
+        analysis = ', '.join(f'{k} {v}' for k, v in counter.most_common(n))
+        if len(counter) > n:
+            analysis += f' (and {len(counter)-n} others...)'
+
+    return analysis
 
 class Table:
     '''A class to hold a table -- and some functions thereon'''
@@ -1239,18 +1276,21 @@ class Table:
             return
 
         for c in col_spec:
-            i, flag = self._fancy_col_index(c)
+            i, use_first_for_label = self._fancy_col_index(c)
             if i is None:
                 continue
-            data = [x[1] for x in self.column(i)]
-            label = data.pop(0) if flag else c
-            counter = collections.Counter(data)
-            if all(x==1 for x in counter.values()):
-                analysis = "All distinct."
+            flags, data = zip(*self.column(i))
+            if use_first_for_label and not flags[0]:
+                label, *data = data
+                _, *flags = flags
             else:
-                analysis = ', '.join(f'{k} {v}' for k, v in counter.most_common(5))
-                if len(counter) > 5:
-                    analysis += f' (and {len(counter)-5} others...)'
+                label = chr(ord('a') + i)
+            
+            if all(flags):
+                analysis = statistical_summary(data)
+            else:
+                analysis = counting_summary(data, 5)
+
             self.messages.append(f'# {label}: {analysis}')
 
     def _roll_by_col(self, col_spec):
