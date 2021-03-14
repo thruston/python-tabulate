@@ -345,6 +345,7 @@ class Table:
             'help': self._describe_operations,
             'make': self._set_output_form,
             'label': self._label_columns,
+            'levels': self._show_column_counts,
             'nospace': self._remove_spaces_from_values,
             'noblanks': self._remove_blank_extras,
             'pivot': self._wrangle,
@@ -684,7 +685,7 @@ class Table:
                 flag, values['x'] = is_as_number(cell)
                 try:
                     new_value = eval(cc, Panther, values)
-                except (ArithmeticError, NameError, TypeError, ValueError) as e:
+                except Exception:
                     new_row.append(cell)
                 else:
                     if isinstance(new_value, tuple):
@@ -1231,6 +1232,27 @@ class Table:
                 self.extras[i].add("blank")
             last_tag = this_tag
 
+    def _show_column_counts(self, col_spec):
+        '''show messages with analysis of given cols
+        '''
+        if not col_spec:
+            return
+
+        for c in col_spec:
+            i, flag = self._fancy_col_index(c)
+            if i is None:
+                continue
+            data = [x[1] for x in self.column(i)]
+            label = data.pop(0) if flag else c
+            counter = collections.Counter(data)
+            if all(x==1 for x in counter.values()):
+                analysis = "All distinct."
+            else:
+                analysis = ', '.join(f'{k} {v}' for k, v in counter.most_common(5))
+                if len(counter) > 5:
+                    analysis += f' (and {len(counter)-5} others...)'
+            self.messages.append(f'# {label}: {analysis}')
+
     def _roll_by_col(self, col_spec):
         '''Roll columns, up, or down
         '''
@@ -1351,10 +1373,7 @@ if __name__ == '__main__':
         first_line = fh.readline().strip()
         fh.seek(0)
         # guess delim from content: csv , tex & latex & pipe |
-        if first_line and csv.Sniffer().sniff(first_line).delimiter == ',':
-            table.parse_lol(csv.reader(fh), filler='-')
-
-        elif first_line.count('&') > 0 and first_line.endswith("\\cr"):
+        if first_line.count('&') > 0 and first_line.endswith("\\cr"):
             table.parse_tex(fh)
             table.do('make tex')
 
@@ -1364,6 +1383,9 @@ if __name__ == '__main__':
 
         elif first_line.count('|') > 2:
             table.parse_lines(fh, splitter=re.compile(r'\s*\|\s*'))
+
+        elif first_line and first_line.count('  ') == 0 and not first_line.startswith('#') and csv.Sniffer().sniff(first_line).delimiter == ',':
+            table.parse_lol(csv.reader(fh), filler='-')
 
         else:
             table.parse_lines(fh, splitter=re.compile(r'\s{2,}'))
