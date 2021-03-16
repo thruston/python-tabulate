@@ -222,6 +222,11 @@ def rounders(s, n):
     flag, number = is_as_number(s)
     return f'{number:.{n}f}' if flag else s
 
+def look_like_years(numbers):
+    '''Do these decimals appear to be a list of years?
+    '''
+    return all(x == x.to_integral_value() and 1900 <= x < 2100 for x in numbers)
+
 def looks_like_formula(expression):
     '''Is this a formula?
 
@@ -911,11 +916,12 @@ class Table:
 
             footer = []
             for c in range(self.cols):
-                booleans, decimals = zip(*self.column(c))
-                if not any(booleans):
+                booleans, values = zip(*self.column(c))
+                decimals = list(itertools.compress(values, booleans))
+                if not any(booleans) or look_like_years(decimals):
                     footer.append(fun.title())
                 else:
-                    footer.append(func(itertools.compress(decimals, booleans)))
+                    footer.append(func(decimals))
 
             self.append(footer)
 
@@ -1280,7 +1286,7 @@ class Table:
             if i is None:
                 continue
             flags, data = zip(*self.column(i))
-            if use_first_for_label and not flags[0]:
+            if use_first_for_label:
                 label, *data = data
                 _, *flags = flags
             else:
