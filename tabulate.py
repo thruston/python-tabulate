@@ -222,10 +222,16 @@ def rounders(s, n):
     flag, number = is_as_number(s)
     return f'{number:.{n}f}' if flag else s
 
-def look_like_years(numbers):
-    '''Do these decimals appear to be a list of years?
+def looks_like_sequence(numbers):
+    '''Do these decimals appear to be a list of years, or some other numeric labels?
+    >>> looks_like_sequence((1,2,3))
+    True
+    >>> looks_like_sequence((1990, 1980, 1970))
+    True
+    >>> looks_like_sequence((3.14, 2.718, 6.28))
+    False
     '''
-    return all(x == x.to_integral_value() and 1900 <= x < 2100 for x in numbers)
+    return sum(numbers) % len(numbers) == 0
 
 def looks_like_formula(expression):
     '''Is this a formula?
@@ -918,7 +924,7 @@ class Table:
             for c in range(self.cols):
                 booleans, values = zip(*self.column(c))
                 decimals = list(itertools.compress(values, booleans))
-                if not any(booleans) or look_like_years(decimals):
+                if not any(booleans) or (c==0 and looks_like_sequence(decimals)):
                     footer.append(fun.title())
                 else:
                     footer.append(func(decimals))
@@ -1134,38 +1140,43 @@ class Table:
                 return
             desiderata.append((cc, x))
 
+        values = {
+            "rows": len(self.data),
+            "cols": self.cols,
+            "total":  sum(as_decimal(x) for row in self.data for x in row),
+            "row_number": 0,
+        }
+        for k in identity:
+            values[k.upper()] = 0 # accumulators
+
         old_data = self.data.copy()
         self.data.clear()
         self.cols = 0
-        value_dict = {}
-        value_dict['rows'] = len(old_data)
-        for k in identity:
-            value_dict[k.upper()] = 0 # accumulators
 
-        for row_number, r in enumerate(old_data):
+        for r in old_data:
             for k, v in zip(identity, r):
-                flag, value_dict[k] = is_as_number(v)
+                flag, values[k] = is_as_number(v)
                 if flag:
-                    value_dict[k.upper()] += value_dict[k]
+                    values[k.upper()] += values[k]
 
             # allow xyz to refer to cells counted from the end...
             for j, k in zip("zyxw", reversed(identity)):
-                value_dict[j] = value_dict[k]
-                value_dict[j.upper()] = value_dict[k.upper()]
+                values[j] = values[k]
+                values[j.upper()] = values[k.upper()]
 
             # and note the line number
-            value_dict['row_number'] = row_number + 1
+            values['row_number'] += 1
 
             new_row = []
             for compiled_code, literal_code in desiderata:
                 try:
-                    new_value = eval(compiled_code, Panther, value_dict)
+                    new_value = eval(compiled_code, Panther, values)
                     if isinstance(new_value, tuple):
                         new_row.extend(new_value)
                     else:
                         new_row.append(new_value)
                 except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation):
-                    new_row.append(_replace_values(literal_code, value_dict))
+                    new_row.append(_replace_values(literal_code, values))
                 except ZeroDivisionError:
                     new_row.append("-")
             self.append(new_row)

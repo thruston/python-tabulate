@@ -6,6 +6,7 @@ Toby Thurston -- 10 Feb 2021
     "dow": tab_fun_dates.dow,
     "base": tab_fun_dates.base,
     "date": tab_fun_dates.date,
+
     "hms": tab_fun_dates.hms,
     "hr": tab_fun_dates.hr,
     "mins": tab_fun_dates.mins,
@@ -60,7 +61,7 @@ def base(sss=None):
     36524
     >>> base() - datetime.date.today().toordinal()
     0
-    >>> datetime.date.today().toordinal() - base(-4) 
+    >>> datetime.date.today().toordinal() - base(-4)
     4
     >>> base('Date')
     'base(Date)'
