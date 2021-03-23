@@ -47,7 +47,7 @@ US              Europe   510900         156     28494973
 '''.strip()
 
     def test_levels(self):
-        "Select matching rows"
+        "show messages about column contents"
         self.tab.parse_lines(self.covid.splitlines())
         self.assertEqual(str(self.tab), self.covid)
         
