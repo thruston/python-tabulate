@@ -154,3 +154,34 @@ def secs(hms_word):
     5025.67
     '''
     return hr(hms_word, 2)
+
+def as_time(time_string):
+    '''Turn a possible time into hh:mm
+
+    >>> a = ['12 midnight', '12.00 a.m.', '12:01 am', '1:00a.m.', '9am', '11.00am', '11:59 a.m.', 'Noon', '12 noon', '12:00 pm', '12:01 p.m.', '1:00pm', '11:00p.m.', '11:59 pm']
+    >>> ' '.join(as_time(x) for x in a)
+    '00:00 00:00 00:01 01:00 09:00 11:00 11:59 12:00 12:00 12:00 12:01 13:00 23:00 23:59'
+    '''
+    ts = ''.join(time_string.lower().split()).replace('.', '').replace(':', '')
+    if ts in ('noon', '12noon', '12pm', '1200pm'):
+        return '12:00'
+    if ts in ('midnight', '12midnight', '12am', '1200am'):
+        return '00:00'
+    if ts.endswith('am'):
+        if len(ts) <= 4:
+            hh = int(ts[:-2]) % 12
+            mm = 0
+        else:
+            hh = int(ts[:-4]) % 12
+            mm = int(ts[-4:-2])
+        return f'{hh:02d}:{mm:02d}'
+    if ts.endswith('pm'):
+        if len(ts) <= 4:
+            hh = int(ts[:-2]) % 12 + 12
+            mm = 0
+        else:
+            hh = int(ts[:-4]) % 12 + 12
+            mm = int(ts[-4:-2])
+        return f'{hh:02d}:{mm:02d}'
+
+    return ts

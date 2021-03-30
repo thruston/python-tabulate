@@ -47,6 +47,7 @@ Panther = {
     'hr': tab_fun_dates.hr,
     'mins': tab_fun_dates.mins,
     'secs': tab_fun_dates.secs,
+    'time': tab_fun_dates.as_time,
     'cos': tab_fun_maths.cos, 'cosd': tab_fun_maths.cosd,
     'sin': tab_fun_maths.sin, 'sind': tab_fun_maths.sind,
     'tan': tab_fun_maths.cos, 'tand': tab_fun_maths.tand,
