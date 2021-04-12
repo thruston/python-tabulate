@@ -158,9 +158,9 @@ def secs(hms_word):
 def as_time(time_string):
     '''Turn a possible time into hh:mm
 
-    >>> a = ['12 midnight', '12.00 a.m.', '12:01 am', '1:00a.m.', '9am', '11.00am', '11:59 a.m.', 'Noon', '12 noon', '12:00 pm', '12:01 p.m.', '1:00pm', '11:00p.m.', '11:59 pm']
+    >>> a = ['12 midnight', '12.00 a.m.', '12:01 am', '1:00a.m.', '9am', '11.00am', '11:59 a.m.', 'Noon', '12 noon', '12:00 pm', '12:01 p.m.', '1:00pm', '4 p.m.', '11:00p.m.', '11:59 pm', '12:00']
     >>> ' '.join(as_time(x) for x in a)
-    '00:00 00:00 00:01 01:00 09:00 11:00 11:59 12:00 12:00 12:00 12:01 13:00 23:00 23:59'
+    '00:00 00:00 00:01 01:00 09:00 11:00 11:59 12:00 12:00 12:00 12:01 13:00 16:00 23:00 23:59 12:00'
     '''
     ts = ''.join(time_string.lower().split()).replace('.', '').replace(':', '')
     if ts in ('noon', '12noon', '12pm', '1200pm'):
@@ -184,4 +184,4 @@ def as_time(time_string):
             mm = int(ts[-4:-2])
         return f'{hh:02d}:{mm:02d}'
 
-    return ts
+    return time_string
