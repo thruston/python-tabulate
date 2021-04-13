@@ -83,8 +83,8 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
         self.assertEqual(str(self.tab), expected)
         
         # check broken col spec
-        self.tab.do('sort ?')
-        self.assertEqual(str(self.tab), '?! colspec ?\n' + expected)
+        self.tab.do('sort <')
+        self.assertEqual(str(self.tab), '?! syntax (<)\n' + expected)
 
         self.tab.do('pop 0 sort -1 push 0')
         expected = '''

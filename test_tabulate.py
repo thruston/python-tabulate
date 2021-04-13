@@ -420,7 +420,7 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat  Sun  Total
         self.assertEqual(str(self.tab), some_lines)
 
         self.tab.do("undefined verb")
-        self.assertEqual(str(self.tab), '?? undefined\n?? verb\n' + some_lines)
+        self.assertEqual(str(self.tab), '?? undefined\n' + some_lines)
 
         self.assertEqual(self.tab.column(99), [])
 

@@ -68,6 +68,7 @@ Panther = {
     'sqrt': lambda x: decimal.Decimal(x).sqrt(),
     'reversed': lambda x: ''.join(reversed(x)),
     'Decimal': decimal.Decimal,
+    'randomd': lambda: decimal.Decimal(str(random.random())),
     '__builtins__': {},
 }
 
@@ -237,14 +238,14 @@ def looks_like_sequence(numbers):
 def looks_like_formula(expression):
     '''Is this a formula?
 
-    >>> looks_like_formula('Abc?')
+    >>> looks_like_formula('Abc@')
     False
     >>> looks_like_formula('-1')
     False
     >>> looks_like_formula('a-1')
     True
     '''
-    if all(x in string.ascii_letters + '?' for x in expression):
+    if all(x in string.ascii_letters + '@' for x in expression):
         return False
     try:
         int(expression)
@@ -279,9 +280,8 @@ def compile_as_decimal(expr):
                 out.append((tokenize.STRING, repr(tv)))
                 out.append((tokenize.OP, ')'))
             elif tv == '?':
-                out.append((tokenize.NAME, 'Decimal'))
+                out.append((tokenize.NAME, 'randomd'))
                 out.append((tokenize.OP, '('))
-                out.append((tokenize.STRING, repr(random.random())))
                 out.append((tokenize.OP, ')'))
             else:
                 out.append((tn, tv))
@@ -568,7 +568,7 @@ class Table:
             op = agenda.pop(0)
             if op not in self.operations:
                 self.messages.append(f'?? {op}')
-                continue
+                break
 
             # get any arguments
             argument = []
@@ -576,6 +576,8 @@ class Table:
                 argument.append(agenda.pop(0))
 
             self.operations[op](' '.join(argument))
+            if self.messages:
+                break
 
     def _label_columns(self, names=''):
         "add some labels"
@@ -1216,13 +1218,21 @@ class Table:
 
         abc means use the concatenation of row[0] + row[1] + row[2]
         upper case groups mean reverse sort
+        a @ somewhere in the spec means: pop first row and push afterwards
 
         groups are done right to left...
 
         '''
+
         if looks_like_formula(col_spec):
             self.do(f"arr ({col_spec})~ sort a arr -a")
             return
+
+        if '@' in col_spec:
+            col_spec = col_spec.replace('@', '')
+            header = self.data.pop(0)
+        else:
+            header = None
 
         identity = string.ascii_lowercase[:self.cols]
         if col_spec is None or col_spec == '':
@@ -1239,6 +1249,9 @@ class Table:
         else:
             if -self.cols <= i < self.cols:
                 self.data.sort(key=lambda row: as_numeric_tuple(row[i], False))
+
+        if header is not None:
+            self.data.insert(0, header)
 
     def _remove_duplicates_by_col(self, col_spec):
         '''like uniq, remove row if key cols match the row above
