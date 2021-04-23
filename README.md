@@ -126,6 +126,8 @@ You can also limit the number of cell splits done by adding a second number to
 a numeric delimiter.  So "1.3" will use one or more spaces as the delimiter,
 but will only make 4 columns. This is often handy when parsing log files etc.
 
+If you want to parse a regular CSV file, use "," as the delimiter.
+
 After the optional delimiter you should specify a sequence of verbs.  If the
 verb needs an option then that goes right after the verb.  Verbs and options
 are separated by blanks.  The parsing is very simple.  If it looks like a verb

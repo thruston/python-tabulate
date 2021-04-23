@@ -1443,7 +1443,7 @@ if __name__ == '__main__':
     if delim is None:
         first_line = fh.readline().strip()
         fh.seek(0)
-        # guess delim from content: csv , tex & latex & pipe |
+        # guess delim from content: tex & latex & pipe |
         if first_line.count('&') > 0 and first_line.endswith("\\cr"):
             table.parse_tex(fh)
             table.do('make tex')
@@ -1454,9 +1454,6 @@ if __name__ == '__main__':
 
         elif first_line.count('|') > 2:
             table.parse_lines(fh, splitter=re.compile(r'\s*\|\s*'))
-
-        elif first_line and first_line.count('  ') == 0 and not first_line.startswith('#') and csv.Sniffer().sniff(first_line).delimiter == ',':
-            table.parse_lol(csv.reader(fh), filler='-')
 
         else:
             table.parse_lines(fh, splitter=re.compile(r'\s{2,}'))
