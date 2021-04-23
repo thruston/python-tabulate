@@ -543,6 +543,8 @@ class Table:
     def insert(self, i, iterable, filler=''):
         "add a row, maintaining cols"
         row = list(filler if x=='' else x for x in iterable)
+        if not row:
+            return
         n = len(row)
         if n < self.cols:
             row.extend([filler] * (self.cols - n))
@@ -587,8 +589,11 @@ class Table:
         # user only gives two names, the 3rd, 4th etc cols will still
         # be labelled c, d, etc.  If you have more than 26 cols
         # cols 27+ will get fillers instead of labels
-        pairs = itertools.zip_longest(names.split(), string.ascii_lowercase)
-        self.insert(0, list(a or b for a, b in pairs)[:self.cols])
+        if self.cols:
+            pairs = itertools.zip_longest(names.split(), string.ascii_lowercase)
+            self.insert(0, list(a or b for a, b in pairs)[:self.cols])
+        else:
+            self.insert(0, names.split()) # if no columns just insert these names
 
     def column(self, i):
         "get a column from the table - zero indexed"
