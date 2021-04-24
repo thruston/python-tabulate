@@ -543,8 +543,6 @@ class Table:
     def insert(self, i, iterable, filler=''):
         "add a row, maintaining cols"
         row = list(filler if x=='' else x for x in iterable)
-        if not row:
-            return
         n = len(row)
         if n < self.cols:
             row.extend([filler] * (self.cols - n))
@@ -554,7 +552,8 @@ class Table:
             self.cols = n
 
         # they should all be strings, and normalize space in last column...
-        self.data.insert(i, [str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
+        if n > 0:
+            self.data.insert(i, [str(x) for x in row[:-1]] + [' '.join(str(row[-1]).split())])
 
     def copy(self):
         "Implement the standard copy method"

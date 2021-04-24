@@ -431,6 +431,11 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat  Sun  Total
         self.assertEqual(str(self.tab), '#at top\n' + some_lines)
         # note that the comment won't actually be printed unless another line were added
 
+        self.tab.clear()
+        self.tab.do()
+        self.tab.do('label this that and the other')
+        self.assertEqual(str(self.tab), "this  that  and  the  other")
+
 
 if __name__ == "__main__":
     unittest.main()
