@@ -185,3 +185,24 @@ def as_time(time_string):
         return f'{hh:02d}:{mm:02d}'
 
     return time_string
+
+def epoch(date_time_string):
+    '''Turn date time into epoch secs
+
+    >>> epoch("01/01/1970 00:00")
+    '0'
+    >>> epoch("2000-12-31 23:59:59")
+    '978307199'
+    '''
+
+    for fd in ('%Y-%m-%d', '%d/%m/%Y'):
+        for ft in ('%H:%M:%S', '%H:%M'):
+            try:
+                dt = datetime.datetime.strptime(date_time_string, f'{fd} {ft}').replace(tzinfo=datetime.timezone.utc)
+            except ValueError:
+                pass
+            else:
+                return f'{dt.timestamp():.0f}'
+
+    return date_time_string
+

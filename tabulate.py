@@ -43,6 +43,7 @@ Panther = {
     'base': tab_fun_dates.base,
     'date': tab_fun_dates.date,
     'dow': tab_fun_dates.dow,
+    'epoch': tab_fun_dates.epoch,
     'hms': tab_fun_dates.hms,
     'hr': tab_fun_dates.hr,
     'mins': tab_fun_dates.mins,
