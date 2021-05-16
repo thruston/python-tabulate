@@ -574,19 +574,45 @@ can try `filter j>10` to get
 
 Notice that the header row was included.  If the expression causes an error (in
 this case because you can't compare a string to a number) then the row will
-always be included.  The expressions should be valid bits of Python and can use
-the same subset of built-in and maths functions as the normal row arrangements
-with `arr`, and single letters refer to the value of the cells in the way
-described for `arr` above.  Again like `arr` you can use the variables `rows`
-and `row_number` in the expression: `rows` is the count of rows in your table, and
-`row_number` starts at 1 and is incremented by 1 on successive rows.
-You could use this to pick out every other row: `filter row_number % 2`.
+always be included.  But if you had done `filter i=0` you would get
+
+    2019-12-30   1  0.0  0.2   0.0  0.0  1.2   0.0  0.0   1.4
+    2020-01-13   3  5.3  1.7   9.1  3.0  1.7   0.0  0.0  20.8
+    2020-03-02  10  0.0  0.0   4.3  0.0  3.0  12.4  0.0  19.7
+    2020-03-09  11  0.0  4.3   6.3  1.3  1.0   1.0  0.0  13.9
+    2020-03-16  12  3.6  1.3   0.0  0.0  0.0   0.5  0.0   5.4
+    2020-03-23  13  0.0  0.0   0.0  0.0  0.0   0.0  0.0   0.0
+    2020-03-30  14  0.1  0.1  10.9  0.0  0.0   0.0  0.0  11.1
+
+because "Sun" is not equal to 0.  In cases like this you could do
+`pop 0 filter i=0 push 0` to keep the header, or as a short cut you can do
+`filter @i=0` which does the same:
+
+    Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat  Sun  Total
+    2019-12-30     1  0.0  0.2   0.0  0.0  1.2   0.0  0.0    1.4
+    2020-01-13     3  5.3  1.7   9.1  3.0  1.7   0.0  0.0   20.8
+    2020-03-02    10  0.0  0.0   4.3  0.0  3.0  12.4  0.0   19.7
+    2020-03-09    11  0.0  4.3   6.3  1.3  1.0   1.0  0.0   13.9
+    2020-03-16    12  3.6  1.3   0.0  0.0  0.0   0.5  0.0    5.4
+    2020-03-23    13  0.0  0.0   0.0  0.0  0.0   0.0  0.0    0.0
+    2020-03-30    14  0.1  0.1  10.9  0.0  0.0   0.0  0.0   11.1
+
+The expressions should be valid bits of Python, with the exceptions noted
+below.  You  can use the same subset of built-in and maths functions as the
+normal row arrangements with `arr`, and single letters refer to the value of
+the cells in the way described for `arr` above.  
+
+Again like `arr` you can use the variables `rows` and `row_number` in the
+expression: `rows` is the count of rows in your table, and `row_number` starts
+at 1 and is incremented by 1 on successive rows.  You could use this to pick
+out every other row: `filter row_number % 2`.
 
 NB. If you are calling tabulate from the Vim command line, you need to escape
 the `%` character, like so: `row_number \% 2`.  But you can also write
 `row_number mod 2`. Similarly to avoid having to escape `!=` you can write `<>`
 instead.  And if you write `a=b` it will be interpreted as `a==b` since
-assignment makes no sense here.
+assignment makes no sense here.  Finally any undefined variable will be
+interpreted as a string; this saves you typing the " marks.
 
 The default action is to do nothing.
 

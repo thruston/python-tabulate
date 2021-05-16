@@ -193,8 +193,9 @@ def epoch(date_time_string):
     '0'
     >>> epoch("2000-12-31 23:59:59")
     '978307199'
+    >>> epoch("Thursday")
+    'Thursday'
     '''
-
     for fd in ('%Y-%m-%d', '%d/%m/%Y'):
         for ft in ('%H:%M:%S', '%H:%M'):
             try:
@@ -203,6 +204,5 @@ def epoch(date_time_string):
                 pass
             else:
                 return f'{dt.timestamp():.0f}'
-
     return date_time_string
 

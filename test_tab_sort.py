@@ -86,7 +86,7 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
         self.tab.do('sort <')
         self.assertEqual(str(self.tab), '?! syntax (<)\n' + expected)
 
-        self.tab.do('pop 0 sort -1 push 0')
+        self.tab.do('sort @z') # automatic pop and push of header
         expected = '''
 Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 ------------------------------------------------------------------------

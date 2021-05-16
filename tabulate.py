@@ -648,6 +648,12 @@ class Table:
         if not expression:
             return
 
+        if expression[0] == '@':
+            expression = expression[1:]
+            header = self.pop(0)
+        else:
+            header = None
+
         ok, cc = compile_as_decimal(expression)
         if not ok:
             self.messages.append(cc)
@@ -683,6 +689,9 @@ class Table:
                 self.append(r)
             elif i > 1 and i in self.extras:
                 self.extras.pop(i) # remove extras if line not wanted (unless we are at the top)
+
+        if header is not None:
+            self.insert(0, header)
 
         if not self.data:
             self.cols = 0
@@ -1335,6 +1344,11 @@ class Table:
         if not col_spec:
             self.data.insert(0, self.data.pop())
         else:
+            if '@' in col_spec:
+                header = self.pop(0)
+                col_spec = col_spec.replace('@', '')
+            else:
+                header = None
             self.data = list(map(list, zip(*self.data)))
             for c in col_spec:
                 i, up = self._fancy_col_index(c)
@@ -1345,6 +1359,8 @@ class Table:
                 else:
                     self.data[i].insert(0, self.data[i].pop())
             self.data = list(map(list, zip(*self.data)))
+            if header is not None:
+                self.insert(0, header)
 
     def tabulate(self):
         '''Generate nicely lined up rows
