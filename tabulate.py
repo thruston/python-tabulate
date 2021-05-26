@@ -305,32 +305,21 @@ def _replace_values(failed_expression, known_variables):
     'count/hide_this'
     >>> _replace_values("a*3+0", {'a': 'count', 'x': 'hide_this'})
     'count*3'
-    >>> _replace_values("(a/x)", {'a': 'count', 'x': 'hide_this'})
-    'count/hide_this'
-    >>> _replace_values("f'{a}'", {'a': 'count', 'x': 'hide_this', 'f': 'and this'})
-    "f'{count}'"
-    >>> _replace_values("f'{a:x}'", {'a': 'count', 'x': 'hide_this', 'f': 'and this'})
-    "f'{count:x}'"
-    >>> _replace_values("f'{a:#b}'", {'a': 'count', 'b': 'hide_this', 'f': 'and this'})
-    "f'{count:#b}'"
+    >>> _replace_values("(s/x)", {'s': 'ex', 'x': 'hide_this'})
+    'ex/hide_this'
     '''
-
-    if failed_expression.startswith("f'") or failed_expression.startswith('f"') :
-        prefix = 'f'
-        failed_expression = failed_expression[1:]
-    else:
-        prefix = ''
-
-    for k, v in known_variables.items():  # try not to sub format types
-        failed_expression = re.sub(rf'(?<![:#^0-9_,]){k}\b', str(v), failed_expression)
-
-    if failed_expression[0] == '(' and failed_expression[-1] == ')':
-        failed_expression = failed_expression[1:-1]
-
-    if failed_expression.endswith('+0'):
-        failed_expression = failed_expression[:-2]
-
-    return prefix + failed_expression
+    out = []
+    for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(failed_expression).readline):
+        if tn==tokenize.NAME and tv in known_variables:
+            out.append((tokenize.NAME, str(known_variables[tv])))
+        else:
+            out.append((tn, tv))
+    new = tokenize.untokenize(out).replace(' ', '')
+    if new.endswith('+0'):
+        new = new[:-2]
+    if new.startswith('(') and new.endswith(')'):
+        new = new[1:-1]
+    return new
 
 def statistical_summary(numbers):
     '''return a 4/6 field summary of a list of numbers
