@@ -23,7 +23,7 @@ def parse_date(sss):
     for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y', '%G-W%V-%u',
                 '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%A'):
         try:
-            return datetime.datetime.strptime(sss, fmt).date()
+            return datetime.datetime.strptime(str(sss), fmt).date()
         except ValueError:
             pass
 
@@ -57,6 +57,12 @@ def base(sss=None):
     693961
     >>> base("01/01/01")
     730486
+    >>> base("20010102")
+    730487
+    >>> base(20010102)
+    730487
+    >>> base("2001-01-03")
+    730488
     >>> base("31 Dec 2000")-base("1 Jan 1901")
     36524
     >>> base() - datetime.date.today().toordinal()
@@ -69,7 +75,7 @@ def base(sss=None):
     if sss is None:
         return datetime.date.today().toordinal()
 
-    if isinstance(sss, int):
+    if isinstance(sss, int) and abs(sss) < 1000:
         return datetime.date.today().toordinal() + sss
 
     try:
