@@ -951,17 +951,19 @@ class Table:
         if not shape or self.cols < 3:
             return
 
-        pivot_function_for = {
-            'wide': builtins.sum,
-            'sum': builtins.sum,
-            'count': builtins.len,
-            'mean':  lambda a: statistics.mean(a) if a else 'NA',
-            'any': builtins.any,
+        pivot_functions_for = {
+            'wide': (builtins.sum, as_decimal),
+            'sum': (builtins.sum, as_decimal), 
+            'count': (builtins.len, as_decimal),
+            'mean':  (lambda a: statistics.mean(a) if a else 'NA', as_decimal),
+            'any': (builtins.any, as_decimal),
+            'first': (lambda a: a[0] if a else '-', str),
+            'last': (lambda a: a[-1] if a else '-', str),
         }
 
-        for k in pivot_function_for:
+        for k in pivot_functions_for:
             if k.startswith(shape.lower()):
-                self._wrangle_wide(pivot_function_for[k])
+                self._wrangle_wide(*pivot_functions_for[k])
                 return
 
         m = re.match(r'long([1-9a-o])?$', shape)
@@ -979,7 +981,7 @@ class Table:
         if self.cols - last_key_col > 1:
             self._wrangle_long(last_key_col)
 
-    def _wrangle_wide(self, fun=sum):
+    def _wrangle_wide(self, fun=sum, prep=as_decimal):
         '''Reflow wide'''
         bags = collections.defaultdict(list)
         names_seen = dict()
@@ -990,7 +992,7 @@ class Table:
             key = tuple(key)
             names_seen[name] = True
             keys_seen[key] = True
-            bags[(key, name)].append(as_decimal(value))
+            bags[(key, name)].append(prep(value))
 
         self.data = []
         self.cols = 0
