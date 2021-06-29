@@ -476,6 +476,7 @@ or British) forms as well as `yyyy-mm-dd`, as follows:
     25/12/20                  %d/%m/%y
     Fri                       %a
     Friday                    %A
+    15-dec-2020               %d-%b-%Y
 
 This table shows the strftime formats used.  This is not as clever as using
 `dateutil.parser` but it does mean that tabulate only uses the standard Python3
@@ -485,6 +486,7 @@ There are also useful functions to convert HH:MM:SS to fractional hours,
 minutes or seconds.  `hms()` takes fractional hours and produces `hh:mm:ss`,
 while `hr`, `mins`, and `secs` go the other way.
 
+Plus "epoch()" that will convert a full date-time timestamp to epoch seconds.
 
 ### ditto - copy down from cell above
 

@@ -20,7 +20,7 @@ def parse_date(sss):
     >>> parse_date("1 January 2001").isoformat()
     '2001-01-01'
     '''
-    for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y', '%G-W%V-%u',
+    for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y', '%G-W%V-%u', '%d-%b-%Y',
                 '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%A'):
         try:
             return datetime.datetime.strptime(str(sss), fmt).date()
@@ -62,6 +62,8 @@ def base(sss=None):
     >>> base(20010102)
     730487
     >>> base("2001-01-03")
+    730488
+    >>> base("03-jan-2001")
     730488
     >>> base("31 Dec 2000")-base("1 Jan 1901")
     36524
@@ -202,7 +204,7 @@ def epoch(date_time_string):
     >>> epoch("Thursday")
     'Thursday'
     '''
-    for fd in ('%Y-%m-%d', '%d/%m/%Y'):
+    for fd in ('%Y-%m-%d', '%d/%m/%Y', '%d-%b-%Y'):
         for ft in ('%H:%M:%S', '%H:%M'):
             try:
                 dt = datetime.datetime.strptime(date_time_string, f'{fd} {ft}').replace(tzinfo=datetime.timezone.utc)

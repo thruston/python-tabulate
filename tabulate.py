@@ -275,7 +275,7 @@ def compile_as_decimal(expr):
     out = []
     try:
         for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(clean_expression).readline):
-            if tn == tokenize.NUMBER and '.' in tv:
+            if tn == tokenize.NUMBER: # and '.' in tv:
                 out.append((tokenize.NAME, 'Decimal'))
                 out.append((tokenize.OP, '('))
                 out.append((tokenize.STRING, repr(tv)))
