@@ -382,7 +382,7 @@ prevent you accidentally loading the `sys` module and deleting your disk. Only
 the following names of functions are allowed in a calculation.
 
 - maths functions: abs cos cosd divmod exp hypot log log10 pow round sin sind sqrt tan tand
-- number conversion: bool chr hex int oct ord
+- number conversion: bool chr hex int oct ord str
 - maths constants: pi tau
 - list functions: all any max min sorted sum
 
@@ -391,7 +391,16 @@ arguments.  If a function returns more than one value (like `divmod`) the
 values will be inserted in separate columns. The others are the regular BIF or
 `math` functions except for the trig functions for angles in degrees.
 
-You can also use `format` and `f''` strings.
+You can also use `format` and `f''` strings. And string slices or indexes.  So
+
+    arr (a[:2])
+
+would give you the first two characters of the strings in column a.  This only works
+with values that are strings of course, but this
+
+    arr (str(a)[:2])
+
+should work with numnbers as well.
 
 Curly braces are only treated as parentheses at the top level (and this only for compatibility
 with the old Perl version of tabulate), so you can put them in normal Python expressions like
@@ -416,6 +425,7 @@ current row number or the total number of rows use the pre-defined variables
     Third   3  6  3/3
 
 There are also some simple date routines included.
+
 - `base` returns the number of days since 1 Jan in the year 1 (assuming the
   Gregorian calendar extended backwards).  The argument should be blank for
   today, or some recognisable form of a date.

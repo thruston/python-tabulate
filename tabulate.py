@@ -62,6 +62,7 @@ Panther = {
     'max': tab_fun_useful.t_max,
     'min': tab_fun_useful.t_min,
     'sorted': tab_fun_useful.t_sorted,
+    'str': builtins.str,
     'sum': tab_fun_useful.t_sum,
     'exp': lambda x: decimal.Decimal(x).exp(),
     'log': lambda x: decimal.Decimal(x).ln(),
@@ -1184,7 +1185,7 @@ class Table:
                     else:
                         new_row.append(new_value)
                 except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation) as e:
-                    # self.messages.append('?! arr: ' + str(e)) - ususally want to be silent here...
+                    # self.messages.append('?! arr: ' + str(e))#  - ususally want to be silent here...
                     new_row.append(_replace_values(literal_code, values))
                 except ZeroDivisionError:
                     new_row.append("-")
