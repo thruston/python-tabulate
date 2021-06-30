@@ -275,7 +275,7 @@ def compile_as_decimal(expr):
     out = []
     try:
         for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(clean_expression).readline):
-            if tn == tokenize.NUMBER: # and '.' in tv:
+            if tn == tokenize.NUMBER and '.' in tv:
                 out.append((tokenize.NAME, 'Decimal'))
                 out.append((tokenize.OP, '('))
                 out.append((tokenize.STRING, repr(tv)))
@@ -1183,7 +1183,8 @@ class Table:
                         new_row.extend(new_value)
                     else:
                         new_row.append(new_value)
-                except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation):
+                except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation) as e:
+                    # self.messages.append('?! arr: ' + str(e)) - ususally want to be silent here...
                     new_row.append(_replace_values(literal_code, values))
                 except ZeroDivisionError:
                     new_row.append("-")

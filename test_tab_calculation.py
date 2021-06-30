@@ -240,5 +240,21 @@ D     0.7476  0.9234  0.8035  0.267833333333
         self.tab.do("arr abcd(d/(row_number-2))")
         self.assertEqual(str(self.tab), z_err)
 
+    def test_with_string_manipulation(self):
+        "Can we truncate things or join them?"
+        input_list = '''
+-rw-r--r--  1  toby  staff  961B  12 Mar 17:07  test_tab_command_line.py
+-rw-r--r--  1  toby  staff  3.0K  14 May 17:35  test_tab_filter.py
+-rw-r--r--  1  toby  staff  3.2K  12 Mar 17:07  test_tab_grouping.py
+-rw-r--r--  1  toby  staff  811B  14 May 16:18  test_tab_help.py
+-rw-r--r--  1  toby  staff  2.7K  23 Mar 11:27  test_tab_levels.py
+-rw-r--r--  1  toby  staff  4.9K  12 Mar 17:07  test_tab_makers.py
+-rw-r--r--  1  toby  staff  6.4K  12 Mar 17:07  test_tab_parsing.py
+'''.strip()
+        self.tab.parse_lines(input_list.splitlines())
+        self.assertEqual(str(self.tab), input_list)
 
-
+        self.tab.do("arr c(g[:4]) uniq")
+        self.assertEqual(str(self.tab), "toby  test")
+        print(self.tab)
+        
