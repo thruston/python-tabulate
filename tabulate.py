@@ -75,6 +75,7 @@ Panther = {
 
 # various number utils at this level
 
+
 def as_numeric_tuple(x, backwards=False):
     '''return something for sort to work with
     >>> as_numeric_tuple("a")
@@ -104,7 +105,7 @@ def as_numeric_tuple(x, backwards=False):
         alpha, omega = omega, alpha
 
     if x is None:
-        return (omega, '') # put it at the bottom
+        return (omega, '')  # put it at the bottom
 
     x = x.upper()
 
@@ -125,6 +126,7 @@ def as_numeric_tuple(x, backwards=False):
         return (alpha, m.group(1) + m.group(2).zfill(15))
 
     return (alpha, x)
+
 
 def is_as_number(sss):
     '''Input (string) Output (boolean, any)
@@ -163,7 +165,7 @@ def is_as_number(sss):
     suffix = '%'
 
     if sss in ('True', 'False'):
-        return (True, sss=='True')
+        return (True, sss == 'True')
 
     if not all((c in digits + point + signs + ignore + alphabetics + suffix) for c in sss.lower()):
         return (False, sss)
@@ -180,12 +182,13 @@ def is_as_number(sss):
 
     try:
         if trial_number.endswith('%'):
-            return (True, decimal.Decimal(trial_number[:-1])/100)
+            return (True, decimal.Decimal(trial_number[:-1]) / 100)
         return (True, decimal.Decimal(trial_number))
     except ArithmeticError:
         pass
 
     return (False, sss)
+
 
 def as_decimal(n, na_value=decimal.Decimal('0')):
     "Make this a decimal"
@@ -193,6 +196,7 @@ def as_decimal(n, na_value=decimal.Decimal('0')):
         return decimal.Decimal(n)
     except decimal.InvalidOperation:
         return na_value
+
 
 def siggy(s, n):
     '''Reduce to n sig figs
@@ -208,8 +212,9 @@ def siggy(s, n):
         return s
     if number.is_zero():
         return '0'
-    figs =  n - math.floor(abs(number).log10()) - 1
+    figs = n - math.floor(abs(number).log10()) - 1
     return '{:f}'.format(round(number, figs))
+
 
 def rounders(s, n):
     '''Round to n fixed places, if possible
@@ -225,6 +230,7 @@ def rounders(s, n):
     flag, number = is_as_number(s)
     return f'{number:.{n}f}' if flag else s
 
+
 def looks_like_sequence(numbers):
     '''Do these decimals appear to be a list of years, or some other numeric labels?
     >>> looks_like_sequence((1,2,3))
@@ -235,6 +241,7 @@ def looks_like_sequence(numbers):
     False
     '''
     return sum(numbers) % len(numbers) == 0
+
 
 def looks_like_formula(expression):
     '''Is this a formula?
@@ -256,6 +263,7 @@ def looks_like_formula(expression):
         return False
     return True
 
+
 def compile_as_decimal(expr):
     '''This function takes as expression give as an argument to
     one of the verbs like arr or filter or sort or tap, and compiles
@@ -271,7 +279,7 @@ def compile_as_decimal(expr):
     '''
     clean_expression = expr.replace('<>', '!=')
     clean_expression = re.sub(r'\bmod\b', '%', clean_expression)
-    clean_expression = re.sub(r'(?<![<>!])=+', '==', clean_expression) # also allow a=b
+    clean_expression = re.sub(r'(?<![<>!])=+', '==', clean_expression)  # also allow a=b
     out = []
     try:
         for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(clean_expression).readline):
@@ -292,9 +300,10 @@ def compile_as_decimal(expr):
     try:
         cc = compile(tokenize.untokenize(out), "<string>", 'eval')
     except (SyntaxError, ValueError):
-        return (False, '?! syntax ' +  expr)
+        return (False, '?! syntax ' + expr)
     else:
         return (True, cc)
+
 
 def _replace_values(failed_expression, known_variables):
     '''replace the variables that we know about in the expression
@@ -310,7 +319,7 @@ def _replace_values(failed_expression, known_variables):
     '''
     out = []
     for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(failed_expression).readline):
-        if tn==tokenize.NAME and tv in known_variables:
+        if tn == tokenize.NAME and tv in known_variables:
             out.append((tokenize.NAME, str(known_variables[tv])))
         else:
             out.append((tn, tv))
@@ -320,6 +329,7 @@ def _replace_values(failed_expression, known_variables):
     if new.startswith('(') and new.endswith(')'):
         new = new[1:-1]
     return new
+
 
 def statistical_summary(numbers):
     '''return a 4/6 field summary of a list of numbers
@@ -334,14 +344,15 @@ def statistical_summary(numbers):
     if not numbers:
         return ''
 
-    min = builtins.min(numbers)
-    max = builtins.max(numbers)
-    mean = statistics.mean(numbers)
+    mi = builtins.min(numbers)
+    ma = builtins.max(numbers)
+    me = statistics.mean(numbers)
     if hasattr(statistics, "quantiles") and len(numbers) > 10:
         lq, md, uq = statistics.quantiles(numbers, n=4)
-        return f'Min: {min}  Q25: {lq}  Median: {md}  Mean: {mean}  Q75: {uq}  Max: {max}'
-    
-    return f'Min: {min}  Mean: {mean}  Max: {max}'
+        return f'Min: {mi}  Q25: {lq}  Median: {md}  Mean: {me}  Q75: {uq}  Max: {ma}'
+
+    return f'Min: {mi}  Mean: {me}  Max: {ma}'
+
 
 def counting_summary(factors, n=5):
     '''summarize different levels in a factor
@@ -350,7 +361,7 @@ def counting_summary(factors, n=5):
     'b 4, a 3, c 2, d 1, e 1 (and 4 others...)'
     '''
     counter = collections.Counter(factors)
-    if all(x==1 for x in counter.values()):
+    if all(x == 1 for x in counter.values()):
         analysis = "All distinct."
     else:
         analysis = ', '.join(f'{k} {v}' for k, v in counter.most_common(n))
@@ -358,6 +369,7 @@ def counting_summary(factors, n=5):
             analysis += f' (and {len(counter)-n} others...)'
 
     return analysis
+
 
 class Table:
     '''A class to hold a table -- and some functions thereon'''
@@ -371,7 +383,7 @@ class Table:
         self.extras = collections.defaultdict(set)
         self.form = 'plain'
         self.messages = []
-        self.stack = [] # used to cache popped items
+        self.stack = []  # used to cache popped items
         self.operations = {
             'add': self._append_reduction,
             'arr': self._arrange_columns,
@@ -437,7 +449,7 @@ class Table:
 
     def _duplicate_item(self, n):
         "Duplicate an item"
-        self.stack.append(self.pop(n)) # pop puts it on the stack first, so this does it twice
+        self.stack.append(self.pop(n))  # pop puts it on the stack first, so this does it twice
         self.push(n)
         self.push(n)
 
@@ -524,7 +536,7 @@ class Table:
             n = int(n)
         except (ValueError, TypeError):
             n = len(self.data)
-        self.insert(n, r) # the semantics of insert take care of indexes out of bounds
+        self.insert(n, r)  # the semantics of insert take care of indexes out of bounds
 
     def append(self, iterable, filler=''):
         "insert at the end"
@@ -532,7 +544,7 @@ class Table:
 
     def insert(self, i, iterable, filler=''):
         "add a row, maintaining cols"
-        row = list(filler if x=='' else x for x in iterable)
+        row = list(filler if x == '' else x for x in iterable)
         n = len(row)
         if n < self.cols:
             row.extend([filler] * (self.cols - n))
@@ -582,7 +594,7 @@ class Table:
             pairs = itertools.zip_longest(names.split(), string.ascii_lowercase)
             self.insert(0, list(a or b for a, b in pairs)[:self.cols])
         else:
-            self.insert(0, names.split()) # if no columns just insert these names
+            self.insert(0, names.split())  # if no columns just insert these names
 
     def column(self, i):
         "get a column from the table - zero indexed"
@@ -654,7 +666,7 @@ class Table:
         value_dict = {}
         value_dict['rows'] = len(old_data)
         for k in identity:
-            value_dict[k.upper()] = 0 # accumulators
+            value_dict[k.upper()] = 0  # accumulators
 
         # the idea here is that we treat unknown names as strings, to allow you to say b=whatever
         # instead of having to write b='whatever'.  The co_names attribute of the compiled code
@@ -677,7 +689,7 @@ class Table:
             if wanted:
                 self.append(r)
             elif i > 1 and i in self.extras:
-                self.extras.pop(i) # remove extras if line not wanted (unless we are at the top)
+                self.extras.pop(i)  # remove extras if line not wanted (unless we are at the top)
 
         if header is not None:
             self.insert(0, header)
@@ -722,7 +734,7 @@ class Table:
             "x": 0,
             "rows": len(self.data),
             "cols": self.cols,
-            "total":  sum(as_decimal(x) for row in self.data for x in row),
+            "total": sum(as_decimal(x) for row in self.data for x in row),
             "row_number": 0,
         }
         col_totals = [sum(x[1] for x in self.column(i) if x[0]) for i in range(self.cols)]
@@ -773,7 +785,7 @@ class Table:
 
         # simple integer
         if count_or_range.isdigit():
-            self.parse_lol(list([x+1] for x in range(int(count_or_range))), append=True)
+            self.parse_lol(list([x + 1] for x in range(int(count_or_range))), append=True)
             return
 
         # integer range -4:99 etc...
@@ -782,7 +794,7 @@ class Table:
             alpha, omega = (int(x) for x in m.groups())
             if alpha > omega:
                 (alpha, omega) = (omega, alpha)
-            self.parse_lol(list([x] for x in range(alpha, omega+1)), append=True)
+            self.parse_lol(list([x] for x in range(alpha, omega + 1)), append=True)
             return
 
         # Labels * Cols...
@@ -800,7 +812,7 @@ class Table:
         for i, row in enumerate(self.data):
             for j, cell in enumerate(row):
                 if cell == marker and i > 0:
-                    self.data[i][j] = self.data[i-1][j]
+                    self.data[i][j] = self.data[i - 1][j]
 
     def _zipper(self, n):
         '''Put n rows side by side
@@ -885,7 +897,7 @@ class Table:
 
         old_data = self.data.copy()
         old_cols = self.cols
-        groups = min(groups, old_cols) # no blanks on the end thank you
+        groups = min(groups, old_cols)  # no blanks on the end thank you
 
         self.data.clear()
         self.cols = 0
@@ -894,7 +906,6 @@ class Table:
         for col_list in self._splitme(range(old_cols), groups):
             for r in old_data:
                 self.append([r[x] for x in col_list])
-
 
     def _append_reduction(self, fun_list):
         '''Reduce column and append result to foot of table
@@ -930,7 +941,7 @@ class Table:
             for c in range(self.cols):
                 booleans, values = zip(*self.column(c))
                 decimals = list(itertools.compress(values, booleans))
-                if not any(booleans) or (c==0 and looks_like_sequence(decimals)):
+                if not any(booleans) or (c == 0 and looks_like_sequence(decimals)):
                     footer.append(fun.title())
                 else:
                     footer.append(func(decimals))
@@ -953,9 +964,9 @@ class Table:
 
         pivot_functions_for = {
             'wide': (builtins.sum, as_decimal),
-            'sum': (builtins.sum, as_decimal), 
+            'sum': (builtins.sum, as_decimal),
             'count': (builtins.len, as_decimal),
-            'mean':  (lambda a: statistics.mean(a) if a else 'NA', as_decimal),
+            'mean': (lambda a: statistics.mean(a) if a else 'NA', as_decimal),
             'any': (builtins.any, as_decimal),
             'first': (lambda a: a[0] if a else '-', str),
             'last': (lambda a: a[-1] if a else '-', str),
@@ -1030,7 +1041,7 @@ class Table:
         ['a', 'b', 'c', '(2+2)', 'e']
         >>> t._get_expr_list("abc(2+2**(4+3.5))e")
         ['a', 'b', 'c', '(2+2**(4+3.5))', 'e']
-        >>> # allow missing trailing parens
+        >>>  # allow missing trailing parens
         >>> t._get_expr_list("abc(2+2")
         ['a', 'b', 'c', '(2+2)']
         >>> t._get_expr_list("a..e")
@@ -1077,9 +1088,9 @@ class Table:
             a = min(ord(a), ord(identity[-1]))
             b = min(ord(b), ord(identity[-1]))
             if a > b:
-                r = range(a, b-1, -1)
+                r = range(a, b - 1, -1)
             else:
-                r = range(a, b+1)
+                r = range(a, b + 1)
 
             return ''.join([prefix + chr(x) + suffix for x in r])
 
@@ -1095,9 +1106,9 @@ class Table:
                 elif c == '~':
                     out.extend(x for x in identity)
                 else:
-                    pass # ignore anything else outside parens
+                    pass  # ignore anything else outside parens
             else:
-                if c == '}' and in_parens == 1: # allow } as ) at top level
+                if c == '}' and in_parens == 1:  # allow } as ) at top level
                     c = ')'
                 expr.append(c)
                 if c in '({':
@@ -1105,7 +1116,7 @@ class Table:
                 elif c in ')}':
                     in_parens -= 1
                 if in_parens == 0:
-                    if len(expr) > 2: # ignore ()
+                    if len(expr) > 2:  # ignore ()
                         out.append(''.join(expr))
         if in_parens > 0:
             out.append(''.join(expr) + ')' * in_parens)
@@ -1136,7 +1147,7 @@ class Table:
 
         if all(x in identity + '?' for x in perm):
             self.data = list(list(_get_value(r, x) for x in perm) for r in self.data)
-            self.cols = len(perm) # perm can delete and/or add columns
+            self.cols = len(perm)  # perm can delete and/or add columns
             return
 
         # make it into a list tuples
@@ -1151,11 +1162,11 @@ class Table:
         values = {
             "rows": len(self.data),
             "cols": self.cols,
-            "total":  sum(as_decimal(x) for row in self.data for x in row),
+            "total": sum(as_decimal(x) for row in self.data for x in row),
             "row_number": 0,
         }
         for k in identity:
-            values[k.upper()] = 0 # accumulators
+            values[k.upper()] = 0  # accumulators
 
         old_data = self.data.copy()
         self.data.clear()
@@ -1321,7 +1332,7 @@ class Table:
                 _, *flags = flags
             else:
                 label = chr(ord('a') + i)
-            
+
             if all(flags):
                 analysis = statistical_summary(data)
             else:
@@ -1398,12 +1409,12 @@ class Table:
         aligns = []
         for i in range(self.cols):
             booleans, _ = zip(*self.column(i))
-            aligns.append('>' if sum(booleans)/len(booleans) > 1/2 else '<')
+            aligns.append('>' if sum(booleans) / len(booleans) > 0.5 else '<')
 
         def _pipe_rule(w, a):
             '''A rule for piped format, given width and alignment
             '''
-            return '-' * (w-1) + (':' if a == '>' else '-')
+            return '-' * (w - 1) + (':' if a == '>' else '-')
 
         # generate nicely lined up rows
         for i, row in enumerate(self.data):
@@ -1426,7 +1437,7 @@ class Table:
             for j, cell in enumerate(row):
                 out.append(f'{cell:{aligns[j]}{widths[j]}}')
 
-            yield ' ' * self.indent + separator.join(out).rstrip() + eol_marker # no trailing blanks
+            yield ' ' * self.indent + separator.join(out).rstrip() + eol_marker  # no trailing blanks
 
 
 if __name__ == '__main__':
