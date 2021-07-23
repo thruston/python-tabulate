@@ -240,14 +240,14 @@ def looks_like_sequence(numbers):
 def looks_like_formula(expression):
     '''Is this a formula?
 
-    >>> looks_like_formula('Abc@')
+    >>> looks_like_formula('Abc')
     False
     >>> looks_like_formula('-1')
     False
     >>> looks_like_formula('a-1')
     True
     '''
-    if all(x in string.ascii_letters + '@' for x in expression):
+    if all(x in string.ascii_letters for x in expression):
         return False
     try:
         int(expression)
@@ -554,8 +554,12 @@ class Table:
         "Do what we've been asked..."
         if agenda is None:
             return
+        
         if not isinstance(agenda, list):
-            agenda = str(agenda).split()
+            if '@' in agenda:
+                agenda = 'pop 0 ' + agenda.replace('@', '') + ' push 0'
+            agenda = agenda.split()
+
         while agenda:
             op = agenda.pop(0)
             if op not in self.operations:
@@ -638,12 +642,6 @@ class Table:
         if not expression:
             return
 
-        if expression[0] == '@':
-            expression = expression[1:]
-            header = self.pop(0)
-        else:
-            header = None
-
         ok, cc = compile_as_decimal(expression)
         if not ok:
             self.messages.append(cc)
@@ -679,9 +677,6 @@ class Table:
                 self.append(r)
             elif i > 1 and i in self.extras:
                 self.extras.pop(i) # remove extras if line not wanted (unless we are at the top)
-
-        if header is not None:
-            self.insert(0, header)
 
         if not self.data:
             self.cols = 0
@@ -1225,7 +1220,6 @@ class Table:
 
         abc means use the concatenation of row[0] + row[1] + row[2]
         upper case groups mean reverse sort
-        a @ somewhere in the spec means: pop first row and push afterwards
 
         groups are done right to left...
 
@@ -1234,12 +1228,6 @@ class Table:
         if looks_like_formula(col_spec):
             self.do(f"arr ({col_spec})~ sort a arr -a")
             return
-
-        if '@' in col_spec:
-            col_spec = col_spec.replace('@', '')
-            header = self.data.pop(0)
-        else:
-            header = None
 
         identity = string.ascii_lowercase[:self.cols]
         if col_spec is None or col_spec == '':
@@ -1256,9 +1244,6 @@ class Table:
         else:
             if -self.cols <= i < self.cols:
                 self.data.sort(key=lambda row: as_numeric_tuple(row[i], False))
-
-        if header is not None:
-            self.data.insert(0, header)
 
     def _remove_duplicates_by_col(self, col_spec):
         '''like uniq, remove row if key cols match the row above
@@ -1337,11 +1322,6 @@ class Table:
         if not col_spec:
             self.data.insert(0, self.data.pop())
         else:
-            if '@' in col_spec:
-                header = self.pop(0)
-                col_spec = col_spec.replace('@', '')
-            else:
-                header = None
             self.data = list(map(list, zip(*self.data)))
             for c in col_spec:
                 i, up = self._fancy_col_index(c)
@@ -1352,8 +1332,6 @@ class Table:
                 else:
                     self.data[i].insert(0, self.data[i].pop())
             self.data = list(map(list, zip(*self.data)))
-            if header is not None:
-                self.insert(0, header)
 
     def tabulate(self):
         '''Generate nicely lined up rows
@@ -1437,8 +1415,12 @@ if __name__ == '__main__':
     parser.add_argument("--file", help="Source file name, defaults to STDIN")
     args = parser.parse_args()
 
-    # Join the agenda args into one string, remove any backslash (for Vim), and split into a list
-    agenda = ' '.join(args.agenda).replace('\\', '').split(None)
+    # Join the agenda args into one string, remove any backslash (for Vim), 
+    # do shorthands and split into a list
+    agenda = ' '.join(args.agenda).replace('\\', '')
+    if '@' in agenda:
+        agenda = 'pop 0 ' + agenda.replace('@', '') + ' push 0'
+    agenda = agenda.split()
 
     # Get the delimiter from the agenda if possible
     try:
@@ -1490,6 +1472,7 @@ if __name__ == '__main__':
         else:
             in_sep = re.compile(re.escape(delim))
         table.parse_lines(fh, splitter=in_sep, splits=cell_limit)
+
     table.do(agenda)
     print(table)
 

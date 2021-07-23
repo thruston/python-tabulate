@@ -146,3 +146,15 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 2020-01-27     5  8.4  2.1  0.0  0.5  1.0  0.0   7.1   19.1  Wet
 '''.strip()
         self.assertEqual(str(self.tab), expected)
+
+        self.tab.do('sort 1')
+        expected = '''
+Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
+------------------------------------------------------------------------
+2020-01-20     4  0.0  0.0  0.0  0.0  0.0  0.1   2.3    2.4  Dry
+2020-01-27     5  8.4  2.1  0.0  0.5  1.0  0.0   7.1   19.1  Wet
+2020-02-03     6  0.1  0.0  0.0  0.0  0.0  1.5  10.6   12.2  Humid
+2020-02-17     8  0.2  3.3  1.0  3.8  0.0  0.5   1.0    9.8  Damp
+2020-02-24     9  6.1  0.5  0.1  8.6  5.9  7.1   0.2   28.5  Monsoon
+'''.strip()
+        self.assertEqual(str(self.tab), expected)
