@@ -204,8 +204,8 @@ def epoch(date_time_string):
     >>> epoch("Thursday")
     'Thursday'
     '''
-    for fd in ('%Y-%m-%d', '%d/%m/%Y', '%d-%b-%Y'):
-        for ft in ('%H:%M:%S', '%H:%M'):
+    for fd in ('%Y-%m-%d', '%d/%m/%Y', '%d-%b-%Y', '%Y%m%d'):
+        for ft in ('%H:%M:%S', '%H:%M', '%H%M%S'):
             try:
                 dt = datetime.datetime.strptime(date_time_string, f'{fd} {ft}').replace(tzinfo=datetime.timezone.utc)
             except ValueError:

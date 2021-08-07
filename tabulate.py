@@ -2,7 +2,7 @@
 '''Tabulate
 
 A module/script to line up text tables.
-Toby Thurston -- 11 Mar 2021
+Toby Thurston -- 07 Aug 2021
 '''
 
 # pylint: disable=C0103, C0301
@@ -1125,6 +1125,11 @@ class Table:
         if not perm:
             return
 
+        # also re-arrange anything on the stack...
+        stack_rows = len(self.stack)
+        self.data.extend(self.stack)
+        self.stack.clear()
+
         # deletions...
         if perm[0] == '-':
             if '(' not in perm:
@@ -1144,58 +1149,63 @@ class Table:
         if all(x in identity + '?' for x in perm):
             self.data = list(list(_get_value(r, x) for x in perm) for r in self.data)
             self.cols = len(perm)  # perm can delete and/or add columns
-            return
+        
+        else:
+            # make it into a list tuples
+            desiderata = []
+            for x in perm:
+                ok, cc = compile_as_decimal(x)
+                if not ok:
+                    self.messages.append(cc)
+                    return
+                desiderata.append((cc, x))
 
-        # make it into a list tuples
-        desiderata = []
-        for x in perm:
-            ok, cc = compile_as_decimal(x)
-            if not ok:
-                self.messages.append(cc)
-                return
-            desiderata.append((cc, x))
+            values = {
+                "rows": len(self.data),
+                "cols": self.cols,
+                "total": sum(as_decimal(x) for row in self.data for x in row),
+                "row_number": 0,
+            }
+            for k in identity:
+                values[k.upper()] = 0  # accumulators
 
-        values = {
-            "rows": len(self.data),
-            "cols": self.cols,
-            "total": sum(as_decimal(x) for row in self.data for x in row),
-            "row_number": 0,
-        }
-        for k in identity:
-            values[k.upper()] = 0  # accumulators
+            old_data = self.data.copy()
+            self.data.clear()
+            self.cols = 0
 
-        old_data = self.data.copy()
-        self.data.clear()
-        self.cols = 0
+            for r in old_data:
+                for k, v in zip(identity, r):
+                    flag, values[k] = is_as_number(v)
+                    if flag:
+                        values[k.upper()] += values[k]
 
-        for r in old_data:
-            for k, v in zip(identity, r):
-                flag, values[k] = is_as_number(v)
-                if flag:
-                    values[k.upper()] += values[k]
+                # allow xyz to refer to cells counted from the end...
+                for j, k in zip("zyxw", reversed(identity)):
+                    values[j] = values[k]
+                    values[j.upper()] = values[k.upper()]
 
-            # allow xyz to refer to cells counted from the end...
-            for j, k in zip("zyxw", reversed(identity)):
-                values[j] = values[k]
-                values[j.upper()] = values[k.upper()]
+                # and note the line number
+                values['row_number'] += 1
 
-            # and note the line number
-            values['row_number'] += 1
+                new_row = []
+                for compiled_code, literal_code in desiderata:
+                    try:
+                        new_value = eval(compiled_code, Panther, values)
+                        if isinstance(new_value, tuple):
+                            new_row.extend(new_value)
+                        else:
+                            new_row.append(new_value)
+                    except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation) as e:
+                        # self.messages.append('?! arr: ' + str(e))#  - ususally want to be silent here...
+                        new_row.append(_replace_values(literal_code, values))
+                    except ZeroDivisionError:
+                        new_row.append("-")
+                self.append(new_row)
 
-            new_row = []
-            for compiled_code, literal_code in desiderata:
-                try:
-                    new_value = eval(compiled_code, Panther, values)
-                    if isinstance(new_value, tuple):
-                        new_row.extend(new_value)
-                    else:
-                        new_row.append(new_value)
-                except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation) as e:
-                    # self.messages.append('?! arr: ' + str(e))#  - ususally want to be silent here...
-                    new_row.append(_replace_values(literal_code, values))
-                except ZeroDivisionError:
-                    new_row.append("-")
-            self.append(new_row)
+        # move any stacked rows back to the stack
+        for _ in range(stack_rows):
+            self.stack.append(self.pop())
+
 
     def _fancy_col_index(self, col_spec):
         '''Find me an index, returns index + T/F to say if letter was upper case
