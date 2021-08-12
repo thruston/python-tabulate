@@ -701,10 +701,28 @@ class Table:
         if not self.data:
             self.cols = 0
 
-    def _shuffle_rows(self, _):
+    def _shuffle_rows(self, col_spec):
         '''Re-arrange the data at random'''
-        random.shuffle(self.data)
-        self.extras.clear()
+        header = None
+        if '@' in col_spec:
+            header = self.pop(0)
+            col_spec = col_spec.replace('@', '')
+
+        if not col_spec:
+            random.shuffle(self.data)
+            self.extras.clear()
+        else:
+            self.data = list(map(list, zip(*self.data)))
+            for c in col_spec:
+                i, _ = self._fancy_col_index(c)
+                if i is None:
+                    continue
+                else:
+                    random.shuffle(self.data[i])
+            self.data = list(map(list, zip(*self.data)))
+
+        if header is not None:
+            self.insert(0, header)
 
     def _remove_blank_extras(self, _):
         for i in range(len(self.data)):

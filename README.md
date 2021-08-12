@@ -612,7 +612,7 @@ because "Sun" is not equal to 0.  In cases like this you could do
 The expressions should be valid bits of Python, with the exceptions noted
 below.  You  can use the same subset of built-in and maths functions as the
 normal row arrangements with `arr`, and single letters refer to the value of
-the cells in the way described for `arr` above.  
+the cells in the way described for `arr` above.
 
 Again like `arr` you can use the variables `rows` and `row_number` in the
 expression: `rows` is the count of rows in your table, and `row_number` starts
@@ -909,7 +909,7 @@ To add a line just before the last line (to show a total or a footer) use `rule 
 
 ### shuffle - rearrange the rows with a Fisher-Yates shuffle
 
-    shuffle
+    shuffle [colspec]
 
 Shuffle the rows in the table.  This is implemented using `random.shuffle`.
 Here's a one liner to generate a random 4x4 arrangement of the numbers 1 to 16:
@@ -923,6 +923,9 @@ produces (for example):
     13   2   3   8
     15   1   6  16
     12  11  10  14
+
+You can also give a colspec, as for sort.  So `shuffle b` will randomize only the second column.
+If you want to leave the top row alone, do `pop 0 shuffle push 0` or just `shuffle @`.
 
 ### sf - round numbers to given significant figures
 
@@ -973,7 +976,7 @@ So `sort abc` is the same as `sort c sort b sort a` (but slightly quicker).
 
 The default is to sort by all columns from right to left.
 
-You can also sort on simple functions; essentially any function that you can use with `arr`. 
+You can also sort on simple functions; essentially any function that you can use with `arr`.
 So given a table like this:
 
     tamarix     33  18
@@ -988,7 +991,7 @@ if you can do `sort len(a)` to get
     tamasha     89  13
     tambourine  48  46
 
-or `sort reversed(a)` to get 
+or `sort reversed(a)` to get
 
     tamasha     89  13
     tambac      57  72
@@ -1158,12 +1161,20 @@ you zip every other row, and unzip the table in half (as it were).
 
 ## What counts as a number?
 
-Tabulate reads and writes everything as strings, but it has a fairly broad definition of which of them count as numbers.
+Tabulate reads and writes everything as strings, but it has a fairly broad
+definition of which of them count as numbers.
 
-- Any string like '4' or '-2.17' that is a valid input to the `decimal.Decimal` constructor
+- Any string like '4' or '-2.17' that is a valid input to the `decimal.Decimal`
+  constructor
+
 - Any string with '_' or ',' as separators like '1,234' or '0.456_789'
-- Any string that looks like a number but ends with '%' is treated as a percentage, so '45%' is interpreted as 0.45
-- Binary, octal, and hex strings with leading '0b', '0o' or '0x' are converted to decimal integers
+
+- Any string that looks like a number but ends with '%' is treated as a
+  percentage, so '45%' is interpreted as 0.45
+
+- Binary, octal, and hex strings with leading '0b', '0o' or '0x' are converted
+  to decimal integers
+
 - The strings 'True' and 'False' count as 1 and 0
 
 Here is a sampler, given this
