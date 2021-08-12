@@ -52,3 +52,23 @@ class TestTableRoller(unittest.TestCase):
         self.tab.do('roll ?') # error
         self.assertEqual(str(self.tab), '?! colspec ?\n' + rain)
 
+        rain_header = '''
+Date        N  Mon  Tue
+2019-12-30  1  0.0  0.2
+2020-01-06  2  0.5  0.0
+2020-01-13  3  5.3  1.7
+2020-01-20  4  0.0  0.0
+'''.strip()
+        rain_header_rolled = '''
+Date        N  Mon  Tue
+2020-01-20  4  0.0  0.0
+2019-12-30  1  0.0  0.2
+2020-01-06  2  0.5  0.0
+2020-01-13  3  5.3  1.7
+'''.strip()
+
+        self.tab.parse_lines(rain_header.splitlines())
+        self.assertEqual(str(self.tab), rain_header)
+        
+        self.tab.do('roll @') # missing predicate rolls whole table but not header
+        self.assertEqual(str(self.tab), rain_header_rolled)

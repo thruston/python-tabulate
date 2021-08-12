@@ -598,7 +598,7 @@ always be included.  But if you had done `filter i=0` you would get
 
 because "Sun" is not equal to 0.  In cases like this you could do
 `pop 0 filter i=0 push 0` to keep the header, or as a short cut you can do
-`@filter i=0` which does the same:
+`filter @i=0` which does the same:
 
     Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat  Sun  Total
     2019-12-30     1  0.0  0.2   0.0  0.0  1.2   0.0  0.0    1.4
@@ -973,6 +973,37 @@ So `sort abc` is the same as `sort c sort b sort a` (but slightly quicker).
 
 The default is to sort by all columns from right to left.
 
+You can also sort on simple functions; essentially any function that you can use with `arr`. 
+So given a table like this:
+
+    tamarix     33  18
+    tamasha     89  13
+    tambac      57  72
+    tambourine  48  46
+
+if you can do `sort len(a)` to get
+
+    tambac      57  72
+    tamarix     33  18
+    tamasha     89  13
+    tambourine  48  46
+
+or `sort reversed(a)` to get 
+
+    tamasha     89  13
+    tambac      57  72
+    tambourine  48  46
+    tamarix     33  18
+
+or  `sort (b-c)` to get:
+
+    tambac      57  72
+    tambourine  48  46
+    tamarix     33  18
+    tamasha     89  13
+
+If you have a header row in your table, then usually `sort` with automagically leave it in place.
+But if this does not work you can do `pop 0 sort abc push 0` or (as a convenience) `sort @abc`.
 
 
 ### tap - apply a function to each numerical value

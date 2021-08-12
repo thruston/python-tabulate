@@ -568,8 +568,6 @@ class Table:
             return
         
         if not isinstance(agenda, list):
-            if '@' in agenda:
-                agenda = 'pop 0 ' + agenda.replace('@', '') + ' push 0'
             agenda = agenda.split()
 
         while agenda:
@@ -654,9 +652,16 @@ class Table:
         if not expression:
             return
 
+        header = None
+        if '@' in expression:
+            header = self.pop(0)
+            expression = expression.replace('@', '')
+
         ok, cc = compile_as_decimal(expression)
         if not ok:
             self.messages.append(cc)
+            if header is not None:
+                self.insert(0,  header)
             return
 
         old_data = self.data[:]
@@ -689,6 +694,9 @@ class Table:
                 self.append(r)
             elif i > 1 and i in self.extras:
                 self.extras.pop(i)  # remove extras if line not wanted (unless we are at the top)
+        
+        if header is not None:
+            self.insert(0, header)
 
         if not self.data:
             self.cols = 0
@@ -1245,30 +1253,40 @@ class Table:
         groups are done right to left...
 
         '''
+        header = None
+        if '@' in col_spec:
+            header = self.pop(0)
+            col_spec = col_spec.replace('@', '')
+
+        if col_spec is None or col_spec == '':
+            col_spec = string.ascii_lowercase[:self.cols]
 
         if looks_like_formula(col_spec):
             self.do(f"arr ({col_spec})~ sort a arr -a")
-            return
-
-        identity = string.ascii_lowercase[:self.cols]
-        if col_spec is None or col_spec == '':
-            col_spec = identity
-
-        try:
-            i = int(col_spec)
-        except ValueError:
-            for col in col_spec[::-1]:
-                c, want_reverse = self._fancy_col_index(col)
-                if c is None:
-                    continue
-                self.data.sort(key=lambda row: as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
         else:
-            if -self.cols <= i < self.cols:
-                self.data.sort(key=lambda row: as_numeric_tuple(row[i], False))
+            try:
+                i = int(col_spec)
+            except ValueError:
+                for col in col_spec[::-1]:
+                    c, want_reverse = self._fancy_col_index(col)
+                    if c is None:
+                        continue
+                    self.data.sort(key=lambda row: as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
+            else:
+                if -self.cols <= i < self.cols:
+                    self.data.sort(key=lambda row: as_numeric_tuple(row[i], False))
+
+        if header is not None:
+            self.insert(0, header)
 
     def _remove_duplicates_by_col(self, col_spec):
         '''like uniq, remove row if key cols match the row above
         '''
+        header = None
+        if '@' in col_spec:
+            header = self.pop(0)
+            col_spec = col_spec.replace('@', '')
+
         if col_spec is None or col_spec == '':
             cols_to_check = list(range(self.cols))
         else:
@@ -1279,20 +1297,21 @@ class Table:
                     continue
                 cols_to_check.append(i)
 
-        if not cols_to_check:
-            return
+        if cols_to_check:
+            rows_to_delete = []
+            previous_t = ''
+            for i, row in enumerate(self.data):
+                this_t = ' '.join(row[j] for j in cols_to_check)
+                if previous_t == this_t:
+                    rows_to_delete.append(i)
+                else:
+                    previous_t = this_t
 
-        rows_to_delete = []
-        previous_t = ''
-        for i, row in enumerate(self.data):
-            this_t = ' '.join(row[j] for j in cols_to_check)
-            if previous_t == this_t:
-                rows_to_delete.append(i)
-            else:
-                previous_t = this_t
-
-        for i in reversed(rows_to_delete):
-            del self.data[i]
+            for i in reversed(rows_to_delete):
+                del self.data[i]
+        
+        if header is not None:
+            self.insert(0, header)
 
     def _add_grouping_blanks(self, col_spec):
         '''Add blanks to show groups in given column
@@ -1340,6 +1359,11 @@ class Table:
     def _roll_by_col(self, col_spec):
         '''Roll columns, up, or down
         '''
+        header = None
+        if '@' in col_spec:
+            header = self.pop(0)
+            col_spec = col_spec.replace('@', '')
+
         if not col_spec:
             self.data.insert(0, self.data.pop())
         else:
@@ -1353,6 +1377,9 @@ class Table:
                 else:
                     self.data[i].insert(0, self.data[i].pop())
             self.data = list(map(list, zip(*self.data)))
+
+        if header is not None:
+            self.insert(0, header)
 
     def tabulate(self):
         '''Generate nicely lined up rows
@@ -1439,8 +1466,6 @@ if __name__ == '__main__':
     # Join the agenda args into one string, remove any backslash (for Vim), 
     # do shorthands and split into a list
     agenda = ' '.join(args.agenda).replace('\\', '')
-    if '@' in agenda:
-        agenda = 'pop 0 ' + agenda.replace('@', '') + ' push 0'
     agenda = agenda.split()
 
     # Get the delimiter from the agenda if possible
