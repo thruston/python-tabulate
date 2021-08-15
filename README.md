@@ -490,7 +490,8 @@ or British) forms as well as `yyyy-mm-dd`, as follows:
 
 This table shows the strftime formats used.  This is not as clever as using
 `dateutil.parser` but it does mean that tabulate only uses the standard Python3
-libraries.
+libraries.  If you want to convert from any of these formats to standard ISO format
+then do `date(base(a))`.  
 
 There are also useful functions to convert HH:MM:SS to fractional hours,
 minutes or seconds.  `hms()` takes fractional hours and produces `hh:mm:ss`,
