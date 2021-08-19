@@ -490,7 +490,8 @@ or British) forms as well as `yyyy-mm-dd`, as follows:
 
 This table shows the strftime formats used.  This is not as clever as using
 `dateutil.parser` but it does mean that tabulate only uses the standard Python3
-libraries.
+libraries.  If you want to convert from any of these formats to standard ISO format
+then do `date(base(a))`.  
 
 There are also useful functions to convert HH:MM:SS to fractional hours,
 minutes or seconds.  `hms()` takes fractional hours and produces `hh:mm:ss`,
@@ -612,7 +613,7 @@ because "Sun" is not equal to 0.  In cases like this you could do
 The expressions should be valid bits of Python, with the exceptions noted
 below.  You  can use the same subset of built-in and maths functions as the
 normal row arrangements with `arr`, and single letters refer to the value of
-the cells in the way described for `arr` above.  
+the cells in the way described for `arr` above.
 
 Again like `arr` you can use the variables `rows` and `row_number` in the
 expression: `rows` is the count of rows in your table, and `row_number` starts
@@ -844,7 +845,7 @@ while `pivot count` would tell you how many of each type you had:
     East     1   1   1   2
     West     1   1   1   3
 
-and `pivot mean` would produce: 
+and `pivot mean` would produce:
 
     Region    Q1    Q2    Q3    Q4
     ------------------------------
@@ -1038,7 +1039,7 @@ So `sort abc` is the same as `sort c sort b sort a` (but slightly quicker).
 
 The default is to sort by all columns from right to left.
 
-You can also sort on simple functions; essentially any function that you can use with `arr`. 
+You can also sort on simple functions; essentially any function that you can use with `arr`.
 So given a table like this:
 
     tamarix     33  18
@@ -1053,7 +1054,7 @@ if you can do `sort len(a)` to get
     tamasha     89  13
     tambourine  48  46
 
-or `sort reversed(a)` to get 
+or `sort reversed(a)` to get
 
     tamasha     89  13
     tambac      57  72
