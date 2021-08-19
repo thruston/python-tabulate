@@ -100,7 +100,7 @@ def date(ordinal=0):
     >>> date(10) == (datetime.date.today() + datetime.timedelta(days=10)).isoformat()
     True
     >>> date('ts')
-    'ts'
+    'date(ts)'
     >>> date(-10000000000000000000000000) == date(0)
     True
     >>> date(-2000) == date(0)
@@ -109,7 +109,9 @@ def date(ordinal=0):
     try:
         ordinal = int(ordinal)
     except (TypeError, ValueError):
-        return ordinal
+        ordinal = base(ordinal)
+        if ordinal.startswith('base'):
+            return ordinal.replace('base', 'date')
 
     if abs(ordinal) < 1000:
         dt = datetime.date.today() + datetime.timedelta(days=ordinal)
