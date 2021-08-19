@@ -1230,13 +1230,16 @@ you zip every other row, and unzip the table in half (as it were).
 Tabulate reads and writes everything as strings, but it has a fairly broad
 definition of which of them count as numbers.
 
-- Any string like '4' or '-2.17' that is a valid input to the `decimal.Decimal` constructor
+- Any string like '4' or '-2.17' that is a valid input to the `decimal.Decimal`
+  constructor
 
 - Any string with '_' or ',' as separators like '1,234' or '0.456_789'
 
-- Any string that looks like a number but ends with '%' is treated as a percentage, so '45%' is interpreted as 0.45
+- Any string that looks like a number but ends with '%' is treated as a
+  percentage, so '45%' is interpreted as 0.45
 
-- Binary, octal, and hex strings with leading '0b', '0o' or '0x' are converted to decimal integers
+- Binary, octal, and hex strings with leading '0b', '0o' or '0x' are converted
+  to decimal integers
 
 - The strings 'True' and 'False' count as 1 and 0
 
