@@ -491,7 +491,7 @@ or British) forms as well as `yyyy-mm-dd`, as follows:
 This table shows the strftime formats used.  This is not as clever as using
 `dateutil.parser` but it does mean that tabulate only uses the standard Python3
 libraries.  If you want to convert from any of these formats to standard ISO format
-then do `date(base(a))`.  
+then do `date(base(a))`.
 
 There are also useful functions to convert HH:MM:SS to fractional hours,
 minutes or seconds.  `hms()` takes fractional hours and produces `hh:mm:ss`,
@@ -975,7 +975,7 @@ To add a line just before the last line (to show a total or a footer) use `rule 
 
 ### shuffle - rearrange the rows with a Fisher-Yates shuffle
 
-    shuffle
+    shuffle [colspec]
 
 Shuffle the rows in the table.  This is implemented using `random.shuffle`.
 Here's a one liner to generate a random 4x4 arrangement of the numbers 1 to 16:
@@ -989,6 +989,9 @@ produces (for example):
     13   2   3   8
     15   1   6  16
     12  11  10  14
+
+You can also give a colspec, as for sort.  So `shuffle b` will randomize only the second column.
+If you want to leave the top row alone, do `pop 0 shuffle push 0` or just `shuffle @`.
 
 ### sf - round numbers to given significant figures
 
