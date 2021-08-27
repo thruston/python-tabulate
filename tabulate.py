@@ -1162,6 +1162,9 @@ class Table:
                 delenda = list(ord(x) - ord('a') for x in self._get_expr_list(perm[1:]))
                 self.data = list(list(x for i, x in enumerate(r) if i not in delenda) for r in self.data)
                 self.cols = len(self.data[0])
+            # move any stacked rows back to the stack
+            for _ in range(stack_rows):
+                self.stack.append(self.pop())
             return
 
         perm = self._get_expr_list(perm)
