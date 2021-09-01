@@ -491,7 +491,7 @@ or British) forms as well as `yyyy-mm-dd`, as follows:
 This table shows the strftime formats used.  This is not as clever as using
 `dateutil.parser` but it does mean that tabulate only uses the standard Python3
 libraries.  If you want to convert from any of these formats to standard ISO format
-then do `date(base(a))`.  
+then do `date(base(a))`.
 
 There are also useful functions to convert HH:MM:SS to fractional hours,
 minutes or seconds.  `hms()` takes fractional hours and produces `hh:mm:ss`,
@@ -814,6 +814,71 @@ The `pivot wide` function assumes that the right hand column contains numeric va
 and the second-from-the-right column contains the names you want as new column headings.
 Any non-numeric value in the values column is treated as 0.  If you have duplicate names
 in the names column then the corresponding values will be added together.
+
+The `pivot` function also allows for repeated rows.  So given this
+
+    Region  Quarter  Sales
+    ----------------------
+    East    Q1        1200
+    East    Q2        1100
+    East    Q3        1500
+    East    Q4        2200
+    West    Q1        2200
+    West    Q2        2500
+    West    Q3        1990
+    West    Q4         600
+    West    Q4        1215
+    East    Q4         640
+    West    Q4         624
+
+`pivot wide` would add up all the values to consolidate the data:
+
+    Region    Q1    Q2    Q3    Q4
+    ------------------------------
+    East    1200  1100  1500  2840
+    West    2200  2500  1990  2439
+
+while `pivot count` would tell you how many of each type you had:
+
+    Region  Q1  Q2  Q3  Q4
+    ----------------------
+    East     1   1   1   2
+    West     1   1   1   3
+
+and `pivot mean` would produce:
+
+    Region    Q1    Q2    Q3    Q4
+    ------------------------------
+    East    1200  1100  1500  1420
+    West    2200  2500  1990   813
+
+You could also do `pivot wide pivot long` to eliminate the duplicates but leave the data
+in long form.
+
+    Region  Name  Value
+    -------------------
+    East    Q1     1200
+    East    Q2     1100
+    East    Q3     1500
+    East    Q4     2840
+    West    Q1     2200
+    West    Q2     2500
+    West    Q3     1990
+    West    Q4     2439
+
+Notice that this replaces the headers with Name and Value.  If you wanted to preserve the old headers
+you could do `pop 0 label pivot wide pivot long push 1 pop 0`
+
+    Region  Quarter  Sales
+    ----------------------
+    East    Q1        1200
+    East    Q2        1100
+    East    Q3        1500
+    East    Q4        2840
+    West    Q1        2200
+    West    Q2        2500
+    West    Q3        1990
+    West    Q4        2439
 
 ### pop - remove a row
 
