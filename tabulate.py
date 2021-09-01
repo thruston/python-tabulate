@@ -99,6 +99,11 @@ def as_numeric_tuple(x, backwards=False):
 
     >>> as_numeric_tuple("A19")
     (-1000000000000.0, 'A000000000000019')
+
+    >>> as_numeric_tuple("A:1")
+    (-1000000000000.0, 'A:000000000000001')
+    >>> as_numeric_tuple('"A:19"')
+    (-1000000000000.0, '"A:00000000000019"')
     '''
 
     alpha, omega = -1e12, 1e12
@@ -122,7 +127,7 @@ def as_numeric_tuple(x, backwards=False):
 
     # pad trailing numbers with zeros
     # Make A1, A2, A10 etc sortable...
-    m = re.match(r'(.*\D)(\d+)\Z', x)
+    m = re.match(r'(\D+)(\d+["\']?)\Z', x)
     if m is not None:
         return (alpha, m.group(1) + m.group(2).zfill(15))
 
