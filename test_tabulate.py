@@ -223,7 +223,7 @@ X  Y   c   d
 6  8  14  16
 ''')
         self.tab.do("pop 0 label")
-        self.tab.do("shuffle sort B")
+        self.tab.do("shuffle @ sort B")
         self.assertEqual("\n" + str(self.tab) + "\n",
 '''
 a  b   c   d

@@ -285,6 +285,7 @@ def compile_as_decimal(expr):
     '''
     clean_expression = expr.replace('<>', '!=')
     clean_expression = re.sub(r'\bmod\b', '%', clean_expression)
+    clean_expression = re.sub(r'([a-z])\s*[+][+]\s*([a-z])', r'hypot(\1,\2)', clean_expression)
     clean_expression = re.sub(r'(?<![<>!])=+', '==', clean_expression)  # also allow a=b
     out = []
     try:
@@ -341,10 +342,10 @@ def statistical_summary(numbers):
     '''return a 4/6 field summary of a list of numbers
     >>> statistical_summary([])
     ''
-    >>> statistical_summary([decimal.Decimal(x) for x in '36.4  67.1  82.7  34.2  96.8  10.9  19.1  71.8  66.0  29.2'.split()])
+    >>> statistical_summary([decimal.Decimal(x) for x in '36.4 67.1 82.7 34.2 96.8 10.9 19.1 71.8 66.0 29.2'.split()])
     'Min: 10.9  Mean: 51.42  Max: 96.8'
-    >>> statistical_summary([decimal.Decimal(x) for x in '0 1 2 3 4 5 6 8 9 36.4  67.1  82.7  34.2  96.8  10.9  19.1  71.8  66.0  29.2'.split()])
-    'Min: 0  Q25: 4  Median: 10.9  Mean: 29.0631578947  Q75: 66.0  Max: 96.8'
+    >>> statistical_summary([decimal.Decimal(x) for x in '0 1 2 3 4 5 6 8 9 36.4 67.1 82.7 34.2 96.8 10.9 29.2'.split()])
+    'Min: 0  Q25: 3.25  Median: 8.5  Mean: 24.70625  Q75: 35.85  Max: 96.8'
 
     '''
     if not numbers:
@@ -571,7 +572,7 @@ class Table:
         "Do what we've been asked..."
         if agenda is None:
             return
-        
+
         if not isinstance(agenda, list):
             agenda = agenda.split()
 
@@ -665,41 +666,38 @@ class Table:
         ok, cc = compile_as_decimal(expression)
         if not ok:
             self.messages.append(cc)
-            if header is not None:
-                self.insert(0,  header)
-            return
+        else:
+            old_data = self.data[:]
+            self.data.clear()
+            identity = string.ascii_lowercase[:self.cols]
+            value_dict = {}
+            value_dict['rows'] = len(old_data)
+            for k in identity:
+                value_dict[k.upper()] = 0  # accumulators
 
-        old_data = self.data[:]
-        self.data.clear()
-        identity = string.ascii_lowercase[:self.cols]
-        value_dict = {}
-        value_dict['rows'] = len(old_data)
-        for k in identity:
-            value_dict[k.upper()] = 0  # accumulators
+            # the idea here is that we treat unknown names as strings, to allow you to say b=whatever
+            # instead of having to write b='whatever'.  The co_names attribute of the compiled code
+            # is a list of the names in the compiled object
+            for n in cc.co_names:
+                if n not in identity and n not in Panther and n not in value_dict:
+                    value_dict[n] = n
 
-        # the idea here is that we treat unknown names as strings, to allow you to say b=whatever
-        # instead of having to write b='whatever'.  The co_names attribute of the compiled code
-        # is a list of the names in the compiled object
-        for n in cc.co_names:
-            if n not in identity and n not in Panther and n not in value_dict:
-                value_dict[n] = n
+            for i, r in enumerate(old_data):
+                value_dict['row_number'] = i + 1
+                for k, v in zip(identity, r):
+                    flag, value_dict[k] = is_as_number(v)
+                    if flag:
+                        value_dict[k.upper()] += value_dict[k]
 
-        for i, r in enumerate(old_data):
-            value_dict['row_number'] = i + 1
-            for k, v in zip(identity, r):
-                flag, value_dict[k] = is_as_number(v)
-                if flag:
-                    value_dict[k.upper()] += value_dict[k]
+                try:
+                    wanted = eval(cc, Panther, value_dict)
+                except (TypeError, NameError, ArithmeticError):
+                    wanted = True  # default to keeping the row
+                if wanted:
+                    self.append(r)
+                elif i > 1 and i in self.extras:
+                    self.extras.pop(i)  # remove extras if line not wanted (unless we are at the top)
 
-            try:
-                wanted = eval(cc, Panther, value_dict)
-            except (TypeError, NameError, ArithmeticError):
-                wanted = True  # default to keeping the row
-            if wanted:
-                self.append(r)
-            elif i > 1 and i in self.extras:
-                self.extras.pop(i)  # remove extras if line not wanted (unless we are at the top)
-        
         if header is not None:
             self.insert(0, header)
 
@@ -1183,7 +1181,7 @@ class Table:
         if all(x in identity + '?' for x in perm):
             self.data = list(list(_get_value(r, x) for x in perm) for r in self.data)
             self.cols = len(perm)  # perm can delete and/or add columns
-        
+
         else:
             # make it into a list tuples
             desiderata = []
@@ -1229,8 +1227,7 @@ class Table:
                             new_row.extend(new_value)
                         else:
                             new_row.append(new_value)
-                    except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation) as e:
-                        # self.messages.append('?! arr: ' + str(e))#  - ususally want to be silent here...
+                    except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation):
                         new_row.append(_replace_values(literal_code, values))
                     except ZeroDivisionError:
                         new_row.append("-")
@@ -1239,7 +1236,6 @@ class Table:
         # move any stacked rows back to the stack
         for _ in range(stack_rows):
             self.stack.append(self.pop())
-
 
     def _fancy_col_index(self, col_spec):
         '''Find me an index, returns index + T/F to say if letter was upper case
@@ -1335,7 +1331,7 @@ class Table:
 
             for i in reversed(rows_to_delete):
                 del self.data[i]
-        
+
         if header is not None:
             self.insert(0, header)
 
@@ -1464,7 +1460,8 @@ class Table:
             for ex in self.extras[i]:
                 if ex == 'rule' and ruler is not None:
                     if ruler == "plain":
-                        yield ' ' * self.indent + '-' * (sum(widths) + self.cols * len(separator) - len(separator) + len(eol_marker))
+                        yield ' ' * self.indent \
+                            + '-' * (sum(widths) + self.cols * len(separator) - len(separator) + len(eol_marker))
                     elif ruler == "piped":
                         yield ' ' * self.indent + separator.join(_pipe_rule(w, a) for w, a in zip(widths, aligns))
                     else:
@@ -1489,7 +1486,7 @@ if __name__ == '__main__':
     parser.add_argument("--file", help="Source file name, defaults to STDIN")
     args = parser.parse_args()
 
-    # Join the agenda args into one string, remove any backslash (for Vim), 
+    # Join the agenda args into one string, remove any backslash (for Vim),
     # do shorthands and split into a list
     agenda = ' '.join(args.agenda).replace('\\', '')
     agenda = agenda.split()
