@@ -3,6 +3,7 @@
 import unittest
 import tabulate
 
+
 class TestTableParsing(unittest.TestCase):
 
     def setUp(self):
@@ -37,7 +38,7 @@ Monday      Week  Mon  Tue   Wed  Thu  Fri   Sat   Sun  Total
 
     def test_lol(self):
         "create table from lol"
-        
+
         self.assertTrue(self.tab)
         self.assertEqual(len(self.tab), 9)
         self.assertEqual(self.tab.cols, 10)

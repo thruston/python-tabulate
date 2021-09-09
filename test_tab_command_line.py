@@ -2,8 +2,7 @@
 
 import unittest
 import subprocess
-import sys
-import tabulate
+
 
 class TestTableScript(unittest.TestCase):
 

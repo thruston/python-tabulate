@@ -3,6 +3,7 @@
 import unittest
 import tabulate
 
+
 class TestTableRoller(unittest.TestCase):
 
     def setUp(self):
@@ -36,20 +37,20 @@ class TestTableRoller(unittest.TestCase):
 '''.strip()
         self.tab.parse_lines(rain.splitlines())
         self.assertEqual(str(self.tab), rain)
-        
-        self.tab.do('roll') # missing predicate rolls whole table
+
+        self.tab.do('roll')  # missing predicate rolls whole table
         self.assertEqual(str(self.tab), rolled)
-        
+
         self.tab.parse_lines(rain.splitlines())
-        self.tab.do('roll b') # down...
+        self.tab.do('roll b')  # down...
         self.assertEqual(str(self.tab), rolled_b_down)
 
         self.tab.parse_lines(rain.splitlines())
-        self.tab.do('roll BC') # up
+        self.tab.do('roll BC')  # up
         self.assertEqual(str(self.tab), rolled_bc_up)
 
         self.tab.parse_lines(rain.splitlines())
-        self.tab.do('roll ?') # error
+        self.tab.do('roll ?')  # error
         self.assertEqual(str(self.tab), '?! colspec ?\n' + rain)
 
         rain_header = '''
@@ -69,6 +70,6 @@ Date        N  Mon  Tue
 
         self.tab.parse_lines(rain_header.splitlines())
         self.assertEqual(str(self.tab), rain_header)
-        
-        self.tab.do('roll @') # missing predicate rolls whole table but not header
+
+        self.tab.do('roll @')  # missing predicate rolls whole table but not header
         self.assertEqual(str(self.tab), rain_header_rolled)

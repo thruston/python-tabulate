@@ -21,6 +21,7 @@ def t_sorted(*args, reverse=False):
     else:
         return tuple(sorted(it, reverse=reverse))
 
+
 def t_apply(*args, fun=all):
     '''Apply fun allowing args to be separate or a tuple
 
@@ -41,37 +42,42 @@ def t_apply(*args, fun=all):
     else:
         return fun(it)
 
+
 def t_all(*args):
     '''
     >>> t_all(0,1,1)
     False
     '''
-    return t_apply(args) 
+    return t_apply(args)
+
 
 def t_any(*args):
     '''
     >>> t_any(0,1,1)
     True
     '''
-    return t_apply(args, fun=any) 
+    return t_apply(args, fun=any)
+
 
 def t_min(*args):
     '''
     >>> t_min(0,1,1)
     0
     '''
-    return t_apply(args, fun=min) 
+    return t_apply(args, fun=min)
+
 
 def t_max(*args):
     '''
     >>> t_max(0,1,1)
     1
     '''
-    return t_apply(args, fun=max) 
+    return t_apply(args, fun=max)
+
 
 def t_sum(*args):
     '''
     >>> t_sum(0,1,1)
     2
     '''
-    return t_apply(args, fun=sum) 
+    return t_apply(args, fun=sum)

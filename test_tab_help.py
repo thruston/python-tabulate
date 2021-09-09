@@ -3,6 +3,7 @@
 import unittest
 import tabulate
 
+
 class TestTableHelp(unittest.TestCase):
 
     def setUp(self):

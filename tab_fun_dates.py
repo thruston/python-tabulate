@@ -15,6 +15,7 @@ Toby Thurston -- 10 Feb 2021
 '''
 import datetime
 
+
 def parse_date(sss):
     '''Try to parse a date
     >>> parse_date("1 January 2001").isoformat()
@@ -28,6 +29,7 @@ def parse_date(sss):
             pass
 
     raise ValueError
+
 
 def dow(sss, date_format="%a"):
     '''Is it Friday yet?
@@ -48,6 +50,7 @@ def dow(sss, date_format="%a"):
         return parse_date(sss).strftime(date_format)
     except (TypeError, ValueError):
         return date_format
+
 
 def base(sss=None):
     '''Get today's date as "base" number, or whatever date you give
@@ -85,6 +88,7 @@ def base(sss=None):
     except (TypeError, ValueError):
         return f'base({sss})'
 
+
 def date(ordinal=0):
     '''Turn a base number (or an epoch time or a millisecond epoch time) into a date
     >>> date(716257)
@@ -115,7 +119,7 @@ def date(ordinal=0):
 
     if abs(ordinal) < 1000:
         dt = datetime.date.today() + datetime.timedelta(days=ordinal)
-    elif ordinal > 100000000000: # about 5000 AD as an epoch, so assume epoch ms
+    elif ordinal > 100000000000:  # about 5000 AD as an epoch, so assume epoch ms
         dt = datetime.datetime.utcfromtimestamp(ordinal / 1000)
     elif ordinal > datetime.date.max.toordinal():  # > max date, so assume epoch seconds
         dt = datetime.datetime.utcfromtimestamp(ordinal)
@@ -126,6 +130,7 @@ def date(ordinal=0):
             dt = datetime.date.today()
 
     return dt.isoformat()
+
 
 def hms(fractional_things):
     '''Turn decimal hours/degrees into h/d:mm:ss.fff
@@ -138,7 +143,8 @@ def hms(fractional_things):
     '''
     hh, r = divmod(fractional_things, 1)
     mm, r = divmod(r * 60, 1)
-    return "{}:{:02d}:{:06.3f}".format(int(hh), int(mm), r*60)
+    return "{}:{:02d}:{:06.3f}".format(int(hh), int(mm), r * 60)
+
 
 def hr(hms_word, s=0):
     '''Turn hh:mm:ss.sss into fractional hours
@@ -148,8 +154,9 @@ def hr(hms_word, s=0):
     '''
     hours = 0
     for i, p in enumerate(hms_word.split(':')):
-        hours += float(p) * 60 ** (s-i)
+        hours += float(p) * 60 ** (s - i)
     return hours
+
 
 def mins(hms_word):
     '''Turn hh:mm:ss.sss into fractional minutes
@@ -158,6 +165,7 @@ def mins(hms_word):
     '''
     return hr(hms_word, 1)
 
+
 def secs(hms_word):
     '''Turn hh:mm:ss.sss into fractional seconds
     >>> secs('1:23:45.67')
@@ -165,10 +173,12 @@ def secs(hms_word):
     '''
     return hr(hms_word, 2)
 
+
 def as_time(time_string):
     '''Turn a possible time into hh:mm
 
-    >>> a = ['12 midnight', '12.00 a.m.', '12:01 am', '1:00a.m.', '9am', '11.00am', '11:59 a.m.', 'Noon', '12 noon', '12:00 pm', '12:01 p.m.', '1:00pm', '4 p.m.', '11:00p.m.', '11:59 pm', '12:00']
+    >>> a = ['12 midnight', '12.00 a.m.', '12:01 am', '1:00a.m.', '9am', '11.00am', '11:59 a.m.']
+    >>> a += ['Noon', '12 noon', '12:00 pm', '12:01 p.m.', '1:00pm', '4 p.m.', '11:00p.m.', '11:59 pm', '12:00']
     >>> ' '.join(as_time(x) for x in a)
     '00:00 00:00 00:01 01:00 09:00 11:00 11:59 12:00 12:00 12:00 12:01 13:00 16:00 23:00 23:59 12:00'
     '''
@@ -196,6 +206,7 @@ def as_time(time_string):
 
     return time_string
 
+
 def epoch(date_time_string):
     '''Turn date time into epoch secs
 
@@ -215,4 +226,3 @@ def epoch(date_time_string):
             else:
                 return f'{dt.timestamp():.0f}'
     return date_time_string
-

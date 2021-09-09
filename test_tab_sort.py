@@ -3,6 +3,7 @@
 import unittest
 import tabulate
 
+
 class TestTableSort(unittest.TestCase):
 
     def setUp(self):
@@ -34,7 +35,7 @@ Sunday     0.34  0.25
     def test_filter(self):
         "Select matching rows"
         self.tab.parse_lines(self.rain.splitlines())
-        self.tab.do('sort') # missing predicate does nothing because we start sorted
+        self.tab.do('sort')  # missing predicate does nothing because we start sorted
         self.assertEqual(str(self.tab), self.rain)
         self.tab.do('sort j')
         expected = '''
@@ -81,12 +82,12 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 2019-12-30     1  0.0  0.2  0.0  0.0  1.2  0.0   0.0    1.4  Dry
 '''.strip()
         self.assertEqual(str(self.tab), expected)
-        
+
         # check broken col spec
         self.tab.do('sort <')
         self.assertEqual(str(self.tab), '?! syntax (<)\n' + expected)
 
-        self.tab.do('sort @z') # automatic pop and push of header
+        self.tab.do('sort @z')  # automatic pop and push of header
         expected = '''
 Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 ------------------------------------------------------------------------

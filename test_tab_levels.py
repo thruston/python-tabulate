@@ -3,6 +3,7 @@
 import unittest
 import tabulate
 
+
 class TestTableLevels(unittest.TestCase):
 
     def setUp(self):
@@ -39,7 +40,7 @@ UK              Europe   122849         183      4176554
 Ukraine         Europe    27472          62      1399813
 US              Europe   510900         156     28494973
 '''.strip()
-        
+
         self.levels = '''
 # Country: All distinct.
 # Region: Europe 14, America 8, Asia 5, Africa 1
@@ -50,15 +51,15 @@ US              Europe   510900         156     28494973
         "show messages about column contents"
         self.tab.parse_lines(self.covid.splitlines())
         self.assertEqual(str(self.tab), self.covid)
-        
-        self.tab.do('levels') # missing predicate does nothing
+
+        self.tab.do('levels')  # missing predicate does nothing
         self.assertEqual(str(self.tab), self.covid)
 
-        self.tab.do('levels .') # broken predicate gives error
+        self.tab.do('levels .')  # broken predicate gives error
         self.assertEqual(str(self.tab), '?! colspec .\n' + self.covid)
-        
+
         self.tab.do('levels ABD')
         self.assertEqual(str(self.tab), self.levels + '\n' + self.covid)
-        
+
         self.tab.do('levels c')
         self.assertEqual(str(self.tab), '# c: All distinct.\n' + self.covid)

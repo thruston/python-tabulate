@@ -10,11 +10,12 @@ decimal.getcontext().prec = 12
 
 PIC = ''.join('''3.1415926535 8979323846 2643383279 5028841971
 6939937510 5820974944 5923078164 0628620899 8628034825 3421170679'''.split())
-PI = 0+decimal.Decimal(PIC)
+PI = 0 + decimal.Decimal(PIC)
 TAU = PI + PI
 ONE = decimal.Decimal('1')
 ZERO = decimal.Decimal('0')
 one = decimal.Decimal('1.0000000000')
+
 
 def degrees(x):
     '''return radians -> degrees
@@ -29,6 +30,7 @@ def degrees(x):
         return ZERO
     return x / PI * 180
 
+
 def radians(x):
     ''' return degrees -> radians
     >>> radians(90)
@@ -39,6 +41,7 @@ def radians(x):
     if not x:
         return ZERO
     return x * PI / 180
+
 
 def sin(x):
     '''sine
@@ -52,8 +55,9 @@ def sin(x):
     '''
     return decimal.Decimal(math.sin(x)).quantize(one).normalize()
 
+
 def cos(x):
-    '''cosine 
+    '''cosine
 
     >>> cos(PI/2)
     Decimal('-0')
@@ -64,12 +68,14 @@ def cos(x):
     '''
     return decimal.Decimal(math.cos(x)).quantize(one).normalize()
 
+
 def tan(x):
     '''tangent
     >>> tan(PI/4)
     Decimal('1')
     '''
     return decimal.Decimal(math.tan(x)).quantize(one).normalize()
+
 
 def sind(x):
     '''sin in degrees
@@ -83,6 +89,7 @@ def sind(x):
     '''
     return decimal.Decimal(math.sin(math.radians(x))).quantize(one).normalize()
 
+
 def cosd(x):
     '''cosine in degrees
 
@@ -94,6 +101,7 @@ def cosd(x):
     Decimal('1')
     '''
     return decimal.Decimal(math.cos(math.radians(x))).quantize(one).normalize()
+
 
 def tand(x):
     '''tan in degrees
@@ -109,6 +117,7 @@ def tand(x):
 
     return decimal.Decimal(math.tan(math.radians(x))).quantize(one).normalize()
 
+
 def pyth_add(a, b):
     '''Pythagorean addition
 
@@ -116,6 +125,7 @@ def pyth_add(a, b):
     Decimal('13')
     '''
     return (ONE * a * a + b * b).sqrt()
+
 
 def decimal_to_hex(d):
     '''decimal to hexadecimal...
@@ -140,6 +150,7 @@ def decimal_to_hex(d):
         a += digits[int(i)]
     return a
 
+
 def decimal_to_oct(d):
     '''decimal to octal...
 
@@ -162,6 +173,7 @@ def decimal_to_oct(d):
         i, d = divmod(d, 1)
         a += digits[int(i)]
     return a
+
 
 def si(amount):
     """If amount is a number, add largest possible SI suffix,
@@ -187,5 +199,5 @@ def si(amount):
     except decimal.InvalidOperation:
         return amount
     else:
-        e = min(int(n.log10()/3), len(sips)-1)
-        return '{:7.3f} {}'.format(n / (10 ** (3*e)), sips[e]).strip()
+        e = min(int(n.log10() / 3), len(sips) - 1)
+        return '{:7.3f} {}'.format(n / (10 ** (3 * e)), sips[e]).strip()

@@ -4,6 +4,7 @@
 import unittest
 import tabulate
 
+
 class TestTablePoppersAdders(unittest.TestCase):
     '''Test add pop and push
     '''
@@ -230,11 +231,11 @@ Mean         5.5  2.61  0.78  1.5  2.89  1.28  2.66  3.85  15.57
         self.tab.do("roll pop 0 push")
         self.assertEqual(str(self.tab), self.sorted_by_total)
 
-        self.tab.do("pop 94") # index out of bounds == nop
+        self.tab.do("pop 94")  # index out of bounds == nop
         self.assertEqual(str(self.tab), self.sorted_by_total)
 
-        self.tab.do("push") # push with no preceding pop == nop
+        self.tab.do("push")  # push with no preceding pop == nop
         self.assertEqual(str(self.tab), self.sorted_by_total)
 
-        self.tab.do("pop push 94") # index out of bounds ok on insert
+        self.tab.do("pop push 94")  # index out of bounds ok on insert
         self.assertEqual(str(self.tab), self.sorted_by_total)

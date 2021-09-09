@@ -3,6 +3,7 @@
 import unittest
 import tabulate
 
+
 class TestTableWrangler(unittest.TestCase):
 
     def setUp(self):
@@ -41,7 +42,7 @@ No.asbestos.exposure           52             941
         self.tab.parse_lines(self.asbo.splitlines())
         self.assertEqual(str(self.tab), self.asbo)
 
-        self.tab.do("pivot") # no argument is nop
+        self.tab.do("pivot")  # no argument is nop
         self.assertEqual(str(self.tab), self.asbo)
 
         self.tab.do("pivot long")
@@ -55,9 +56,6 @@ No.asbestos.exposure           52             941
 
         self.tab.do("nospace .")
         self.assertEqual(str(self.tab), self.for_pirates)
-
-
-
 
     def test_pivot_wide(self):
         sales = '''
@@ -114,7 +112,6 @@ West    2200  2500  1990  2600
         self.tab.parse_lines(sales.splitlines())
         self.tab.do("pivot undefined")
         self.assertEqual(str(self.tab), sales)
-
 
     def test_pivot_long(self):
         "Now try going the other way..."
@@ -239,7 +236,7 @@ Monday      Week  Name  Value
 2020-03-30    14  Sat     0.0
 2020-03-30    14  Sun     0.0
 '''.strip()
-    
+
         self.tab.parse_lines(rain.splitlines())
         self.assertEqual(str(self.tab), rain)
 
@@ -251,5 +248,5 @@ Monday      Week  Name  Value
         self.assertEqual(str(self.tab), longrain)
 
         self.tab.parse_lines(rain.splitlines())
-        self.tab.do("pivot longm") # out of bounds == nop
+        self.tab.do("pivot longm")  # out of bounds == nop
         self.assertEqual(str(self.tab), rain)

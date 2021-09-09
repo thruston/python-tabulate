@@ -2,9 +2,11 @@ import unittest
 import doctest
 import tabulate
 
+
 def load_tests(loader, tests, ignore):
     tests.addTests(doctest.DocTestSuite(tabulate))
     return tests
+
 
 class TestTable(unittest.TestCase):
 
@@ -30,10 +32,9 @@ class TestTable(unittest.TestCase):
         self.tab.append([21])
         self.assertTrue(self.tab[-1] == ['21', '', ''])
 
-        self.tab.append([1,2,3,4,5])
+        self.tab.append([1, 2, 3, 4, 5])
         self.assertTrue(self.tab.cols == 5)
         self.assertTrue(self.tab[0] == ['First', 'Second', 'Third', '', ''])
-        
 
     def test_arrange(self):
         self.tab.parse_lines('''
@@ -46,8 +47,7 @@ class TestTable(unittest.TestCase):
     2020-05-19  09:20:40  28.3  28.6  22.5  22.3  24.1  23.7  19.7  23.0  1428  50.5'''.splitlines())
 
         self.tab.do("arr a..z")
-        self.assertEqual(str(self.tab) + "\n",
-'''
+        self.assertEqual(str(self.tab) + "\n", '''
     2020-05-19  09:18:00  30.3  30.2  30.1  28.9  29.8  29.6  29.9  30.2   135   4.5
     2020-05-19  09:18:10  29.2  29.1  29.4  30.5  30.2  30.3  30.0  29.5   132   4.5
     2020-05-19  09:18:20  29.2  28.8  28.6  29.2  29.2  29.3  29.1  28.8   136   4.7
@@ -57,8 +57,7 @@ class TestTable(unittest.TestCase):
     2020-05-19  09:20:40  28.3  28.6  22.5  22.3  24.1  23.7  19.7  23.0  1428  50.5
 ''')
         self.tab.do("arr xyz")
-        self.assertEqual(str(self.tab) + "\n",
-'''
+        self.assertEqual(str(self.tab) + "\n", '''
     30.2   135   4.5
     29.5   132   4.5
     28.8   136   4.7
@@ -68,8 +67,7 @@ class TestTable(unittest.TestCase):
     23.0  1428  50.5
 ''')
         self.tab.do("arr abc.;")
-        self.assertEqual(str(self.tab) + "\n",
-'''
+        self.assertEqual(str(self.tab) + "\n", '''
     30.2   135   4.5
     29.5   132   4.5
     28.8   136   4.7
@@ -90,8 +88,7 @@ class TestTable(unittest.TestCase):
     2020-05-19  09:20:40  28.3  28.6  22.5  22.3  24.1  23.7  19.7  23.0  1428  50.5'''.splitlines())
 
         self.tab.do("arr -cd")
-        self.assertEqual(str(self.tab) + "\n",
-'''
+        self.assertEqual(str(self.tab) + "\n", '''
     2020-05-19  09:18:00  30.1  28.9  29.8  29.6  29.9  30.2   135   4.5
     2020-05-19  09:18:10  29.4  30.5  30.2  30.3  30.0  29.5   132   4.5
     2020-05-19  09:18:20  28.6  29.2  29.2  29.3  29.1  28.8   136   4.7
@@ -101,8 +98,7 @@ class TestTable(unittest.TestCase):
     2020-05-19  09:20:40  22.5  22.3  24.1  23.7  19.7  23.0  1428  50.5
 ''')
         self.tab.do("arr abcz")
-        self.assertEqual(str(self.tab) + "\n",
-'''
+        self.assertEqual(str(self.tab) + "\n", '''
     2020-05-19  09:18:00  30.1   4.5
     2020-05-19  09:18:10  29.4   4.5
     2020-05-19  09:18:20  28.6   4.7
@@ -123,8 +119,7 @@ class TestTable(unittest.TestCase):
     2020-05-19  09:20:40  28.3  28.6  22.5  22.3  24.1  23.7  19.7  23.0  1428  50.5'''.splitlines())
 
         self.tab.do("arr abced")
-        self.assertEqual(str(self.tab) + "\n",
-'''
+        self.assertEqual(str(self.tab) + "\n", '''
     2020-05-19  09:18:00  30.3  30.1  30.2
     2020-05-19  09:18:10  29.2  29.4  29.1
     2020-05-19  09:18:20  29.2  28.6  28.8
@@ -135,8 +130,7 @@ class TestTable(unittest.TestCase):
 ''')
 
         self.tab.do("arr abcdeE")
-        self.assertEqual(str(self.tab) + "\n",
-'''
+        self.assertEqual(str(self.tab) + "\n", '''
     2020-05-19  09:18:00  30.3  30.1  30.2   30.2
     2020-05-19  09:18:10  29.2  29.4  29.1   59.3
     2020-05-19  09:18:20  29.2  28.6  28.8   88.1
@@ -146,11 +140,9 @@ class TestTable(unittest.TestCase):
     2020-05-19  09:20:40  28.3  22.5  28.6  209.4
 ''')
 
-
     def test_gen_and_wrap_and_zip(self):
         self.tab.do("gen -7:8 wrap 4")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
 -7  -3  1  5
 -6  -2  2  6
 -5  -1  3  7
@@ -158,8 +150,7 @@ class TestTable(unittest.TestCase):
 ''')
         self.tab.clear()
         self.tab.do("gen -7..8 wrap 4")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
 -7  -3  1  5
 -6  -2  2  6
 -5  -1  3  7
@@ -167,8 +158,7 @@ class TestTable(unittest.TestCase):
 ''')
         self.tab.clear()
         self.tab.do("gen 8:-7 wrap 4")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
 -7  -3  1  5
 -6  -2  2  6
 -5  -1  3  7
@@ -176,22 +166,19 @@ class TestTable(unittest.TestCase):
 ''')
         self.tab.clear()
         self.tab.do("gen 16 wrap 4")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
 1  5   9  13
 2  6  10  14
 3  7  11  15
 4  8  12  16
 ''')
         self.tab.do("zip")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
 1  5   9  13  2  6  10  14
 3  7  11  15  4  8  12  16
 ''')
         self.tab.do("unwrap")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
 1  5   9  13
 3  7  11  15
 2  6  10  14
@@ -214,8 +201,7 @@ class TestTable(unittest.TestCase):
 12  16
 '''.strip())
         self.tab.do("xp unzip arr acbd label X Y")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
 X  Y   c   d
 1  3   9  11
 2  4  10  12
@@ -224,36 +210,41 @@ X  Y   c   d
 ''')
         self.tab.do("pop 0 label")
         self.tab.do("shuffle @ sort B")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
 a  b   c   d
 6  8  14  16
 5  7  13  15
 2  4  10  12
 1  3   9  11
 ''')
+
+        self.tab.do("sort shuffle c arr -c")
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
+a  b   d
+1  3  11
+2  4  12
+5  7  15
+6  8  16
+''')
         self.tab.do("dup 0 zip")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
-a  b   c   d  a  b   c   d
-6  8  14  16  5  7  13  15
-2  4  10  12  1  3   9  11
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
+a  b   d  a  b   d
+1  3  11  2  4  12
+5  7  15  6  8  16
 ''')
         self.tab.add_rule(-1)
-        self.assertEqual(str(self.tab),
-'''
-a  b   c   d  a  b   c   d
-6  8  14  16  5  7  13  15
---------------------------
-2  4  10  12  1  3   9  11
+        self.assertEqual(str(self.tab), '''
+a  b   d  a  b   d
+1  3  11  2  4  12
+------------------
+5  7  15  6  8  16
 '''.strip())
-        self.tab.do("zip 1") # < 2 is a nop
-        self.assertEqual(str(self.tab),
-'''
-a  b   c   d  a  b   c   d
-6  8  14  16  5  7  13  15
---------------------------
-2  4  10  12  1  3   9  11
+        self.tab.do("zip 1")  # < 2 is a nop
+        self.assertEqual(str(self.tab), '''
+a  b   d  a  b   d
+1  3  11  2  4  12
+------------------
+5  7  15  6  8  16
 '''.strip())
 
         abba = '''
@@ -276,24 +267,20 @@ A  B  A  B  A  B
         self.tab.do("wrap 3")
         self.assertEqual(str(self.tab), oddly_wrapped)
 
-
-
     def test_ditto(self):
         self.tab.parse_lines('''
--  Act 3  -  -  Enzo Florimo, Hakan Hagegard, Arleen Auger, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Oestman
+-  Act 3  -  -  Enzo Florimo, Hakan Hagegard, Arleen Auger, Arnold Oman
 1.  "  "Io vi dico, signor"  [1:10]  "
 2.  "  Sull'aria...Cosa mi narri!...Che soave zefiretto...  [2:42]  "
 3.  "  "Ricevete, o padroncina" - "Queste sono, Madama"  [3:58]   "
 4.  "  Ecco la marcia...Eh, gia, solita usanza  [5:58]   "'''.splitlines())
         self.tab.do("ditto pop 0")
-        self.assertEqual(str(self.tab) + "\n",
-'''
-1.  Act 3  "Io vi dico, signor"                                 [1:10]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Oestman
-2.  Act 3  Sull'aria...Cosa mi narri!...Che soave zefiretto...  [2:42]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Oestman
-3.  Act 3  "Ricevete, o padroncina" - "Queste sono, Madama"     [3:58]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Oestman
-4.  Act 3  Ecco la marcia...Eh, gia, solita usanza              [5:58]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Barbara Bonney, The Drottningholm Court Theatre Orchestra, Arnold Oestman
+        self.assertEqual(str(self.tab) + "\n", '''
+1.  Act 3  "Io vi dico, signor"                                 [1:10]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Arnold Oman
+2.  Act 3  Sull'aria...Cosa mi narri!...Che soave zefiretto...  [2:42]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Arnold Oman
+3.  Act 3  "Ricevete, o padroncina" - "Queste sono, Madama"     [3:58]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Arnold Oman
+4.  Act 3  Ecco la marcia...Eh, gia, solita usanza              [5:58]  Enzo Florimo, Hakan Hagegard, Arleen Auger, Arnold Oman
 ''')
-
 
     def test_dates(self):
         self.tab.append(['Date'])
@@ -303,8 +290,7 @@ A  B  A  B  A  B
         self.tab.append(['2011-07-05'])
 
         self.tab.do("arr a{dow(a)}")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
 Date        %a
 2011-01-17  Mon
 2011-02-23  Wed
@@ -313,8 +299,7 @@ Date        %a
 ''')
 
         self.tab.do("pop 0 arr a{base('2020-05-22')-base(a)}")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
 2011-01-17  3413
 2011-02-23  3376
 2011-03-19  3352
@@ -322,8 +307,7 @@ Date        %a
 ''')
 
         self.tab.do("arr a{date(base(a)+140)}")
-        self.assertEqual("\n" + str(self.tab) + "\n",
-'''
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
 2011-01-17  2011-06-06
 2011-02-23  2011-07-13
 2011-03-19  2011-08-06
@@ -345,7 +329,7 @@ Date        %a
  3.612   3.017  8.675   2.117''')
 
     def test_complex_gen(self):
-        '''Test out gen with ABCn argument and some of the 
+        '''Test out gen with ABCn argument and some of the
         smarter bits of pivot'''
         self.tab.do("gen PQ4")
         expected = '''
@@ -416,7 +400,7 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat  Sun  Total
         self.tab.do()
         self.assertEqual(str(self.tab), some_lines)
 
-        self.tab.do("dp") # missing predicate == nop
+        self.tab.do("dp")  # missing predicate == nop
         self.assertEqual(str(self.tab), some_lines)
 
         self.tab.do("undefined verb")

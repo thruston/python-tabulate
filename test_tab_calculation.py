@@ -3,6 +3,7 @@
 import unittest
 import tabulate
 
+
 class TestTableCalculation(unittest.TestCase):
 
     def setUp(self):
@@ -20,8 +21,7 @@ class TestTableCalculation(unittest.TestCase):
     def test_functions(self):
         self.tab.parse_lines(self.simple.splitlines())
         self.tab.do("arr abc(sqrt(b))(sqrt(a))")
-        self.assertEqual(str(self.tab),
-'''
+        self.assertEqual(str(self.tab), '''
 30.2   135   4.5  11.6189500386  5.49545266561
 29.5   132   4.5  11.4891252931  5.43139024560
 28.8   136   4.7  11.6619037897  5.36656314600
@@ -31,8 +31,7 @@ class TestTableCalculation(unittest.TestCase):
 23.0  1428  50.5  37.7888872554  4.79583152331
 '''.strip())
         self.tab.do("arr abc(log(b))(log(a))")
-        self.assertEqual(str(self.tab),
-'''
+        self.assertEqual(str(self.tab), '''
 30.2   135   4.5  4.90527477844  3.40784192438
 29.5   132   4.5  4.88280192259  3.38439026335
 28.8   136   4.7  4.91265488574  3.36037538714
@@ -42,8 +41,7 @@ class TestTableCalculation(unittest.TestCase):
 23.0  1428  50.5  7.26403014290  3.13549421593
 '''.strip())
         self.tab.do("arr abc(log10(b))(log10(a))")
-        self.assertEqual(str(self.tab),
-'''
+        self.assertEqual(str(self.tab), '''
 30.2   135   4.5  2.13033376850  1.48000694296
 29.5   132   4.5  2.12057393121  1.46982201598
 28.8   136   4.7  2.13353890837  1.45939248776
@@ -53,8 +51,7 @@ class TestTableCalculation(unittest.TestCase):
 23.0  1428  50.5  3.15472820744  1.36172783602
 '''.strip())
         self.tab.do("arr abc(divmod(b, 37))")
-        self.assertEqual(str(self.tab),
-'''
+        self.assertEqual(str(self.tab), '''
 30.2   135   4.5   3  24
 29.5   132   4.5   3  21
 28.8   136   4.7   3  25
@@ -64,8 +61,7 @@ class TestTableCalculation(unittest.TestCase):
 23.0  1428  50.5  38  22
 '''.strip())
         self.tab.do("arr abc(sum(c,d,e))")
-        self.assertEqual(str(self.tab),
-'''
+        self.assertEqual(str(self.tab), '''
 30.2   135   4.5   31.5
 29.5   132   4.5   28.5
 28.8   136   4.7   32.7
@@ -74,7 +70,6 @@ class TestTableCalculation(unittest.TestCase):
 18.1  1375  48.6   91.6
 23.0  1428  50.5  110.5
 '''.strip())
-
 
         self.tab.parse_lines('''
 2020-05-19  09:18:00  30.3  30.1  30.2
@@ -86,8 +81,7 @@ class TestTableCalculation(unittest.TestCase):
 2020-05-19  09:20:40  28.3  22.5  28.6
 '''.strip().splitlines())
         self.tab.do("arr ~(y/z)")
-        self.assertEqual(str(self.tab),
-'''
+        self.assertEqual(str(self.tab), '''
 2020-05-19  09:18:00  30.3  30.1  30.2  0.996688741722
 2020-05-19  09:18:10  29.2  29.4  29.1   1.01030927835
 2020-05-19  09:18:20  29.2  28.6  28.8  0.993055555556
@@ -97,8 +91,7 @@ class TestTableCalculation(unittest.TestCase):
 2020-05-19  09:20:40  28.3  22.5  28.6  0.786713286713
 '''.strip())
         self.tab.do("arr -z arr ~(sqrt(c) dp 001144")
-        self.assertEqual(str(self.tab),
-'''
+        self.assertEqual(str(self.tab), '''
 2020-05-19  09:18:00  30.3  30.1  30.2000  5.5045
 2020-05-19  09:18:10  29.2  29.4  29.1000  5.4037
 2020-05-19  09:18:20  29.2  28.6  28.8000  5.4037
@@ -108,8 +101,7 @@ class TestTableCalculation(unittest.TestCase):
 2020-05-19  09:20:40  28.3  22.5  28.6000  5.3198
 '''.strip())
         self.tab.do("arr abccde roll d arr abc{c-d}ef")
-        self.assertEqual(str(self.tab),
-'''
+        self.assertEqual(str(self.tab), '''
 2020-05-19  09:18:00  30.3   2.0  30.1  30.2000
 2020-05-19  09:18:10  29.2  -1.1  29.4  29.1000
 2020-05-19  09:18:20  29.2   0.0  28.6  28.8000
@@ -119,8 +111,7 @@ class TestTableCalculation(unittest.TestCase):
 2020-05-19  09:20:40  28.3   0.0  22.5  28.6000
 '''.strip())
         self.tab.do("arr abc('Aok  {:.2f}'.format(f)")
-        self.assertEqual(str(self.tab),
-'''
+        self.assertEqual(str(self.tab), '''
 2020-05-19  09:18:00  30.3  Aok 30.20
 2020-05-19  09:18:10  29.2  Aok 29.10
 2020-05-19  09:18:20  29.2  Aok 28.80
@@ -129,13 +120,12 @@ class TestTableCalculation(unittest.TestCase):
 2020-05-19  09:20:30  28.3  Aok 28.20
 2020-05-19  09:20:40  28.3  Aok 28.60
 '''.strip())
-        
+
         self.tab.do("arr abc?")
         self.assertTrue(all(0 <= x[1] < 1 for x in self.tab.column(3)))
 
         self.tab.do("arr abc(20*?+4)")
         self.assertTrue(all(4 <= x[1] < 24 for x in self.tab.column(3)))
-
 
     def test_normalize_and_tap(self):
         "Test table wide processing..."
@@ -205,7 +195,7 @@ d  13  14  15  16
         self.tab.do("tap x!4")
         self.assertEqual(str(self.tab), '?! syntax x!4\n' + sample)
 
-        self.tab.do("tap x*undefined") # undefined names are treated as strings
+        self.tab.do("tap x*undefined")  # undefined names are treated as strings
         self.assertEqual(str(self.tab), sample)
 
     def test_with_non_numbers(self):
@@ -257,4 +247,3 @@ D     0.7476  0.9234  0.8035  0.267833333333
         self.tab.do("arr c(g[:4]) uniq")
         self.assertEqual(str(self.tab), "toby  test")
         print(self.tab)
-        

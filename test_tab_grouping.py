@@ -3,6 +3,7 @@
 import unittest
 import tabulate
 
+
 class TestTableGrouper(unittest.TestCase):
 
     def setUp(self):
@@ -52,21 +53,21 @@ March 2020     2020-03-30  0.1  0.1  10.9  0.0  0.0   0.0   0.0   11.1
         "Select matching rows"
         self.tab.parse_lines(self.rain.splitlines())
         self.assertEqual(str(self.tab), self.rain)
-        
-        self.tab.do('group') # missing predicate assumes a
-        self.assertEqual(str(self.tab), self.grouped)
-        
-        self.tab.do('group a') # repeat is harmless
+
+        self.tab.do('group')  # missing predicate assumes a
         self.assertEqual(str(self.tab), self.grouped)
 
-        self.tab.do('noblanks')
-        self.assertEqual(str(self.tab), self.rain)
-
-        self.tab.do('group a') 
+        self.tab.do('group a')  # repeat is harmless
         self.assertEqual(str(self.tab), self.grouped)
 
         self.tab.do('noblanks')
         self.assertEqual(str(self.tab), self.rain)
 
-        self.tab.do('group ?') 
+        self.tab.do('group a')
+        self.assertEqual(str(self.tab), self.grouped)
+
+        self.tab.do('noblanks')
+        self.assertEqual(str(self.tab), self.rain)
+
+        self.tab.do('group ?')
         self.assertEqual(str(self.tab), '?! colspec ?\n' + self.rain)
