@@ -159,3 +159,6 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 2020-02-24     9  6.1  0.5  0.1  8.6  5.9  7.1   0.2   28.5  Monsoon
 '''.strip()
         self.assertEqual(str(self.tab), expected)
+
+        self.tab.do('uniq @z')
+        self.assertEqual(str(self.tab), expected)

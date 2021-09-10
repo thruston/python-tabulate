@@ -2,10 +2,8 @@
 '''Tabulate
 
 A module/script to line up text tables.
-Toby Thurston -- 07 Aug 2021
+Toby Thurston -- 10 Sep 2021
 '''
-
-# pylint: disable=C0103, C0301
 
 import argparse
 import builtins
@@ -240,6 +238,8 @@ def rounders(s, n):
 def looks_like_sequence(numbers):
     '''Do these decimals appear to be a list of years, or some other numeric labels?
     We are trying to see if they are in arithmetic progression... (sort of)
+    Usually the list will *not* be a sequence, so we can be more
+    efficient by using `all` than just sorting everything.
 
     >>> looks_like_sequence((1,2,3))
     True
@@ -258,12 +258,7 @@ def looks_like_sequence(numbers):
     delta = numbers[0] - numbers[1]
     return n > 2 and delta != 0 \
         and all(x == int(x) for x in numbers) \
-        and all(delta == numbers[x-1] - numbers[x] for x in range(2,n))
-        
-
-    return sum(numbers) % len(numbers) == 0 and 0 not in numbers
-
-    # and (all(a < b for a, b in zip(numbers, numbers[1:])) or all(a > b for a, b in zip(numbers, numbers[1:])))
+        and all(delta == numbers[x - 1] - numbers[x] for x in range(2, n))
 
 
 def looks_like_formula(expression):
@@ -1308,8 +1303,6 @@ class Table:
             except ValueError:
                 for col in col_spec[::-1]:
                     c, want_reverse = self._fancy_col_index(col)
-                    if c is None:
-                        continue
                     self.data.sort(key=lambda row: as_numeric_tuple(row[c], want_reverse), reverse=want_reverse)
             else:
                 if -self.cols <= i < self.cols:
