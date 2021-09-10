@@ -239,14 +239,20 @@ def rounders(s, n):
 
 def looks_like_sequence(numbers):
     '''Do these decimals appear to be a list of years, or some other numeric labels?
+    We are trying to see if they are in arithmetic progression... (sort of)
+
     >>> looks_like_sequence((1,2,3))
     True
     >>> looks_like_sequence((1990, 1980, 1970))
     True
     >>> looks_like_sequence((3.14, 2.718, 6.28))
     False
+    >>> looks_like_sequence((28, 44, 20, 0))
+    False
     '''
-    return sum(numbers) % len(numbers) == 0
+    return sum(numbers) % len(numbers) == 0 and 0 not in numbers
+
+    # and (all(a < b for a, b in zip(numbers, numbers[1:])) or all(a > b for a, b in zip(numbers, numbers[1:])))
 
 
 def looks_like_formula(expression):
