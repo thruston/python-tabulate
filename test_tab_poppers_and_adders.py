@@ -204,6 +204,30 @@ Mean         5.5  2.61  0.78  1.5  2.89  1.28  2.66  3.85  15.57
         self.tab.do("pop add summary dp 001")
         self.assertEqual(str(self.tab), self.rain_summary)
 
+    def test_special_adding(self):
+        "And the taking away..."
+        self.tab.clear()
+        self.tab.parse_lines('''
+Year              Class A              Class B
+2001   0.9955302869874892  0.32216042430627556
+2003   0.5050938597046872  0.20169540227995664
+2005  0.47432722599413435   0.4916281875757852
+2007   0.8846767634771708   0.6758599498240474
+2009   0.7307419168402146  0.20096087617739122
+'''.strip().splitlines())
+        
+        self.tab.do("rule add mean")
+        self.assertEqual(str(self.tab), '''
+Year              Class A              Class B
+2001   0.9955302869874892  0.32216042430627556
+2003   0.5050938597046872  0.20169540227995664
+2005  0.47432722599413435   0.4916281875757852
+2007   0.8846767634771708   0.6758599498240474
+2009   0.7307419168402146  0.20096087617739122
+----------------------------------------------
+Mean       0.718074010601       0.378460968033
+'''.strip())
+
     def test_unknown_function(self):
         self.tab.parse_lines(self.rain.splitlines())
         self.assertEqual(str(self.tab), self.rain)

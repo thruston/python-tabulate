@@ -249,7 +249,18 @@ def looks_like_sequence(numbers):
     False
     >>> looks_like_sequence((28, 44, 20, 0))
     False
+    >>> looks_like_sequence((1,1,1,1,1))
+    False
+    >>> looks_like_sequence((28, 44))
+    False
     '''
+    n = len(numbers)
+    delta = numbers[0] - numbers[1]
+    return n > 2 and delta != 0 \
+        and all(x == int(x) for x in numbers) \
+        and all(delta == numbers[x-1] - numbers[x] for x in range(2,n))
+        
+
     return sum(numbers) % len(numbers) == 0 and 0 not in numbers
 
     # and (all(a < b for a, b in zip(numbers, numbers[1:])) or all(a > b for a, b in zip(numbers, numbers[1:])))
