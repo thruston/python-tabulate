@@ -253,12 +253,20 @@ def looks_like_sequence(numbers):
     False
     >>> looks_like_sequence((28, 44))
     False
+    >>> looks_like_sequence((28,))
+    False
+    >>> looks_like_sequence([])
+    False
     '''
-    n = len(numbers)
-    delta = numbers[0] - numbers[1]
-    return n > 2 and delta != 0 \
-        and all(x == int(x) for x in numbers) \
-        and all(delta == numbers[x - 1] - numbers[x] for x in range(2, n))
+    try:
+        delta = numbers[0] - numbers[1]
+    except IndexError:
+        return False
+    else:
+        n = len(numbers)
+        return n > 2 and delta != 0 \
+            and all(x == int(x) for x in numbers) \
+            and all(delta == numbers[x - 1] - numbers[x] for x in range(2, n))
 
 
 def looks_like_formula(expression):
