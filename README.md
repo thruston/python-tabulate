@@ -21,12 +21,13 @@ will need to create a table of data or other information, something like this
     D         2.283       62
     E         4.533       85
 
-and you may find that your editor has some useful facilities for working in "block"
-mode that help to manage the table.  But you might also find that the facilities are
-just a little bit limited.   You want to know the totals of each column, but you
-really didn't want to load the data into a spreadsheet or a statistics system like
-R; you just want the simple totals.   That's what tabulate is for.  If you set it up
-in Vim (see below) as a user command, then you can just say `:Table add` to get this:
+You may find that your editor has some useful facilities for working in "block"
+mode that help to manage the table, but you might also find that the facilities
+are just a little bit limited.   For example, you might want to know the totals
+of each column, but you really didn't want to load the data into a spreadsheet
+or a statistics system like R; you just want the simple totals.   That's what
+tabulate is for.  If you set it up in Vim (see below) as a user command, then
+you can just say `:Table add` to get this:
 
     event  eruption  waiting
     A         3.600       79
@@ -42,7 +43,7 @@ Tabulate also lets you transpose your table (to get this...)
     eruption  3.600  1.800  3.333  2.283  4.533
     waiting      79     54     74     62     85
 
-as well as, sort by any column in the table, rearrange the columns, delete
+You can also sort by any column in the table, rearrange the columns, delete
 columns, or add new columns computed from the others.  It can't do everything
 you can do in a spreadsheet but it can do most of the simple things, and you
 can use it right in the middle of your favourite editor.
@@ -53,7 +54,7 @@ Vim just so I could tidy it up with `tabulate`.  So I have re-written the origin
 Perl version of tabulate as a Python module that can be imported, and used to
 tidy up a list of lists of data for printing directly as part of a script.
 
-Toby Thurston -- 01 Mar 2021
+Toby Thurston -- 1 Oct 2021
 
 ## Usage and set up
 
@@ -81,7 +82,7 @@ To use tabulate as a filter, you need first to add a line to your `.vimrc` file 
 
     :command! -nargs=* -range=% Table <line1>,<line2>!python3 ~/python-tabulate/tabulate.py <q-args>
 
-which you should adjust appropriately so your Python3 can find where you put
+which you should adjust appropriately so your python3 can find where you put
 tabulate.  You can of course use some word other than `Table` as the command
 name. Perhaps `Tbl` ?  Take your pick, you can choose anything, except that Vim
 insists on the name starting with an uppercase letter.
@@ -400,7 +401,7 @@ with values that are strings of course, but this
 
     arr (str(a)[:2])
 
-should work with numnbers as well.
+should work with numbers as well.
 
 Curly braces are only treated as parentheses at the top level (and this only for compatibility
 with the old Perl version of tabulate), so you can put them in normal Python expressions like
@@ -967,11 +968,10 @@ the last and the first. (And hence the new column sums to zero).
     rule [n]
 
 Adds a rule after line `n` where the top line is line 1.  If `n` is larger than
-the number of rows in the table, the rule will be added after the last line, however it will not get
-shown when the table is tabulated unless you have added more data by then.
-To add a line just before the last line (to show a total or a footer) use `rule -1`
-
-
+the number of rows in the table, the rule will be added after the last line,
+however it will not get shown when the table is tabulated unless you have added
+more data by then.  To add a line just before the last line (to show a total or
+a footer) use `rule -1`
 
 ### shuffle - rearrange the rows with a Fisher-Yates shuffle
 
@@ -1355,6 +1355,23 @@ table like this
 
     sum(x[1] for x in t.column(2) if x[0])
 
+### `transpose()`
+
+Swap rows and columns. This is the equivalent of the `xp` DSL verb.
+So if `t` is a tabulate Table object then this:
+
+    t.transpose()
+
+has the same effect as this:
+
+    t.do('xp')
+
+You could use this to add a new column:
+
+    t.transpose()
+    t.append(iterable)
+    t.transpose()
+
 ### `do(agenda)`
 
 Apply a sequence of DSL verbs and options to the contents of the table.
@@ -1380,7 +1397,8 @@ You can print your table neatly like this:
     for r in t.tabulate():
         print(r)
 
-or perhaps
+This allows you to print rows selectively or perhaps highlight some of them in some
+way.  If you just want to print the whole thing, you could do
 
     print("\n".join(t.tabulate()))
 

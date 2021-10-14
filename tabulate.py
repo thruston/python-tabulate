@@ -439,7 +439,7 @@ class Table:
             'unwrap': self._unrapper,
             'unzip': self._unzipper,
             'wrap': self._rapper,
-            'xp': self._transpose,
+            'xp': self.transpose,
             'zip': self._zipper,
         }
 
@@ -665,7 +665,7 @@ class Table:
         "Set the form name, used in `tabulate`"
         self.form = form_name.lower()
 
-    def _transpose(self, _):
+    def transpose(self, _=None):
         '''Swap rows and columns
         '''
         self.cols = len(self.data)
