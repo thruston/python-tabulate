@@ -215,7 +215,7 @@ Year              Class A              Class B
 2007   0.8846767634771708   0.6758599498240474
 2009   0.7307419168402146  0.20096087617739122
 '''.strip().splitlines())
-        
+
         self.tab.do("rule add mean")
         self.assertEqual(str(self.tab), '''
 Year              Class A              Class B
