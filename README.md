@@ -1040,7 +1040,60 @@ assuming you have fewer than 26 columns).
 You can sort on a sequence of columns by just giving a longer string.
 So `sort abc` is the same as `sort c sort b sort a` (but slightly quicker).
 
-The default is to sort by all columns from right to left.
+The default is to sort by all columns from right to left, but with some
+built-in smarts: things that look like dates are treated as dates; "book
+titles" ignore leading articles; and labels with numeric suffixes are sorted
+properly, So given this table:
+
+    20 Feb 2014  Social Darwinism               p5912
+    27 Feb 2020  The Evolution of Horses        p233
+    11 Feb 2016  Rumi's Poetry                  p7019
+    24 Nov 2016  Baltic Crusades                p5060
+    30 Sep 2021  The Tenant of Wildfell Hall    p780
+    21 Sep 2017  Kant's Categorical Imperative  p265
+    24 Sep 2020  Cave Art                       p904
+    29 Oct 2015  The Empire of Mali             p423
+    03 May 2018  The Almoravid Empire           p3972
+    04 Feb 2016  Chromatography                 p11
+
+`sort a` produces this
+
+    20 Feb 2014  Social Darwinism               p5912
+    29 Oct 2015  The Empire of Mali             p423
+    04 Feb 2016  Chromatography                 p11
+    11 Feb 2016  Rumi's Poetry                  p7019
+    24 Nov 2016  Baltic Crusades                p5060
+    21 Sep 2017  Kant's Categorical Imperative  p265
+    03 May 2018  The Almoravid Empire           p3972
+    27 Feb 2020  The Evolution of Horses        p233
+    24 Sep 2020  Cave Art                       p904
+    30 Sep 2021  The Tenant of Wildfell Hall    p780
+
+`sort b` produces this
+
+    03 May 2018  The Almoravid Empire           p3972
+    24 Nov 2016  Baltic Crusades                p5060
+    24 Sep 2020  Cave Art                       p904
+    04 Feb 2016  Chromatography                 p11
+    29 Oct 2015  The Empire of Mali             p423
+    27 Feb 2020  The Evolution of Horses        p233
+    21 Sep 2017  Kant's Categorical Imperative  p265
+    11 Feb 2016  Rumi's Poetry                  p7019
+    20 Feb 2014  Social Darwinism               p5912
+    30 Sep 2021  The Tenant of Wildfell Hall    p780
+
+and `sort c` produces this
+
+    04 Feb 2016  Chromatography                 p11
+    27 Feb 2020  The Evolution of Horses        p233
+    21 Sep 2017  Kant's Categorical Imperative  p265
+    29 Oct 2015  The Empire of Mali             p423
+    30 Sep 2021  The Tenant of Wildfell Hall    p780
+    24 Sep 2020  Cave Art                       p904
+    03 May 2018  The Almoravid Empire           p3972
+    24 Nov 2016  Baltic Crusades                p5060
+    20 Feb 2014  Social Darwinism               p5912
+    11 Feb 2016  Rumi's Poetry                  p7019
 
 You can also sort on simple functions; essentially any function that you can use with `arr`.
 So given a table like this:

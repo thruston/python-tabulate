@@ -102,6 +102,12 @@ def as_numeric_tuple(x, backwards=False):
     (-1000000000000.0, 'A:000000000000001')
     >>> as_numeric_tuple('"A:19"')
     (-1000000000000.0, '"A:00000000000019"')
+
+    >>> as_numeric_tuple("The War of the Roses")
+    (-1000000000000.0, 'WAR OF THE ROSES')
+
+    >>> as_numeric_tuple("")
+    (-1000000000000.0, '')
     '''
 
     alpha, omega = -1e12, 1e12
@@ -128,6 +134,11 @@ def as_numeric_tuple(x, backwards=False):
     m = re.match(r'(\D+)(\d+["\']?)\Z', x)
     if m is not None:
         return (alpha, m.group(1) + m.group(2).zfill(15))
+
+    # remove leading articles (Library sort)
+    words = x.split()
+    if len(words) > 1 and words.pop(0) in ('A', 'AN', 'THE'):
+        return (alpha, ' '.join(words))
 
     return (alpha, x)
 
