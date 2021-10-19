@@ -972,17 +972,11 @@ class Table:
         if not fun_list:
             fun_list = 'total'
         else:
-            fun_list = fun_list.replace('summary', 'min q25 median mean q75 max')
+            fun_list = fun_list.replace('summary', 'min median mean max')
 
         for fun in (f.lower() for f in fun_list.split()):
             if hasattr(statistics, fun):
                 func = getattr(statistics, fun)
-            elif fun == "q25" and hasattr(statistics, "quantiles"):
-                func = lambda data: statistics.quantiles(data, n=4)[0]
-            elif fun == "q75" and hasattr(statistics, "quantiles"):
-                func = lambda data: statistics.quantiles(data, n=4)[2]
-            elif fun == "q95" and hasattr(statistics, "quantiles"):
-                func = lambda data: statistics.quantiles(data, n=20)[-1]
             elif fun in "min max all any sum".split():
                 func = getattr(builtins, fun)
             elif fun == "prod" and hasattr(math, "prod"):
@@ -1087,7 +1081,7 @@ class Table:
         >>> t = Table()
         >>> a = (1, 2, 3, 4, 5, 6, 7, 8)
         >>> t.parse_lol((a, a))
-        >>> t._get_expr_list("abc")
+        >>> t._get_expr_list("-abc")
         ['a', 'b', 'c']
         >>> t._get_expr_list("abcA")
         ['a', 'b', 'c', 'A']
