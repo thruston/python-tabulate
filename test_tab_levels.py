@@ -44,7 +44,7 @@ US              Europe   510900         156     28494973
         self.levels = '''
 # Country: All distinct.
 # Region: Europe 14, America 8, Asia 5, Africa 1
-# Death rate: Min: 12  Q25: 75.75  Median: 116  Mean: 111.5  Q75: 152.5  Max: 192
+# Death rate: Min: 12  Q25: 81.25  Median: 116.0  Mean: 111.5  Q75: 149.50  Max: 192
 '''.strip()
 
     def test_levels(self):

@@ -369,6 +369,41 @@ def _replace_values(failed_expression, known_variables):
     return new
 
 
+def quantile(ordered_data, p):
+    '''get a particular linearly-interpolated percentile from sorted data
+
+    >>> quantile([1,2,3,4,5], 0.5)
+    Decimal('3')
+    >>> quantile([1,2,3,4,5], 0.25)
+    Decimal('2')
+    >>> quantile([1,2,3,4,5], 0)
+    Decimal('1')
+    >>> quantile([1,2,3,4,5], 1)
+    Decimal('5')
+    '''
+    n = len(ordered_data)
+    try:
+        assert 0 <= p <= 1
+    except AssertionError:
+        return None
+
+    if p == 1:
+        return decimal.Decimal(ordered_data[-1])
+
+    f = math.floor(p * (n - 1))
+    w = decimal.Decimal(p * (n - 1)) - f
+    return decimal.Decimal((1 - w) * ordered_data[f] + w * ordered_data[f + 1])
+
+
+def quantiles(data, pvalues=(0, 0.25, 0.5, 0.75, 1)):
+    '''return a list of percentiles as defined in S.
+    >>> quantiles([68, 86, 29, 8, 75, 38, 87, 74, 40])
+    [Decimal('8'), Decimal('38'), Decimal('68'), Decimal('75'), Decimal('87')]
+    '''
+    x = sorted(data)
+    return [quantile(x, p) for p in pvalues]
+
+
 def statistical_summary(numbers):
     '''return a 4/6 field summary of a list of numbers
     >>> statistical_summary([])
@@ -376,20 +411,18 @@ def statistical_summary(numbers):
     >>> statistical_summary([decimal.Decimal(x) for x in '36.4 67.1 82.7 34.2 96.8 10.9 19.1 71.8 66.0 29.2'.split()])
     'Min: 10.9  Mean: 51.42  Max: 96.8'
     >>> statistical_summary([decimal.Decimal(x) for x in '0 1 2 3 4 5 6 8 9 36.4 67.1 82.7 34.2 96.8 10.9 29.2'.split()])
-    'Min: 0  Q25: 3.25  Median: 8.5  Mean: 24.70625  Q75: 35.85  Max: 96.8'
+    'Min: 0  Q25: 3.75  Median: 8.5  Mean: 24.70625  Q75: 34.750  Max: 96.8'
 
     '''
     if not numbers:
         return ''
 
-    mi = builtins.min(numbers)
-    ma = builtins.max(numbers)
     me = statistics.mean(numbers)
-    if hasattr(statistics, "quantiles") and len(numbers) > 10:
-        lq, md, uq = statistics.quantiles(numbers, n=4)
+    if len(numbers) > 10:
+        mi, lq, md, uq, ma = quantiles(numbers)
         return f'Min: {mi}  Q25: {lq}  Median: {md}  Mean: {me}  Q75: {uq}  Max: {ma}'
 
-    return f'Min: {mi}  Mean: {me}  Max: {ma}'
+    return f'Min: {builtins.min(numbers)}  Mean: {me}  Max: {builtins.max(numbers)}'
 
 
 def counting_summary(factors, n=5):
