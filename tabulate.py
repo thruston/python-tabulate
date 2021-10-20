@@ -1012,8 +1012,6 @@ class Table:
                 func = getattr(statistics, fun)
             elif fun in "min max all any sum".split():
                 func = getattr(builtins, fun)
-            elif fun == "prod" and hasattr(math, "prod"):
-                func = math.prod
             elif fun == "total":
                 func = builtins.sum
             else:
