@@ -9,7 +9,7 @@ class TestTableScript(unittest.TestCase):
     def test_me(self):
         '''Run tabulate.py'''
         cmd = 'python3 tabulate.py gen 16 wrap 4'.split()
-        cp = subprocess.run(cmd, capture_output=True)
+        cp = subprocess.run(cmd, stdout=subprocess.PIPE)
         self.assertEqual(cp.returncode, 0)
         self.assertEqual(cp.stdout.decode('utf-8'), '''
 1  5   9  13
@@ -19,7 +19,7 @@ class TestTableScript(unittest.TestCase):
 '''.lstrip())
 
         cmd = 'python3 tabulate.py --file test-input.txt 1 dp 003 rule 1 rule add'.split()
-        cp = subprocess.run(cmd, capture_output=True)
+        cp = subprocess.run(cmd, stdout=subprocess.PIPE)
         self.assertEqual(cp.returncode, 0)
         self.assertEqual(cp.stdout.decode('utf-8'), '''
 x      Price      Val
