@@ -32,6 +32,7 @@ Panther = {
     'bool': builtins.bool,
     'chr': builtins.chr,
     'divmod': builtins.divmod,
+    'floor': math.floor,
     'format': builtins.format,
     'int': builtins.int,
     'len': builtins.len,
