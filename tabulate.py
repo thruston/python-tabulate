@@ -108,6 +108,15 @@ def as_numeric_tuple(x, backwards=False):
 
     >>> as_numeric_tuple("")
     (-1000000000000.0, '')
+
+    >>> as_numeric_tuple("50k")
+    (50000.0, '50K')
+
+    >>> as_numeric_tuple("4 MiB")
+    (4194304.0, '4 MIB')
+
+    >>> as_numeric_tuple("1.12 GB")
+    (1202590842.88, '1.12 GB')
     '''
 
     alpha, omega = -1e12, 1e12
@@ -134,6 +143,18 @@ def as_numeric_tuple(x, backwards=False):
     m = re.match(r'(\D+)(\d+["\']?)\Z', x)
     if m is not None:
         return (alpha, m.group(1) + m.group(2).zfill(15))
+
+    si_values = {
+        'B': 1, 'K': 1000, 'M': 1000000, 'G': 1000000000, 'T': 1000000000000,
+        'KB': 1024, 'MB': 1048576, 'GB': 1073741824, 'TB': 1099511627776,
+        'KIB': 1024, 'MIB': 1048576, 'GIB': 1073741824, 'TIB': 1099511627776,
+    }
+    m = re.match(r'(\d+\.\d*|\.?\d+)\s?([BKMGT](I?B)?)', x)
+    if m is not None:
+        try:
+            return (float(m.group(1)) * si_values.get(m.group(2), 1), x)
+        except ValueError:
+            pass
 
     # remove leading articles (Library sort)
     words = x.split()
