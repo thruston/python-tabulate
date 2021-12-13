@@ -1284,7 +1284,7 @@ Tabulate reads and writes everything as strings, but it has a fairly broad
 definition of which of them count as numbers.
 
 - Any string like '4' or '-2.17' that is a valid input to the `decimal.Decimal`
-  constructor
+  constructor, including strings like '1E-3'
 
 - Any string with '_' or ',' as separators like '1,234' or '0.456_789'
 
@@ -1298,30 +1298,31 @@ definition of which of them count as numbers.
 
 Here is a sampler, given this
 
-    First example   True  42  3.1415  1,234  0.123_245  32%  0b1111  0xdead
-    Another one    False  39  2.7185  4,537  0.892_244  67%    0o63  0xBEEF
+    First example   True  42  3.1415  1,234  0.123_245   32%  0b1111  0xdead       4E3
+    Another one    False  39  2.7185  4,537  0.892_244   67%    0o63  0xBEEF     21E-3
 
 then `rule add` will produce
 
-    First example   True  42  3.1415  1,234  0.123_245   32%  0b1111  0xdead
-    Another one    False  39  2.7185  4,537  0.892_244   67%    0o63  0xBEEF
-    ------------------------------------------------------------------------
-    Total              1  81  5.8600   5771   1.015489  0.99      66  105884
+    First example   True  42  3.1415  1,234  0.123_245   32%  0b1111  0xdead       4E3
+    Another one    False  39  2.7185  4,537  0.892_244   67%    0o63  0xBEEF     21E-3
+    ----------------------------------------------------------------------------------
+    Total              1  81  5.8600   5771   1.015489  0.99      66  105884  4000.021
 
 Notice that the results are always given as decimals, but you can use `tap` or `arr` to
 set a common format.  You can reset them all to "normal" decimals with `tap +0`:
 
-    First example  1  42  3.1415  1234  0.123245  0.32  15   57005
-    Another one    0  39  2.7185  4537  0.892244  0.67  51   48879
-    --------------------------------------------------------------
-    Total          1  81  5.8600  5771  1.015489  0.99  66  105884
+    First example  1  42  3.1415  1234  0.123245  0.32  15   57005      4000
+    Another one    0  39  2.7185  4537  0.892244  0.67  51   48879     0.021
+    ------------------------------------------------------------------------
+    Total          1  81  5.8600  5771  1.015489  0.99  66  105884  4000.021
 
 while `tap f'{x:,}'` gives you:
 
-    First example  1  42  3.1415  1,234  0.123245  0.32  15   57,005
-    Another one    0  39  2.7185  4,537  0.892244  0.67  51   48,879
-    ----------------------------------------------------------------
-    Total          1  81  5.8600  5,771  1.015489  0.99  66  105,884
+    First example  1  42  3.1415  1,234  0.123245  0.32  15   57,005      4,000
+    Another one    0  39  2.7185  4,537  0.892244  0.67  51   48,879      0.021
+    ---------------------------------------------------------------------------
+    Total          1  81  5.8600  5,771  1.015489  0.99  66  105,884  4,000.021
+
 
 ## Methods available for a Table object
 

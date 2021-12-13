@@ -193,6 +193,8 @@ def is_as_number(sss):
     (True, Decimal('-902'))
     >>> is_as_number('£34.00')
     (True, Decimal('34.00'))
+    >>> is_as_number('1E-12')
+    (True, Decimal('1E-12'))
     '''
     digits = '1234567890'
     ignore = '£$,_'
@@ -343,7 +345,7 @@ def compile_as_decimal(expr):
     out = []
     try:
         for tn, tv, _, _, _ in tokenize.generate_tokens(io.StringIO(clean_expression).readline):
-            if tn == tokenize.NUMBER and '.' in tv:
+            if tn == tokenize.NUMBER and ('.' in tv or 'e' in tv.lower()):
                 out.append((tokenize.NAME, 'Decimal'))
                 out.append((tokenize.OP, '('))
                 out.append((tokenize.STRING, repr(tv)))
