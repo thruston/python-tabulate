@@ -1447,10 +1447,10 @@ Add a special comment line after row `n` or at the end if `n` is None
 
 Return a generator object, that will yield a tabulated string for each row in the table.
 You can print your table neatly like this:
-
+```python
     for r in t.tabulate():
         print(r)
-
+```
 This allows you to print rows selectively or perhaps highlight some of them in some
 way.  If you just want to print the whole thing, you could do
 

@@ -20,7 +20,15 @@ def parse_date(sss):
     '''Try to parse a date
     >>> parse_date("1 January 2001").isoformat()
     '2001-01-01'
+    >>> parse_date(base("1 January 2001")).isoformat()
+    '2001-01-01'
     '''
+    try:
+        if 0 < sss < 900000:
+            return datetime.date.fromordinal(sss)
+    except (TypeError, ValueError) as e:
+        pass
+
     for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y', '%G-W%V-%u', '%d-%b-%Y',
                 '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%A'):
         try:
@@ -35,6 +43,10 @@ def dow(sss, date_format="%a"):
     '''Is it Friday yet?
     >>> dow("1 January 2001")
     'Mon'
+    >>> dow(base("1 January 2001"))
+    'Mon'
+    >>> dow("31/12/2021")
+    'Fri'
     >>> dow("1 January 2001", "%A")
     'Monday'
     >>> dow("date")

@@ -60,6 +60,7 @@ Panther = {
     'any': tab_fun_useful.t_any,
     'max': tab_fun_useful.t_max,
     'min': tab_fun_useful.t_min,
+    'minp': tab_fun_useful.t_minp,
     'sorted': tab_fun_useful.t_sorted,
     'str': builtins.str,
     'sum': tab_fun_useful.t_sum,
@@ -1602,7 +1603,13 @@ if __name__ == '__main__':
             table.parse_lines(fh, splitter=re.compile(r'\s{2,}'))
 
     elif delim == ',':
-        table.parse_lol(csv.reader(fh), filler='-')
+        try:
+            dialect = csv.Sniffer().sniff(fh.read(1024))
+            fh.seek(0)
+            table.parse_lol(csv.reader(fh, dialect), filler='-')
+        except csv.Error:
+            fh.seek(0)
+            table.parse_lol(csv.reader(fh))
 
     else:
         # check for a maxsplit spec ".3", "2.4" etc
