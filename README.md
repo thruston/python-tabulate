@@ -3,7 +3,7 @@ Tabulate
 
 Line up tabular material neatly.
 
-Tabulate is n exportable module that will line up tabular material automatically,
+Tabulate is an exportable module that will line up tabular material automatically,
 and so save you hours of time faffing about with format and alignment.  As a script
 it provides a filter with a simple DSL (domain-specific language) that can be used
 to make and manipulate tables in editors that support external filters (such as
