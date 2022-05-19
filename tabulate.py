@@ -153,10 +153,7 @@ def as_numeric_tuple(x, backwards=False):
     }
     m = re.match(r'(\d+\.\d*|\.?\d+)\s?([BKMGT](I?B)?)', x)
     if m is not None:
-        try:
-            return (float(m.group(1)) * si_values.get(m.group(2), 1), x)
-        except ValueError:
-            pass
+        return (float(m.group(1)) * si_values.get(m.group(2), 1), x)
 
     # remove leading articles (Library sort)
     words = x.split()
@@ -196,13 +193,15 @@ def is_as_number(sss):
     (True, Decimal('34.00'))
     >>> is_as_number('1E-12')
     (True, Decimal('1E-12'))
+    >>> is_as_number('14¾')
+    (True, Decimal('14.75'))
     '''
     digits = '1234567890'
     ignore = '£$,_'
     signs = '+-'
     point = '.'
     alphabetics = 'xoabcdef'
-    suffix = '%'
+    suffix = '%¼½¾'
 
     if sss in ('True', 'False'):
         return (True, sss == 'True')
@@ -223,6 +222,8 @@ def is_as_number(sss):
     try:
         if trial_number.endswith('%'):
             return (True, decimal.Decimal(trial_number[:-1]) / 100)
+        if trial_number[-1] in suffix:
+            return (True, decimal.Decimal(trial_number[:-1]) + decimal.Decimal(suffix.index(trial_number[-1])) / 4)
         return (True, decimal.Decimal(trial_number))
     except ArithmeticError:
         pass
