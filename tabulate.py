@@ -309,6 +309,8 @@ def looks_like_sequence(numbers):
 def looks_like_formula(expression):
     '''Is this a formula?
 
+    >>> looks_like_formula('')
+    False
     >>> looks_like_formula('Abc')
     False
     >>> looks_like_formula('-1')
@@ -406,11 +408,10 @@ def quantile(ordered_data, p):
     Decimal('1')
     >>> quantile([1,2,3,4,5], 1)
     Decimal('5')
+    >>> quantile([1,2,3,4,5], 2)
     '''
     n = len(ordered_data)
-    try:
-        assert 0 <= p <= 1
-    except AssertionError:
+    if not 0 <= p <= 1:
         return None
 
     if p == 1:
@@ -1300,6 +1301,7 @@ class Table:
 
                 # and note the line number
                 values['row_number'] += 1
+                values['row_total'] = sum(as_decimal(x) for x in r)
 
                 new_row = []
                 for compiled_code, literal_code in desiderata:
@@ -1322,7 +1324,6 @@ class Table:
     def _fancy_col_index(self, col_spec):
         '''Find me an index, returns index + T/F to say if letter was upper case
         '''
-        assert col_spec
 
         flag = False
         if col_spec in string.ascii_uppercase:
@@ -1340,7 +1341,6 @@ class Table:
 
         if c >= self.cols:
             c = self.cols - 1
-        assert 0 <= c < self.cols
         return (c, flag)
 
     def _sort_rows_by_col(self, col_spec=None):
@@ -1367,6 +1367,7 @@ class Table:
 
         if looks_like_formula(col_spec):
             self.do(f"arr ({col_spec})~ sort a arr -a")
+
         else:
             try:
                 i = int(col_spec)

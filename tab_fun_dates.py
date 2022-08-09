@@ -30,7 +30,7 @@ def parse_date(sss):
         pass
 
     for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y', '%G-W%V-%u', '%d-%b-%Y',
-                '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%A'):
+                '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%A', '%B %d, %Y'):
         try:
             return datetime.datetime.strptime(str(sss), fmt).date()
         except ValueError:
