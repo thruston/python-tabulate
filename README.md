@@ -54,7 +54,7 @@ Vim just so I could tidy it up with `tabulate`.  So I have re-written the origin
 Perl version of tabulate as a Python module that can be imported, and used to
 tidy up a list of lists of data for printing directly as part of a script.
 
-Toby Thurston -- 1 Oct 2021
+Toby Thurston -- 1 Oct 2022
 
 ## Usage and set up
 
@@ -1043,7 +1043,7 @@ So `sort abc` is the same as `sort c sort b sort a` (but slightly quicker).
 The default is to sort by all columns from right to left, but with some
 built-in smarts: things that look like dates are treated as dates; "book
 titles" ignore leading articles; and labels with numeric suffixes are sorted
-properly, So given this table:
+properly. So given this table:
 
     20 Feb 2014  Social Darwinism               p5912
     27 Feb 2020  The Evolution of Horses        p233

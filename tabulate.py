@@ -119,6 +119,12 @@ def as_numeric_tuple(x, backwards=False):
 
     >>> as_numeric_tuple("1.12 GB")
     (1202590842.88, '1.12 GB')
+
+    >>> as_numeric_tuple("8:56.2")
+    (536.2, '8:56.2')
+
+    >>> as_numeric_tuple("13:34:20")
+    (48860.0, '13:34:20')
     '''
 
     alpha, omega = -1e12, 1e12
@@ -139,6 +145,15 @@ def as_numeric_tuple(x, backwards=False):
         return (int(tab_fun_dates.parse_date(x).strftime("%s")), x)
     except ValueError:
         pass
+
+    # is this a time?
+    m = re.match(r'(\d+):([0-5]\d):([0-5]\d(\.\d+)?)', x)
+    if m is not None:
+        return (int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3)), x)
+
+    m = re.match(r'(\d+):([0-5]\d(\.\d+)?)', x)
+    if m is not None:
+        return (int(m.group(1)) * 60 + float(m.group(2)), x)
 
     # pad trailing numbers with zeros
     # Make A1, A2, A10 etc sortable...
