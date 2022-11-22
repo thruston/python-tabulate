@@ -22,15 +22,31 @@ def parse_date(sss):
     '2001-01-01'
     >>> parse_date(base("1 January 2001")).isoformat()
     '2001-01-01'
+    >>> parse_date("6/7/95").isoformat()
+    '1995-07-06'
+    >>> parse_date(datetime.date(2022, 11, 22).strftime("%A")).isoformat()
+    '2022-11-22'
+    >>> parse_date("2022-W47-2").isoformat()
+    '2022-11-22'
     '''
     try:
         if 0 < sss < 900000:
             return datetime.date.fromordinal(sss)
     except (TypeError, ValueError) as e:
         pass
+   
+    days = "Monday Tuesday Wednesday Thursday Friday Saturday Sunday".split()
+    try:
+        iso_dow = 1 + days.index(str(sss).capitalize())
+    except ValueError:
+        pass
+    else:
+        if 1 <= iso_dow <= 7:
+            year, week = datetime.datetime.today().strftime("%G-%V").split("-")
+            return datetime.datetime.strptime(f'{year}-W{week}-{iso_dow}',"%G-W%V-%u").date()
 
-    for fmt in ('%Y-%m-%d', '%Y%m%d', '%c', '%x', '%d %B %Y', '%d %b %Y', '%G-W%V-%u', '%d-%b-%Y',
-                '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%A', '%B %d, %Y'):
+    for fmt in ('%Y-%m-%d', '%Y%m%d', '%d %B %Y', '%d %b %Y', '%G-W%V-%u', '%d-%b-%Y',
+                '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%B %d, %Y', '%c', '%x'):
         try:
             return datetime.datetime.strptime(str(sss), fmt).date()
         except ValueError:

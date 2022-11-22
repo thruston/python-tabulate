@@ -128,6 +128,9 @@ def as_numeric_tuple(x, backwards=False):
 
     >>> as_numeric_tuple("13:34:20")
     (48860.0, '13:34:20')
+
+    >>> as_numeric_tuple("Monday") < as_numeric_tuple("Friday")
+    True
     '''
 
     alpha, omega = -1e12, 1e12

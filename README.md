@@ -1138,7 +1138,7 @@ or  `sort (b-c)` to get:
     tamarix     33  18
     tamasha     89  13
 
-If you have a header row in your table, then usually `sort` with automagically leave it in place.
+If you have a header row in your table, then usually `sort` will automagically leave it in place.
 But if this does not work you can do `pop 0 sort abc push 0` or (as a convenience) `sort @abc`.
 
 
