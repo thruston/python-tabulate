@@ -1,8 +1,8 @@
 #! /usr/bin/env python3
 
 import unittest
-import tabulate
 
+import tabulate
 
 class TestTableHelp(unittest.TestCase):
 
@@ -12,13 +12,14 @@ class TestTableHelp(unittest.TestCase):
 Try one of these: add arr ditto dp dup filter gen group help label
 levels make noblanks nospace pivot pop push roll rule sf shuffle sort
 tap uniq unwrap unzip wrap xp zip
-'''.strip()
+        '''.strip()
+
         self.verbs = '''
-Functions for arr: abs all any base bool chr cos cosd date divmod dow
-epoch exp floor format hex hms hr hypot int len log log10 max min minp
-mins oct ord pi pow randomd reversed round secs sin sind sorted sqrt
-str sum tan tand tau time
-'''.strip()
+Functions for arr: abs all any base bool caps chr cos cosd date divmod
+dow epoch exp floor format hex hms hr hypot int len log log10 lower
+max min minp mins oct ord pi pow randomd reversed round secs sin sind
+sorted sqrt str sum tan tand tau time upper
+        '''.strip()
 
     def test_help(self):
         self.tab.do("help")

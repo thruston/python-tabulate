@@ -392,6 +392,15 @@ arguments.  If a function returns more than one value (like `divmod`) the
 values will be inserted in separate columns. The others are the regular BIF or
 `math` functions except for the trig functions for angles in degrees.
 
+You can also use "?" in a formula to get a random number.  If you want the
+current row number or the total number of rows use the pre-defined variables
+`row_number` and `rows` in your formula. So with the simple table from above,
+`arr ~(f'{row_number}/{rows}')` should produce this:
+
+    First   1  1  1/3
+    Second  2  3  2/3
+    Third   3  6  3/3
+
 You can also use `format` and `f''` strings. And string slices or indexes.  So
 
     arr (a[:2])
@@ -416,14 +425,19 @@ which show how to concatenate two columns into one.  You can also include
 spaces in your formula as the argument to `arr` continues to the next verb or
 the end of the command line.
 
-You can also use "?" in a formula to get a random number.  If you want the
-current row number or the total number of rows use the pre-defined variables
-`row_number` and `rows` in your formula. So with the simple table from above,
-`arr ~(f'{row_number}/{rows}')` should produce this:
+There are also three functions for changing the case of a string column, so given:
 
-    First   1  1  1/3
-    Second  2  3  2/3
-    Third   3  6  3/3
+    Crosby   crines   hobbies  sola
+    Juno     aril     horn     culicid
+    Krishna  parched  debouch  moutan
+    Lille    gowd     medius   tanrec
+
+the DSL `arr (lower(a))(upper(b))(caps(c)+caps(d))` gives you:
+
+    crosby   CRINES   HobbiesSola
+    juno     ARIL     HornCulicid
+    krishna  PARCHED  DebouchMoutan
+    lille    GOWD     MediusTanrec
 
 There are also some simple date routines included.
 

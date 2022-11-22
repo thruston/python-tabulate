@@ -23,8 +23,8 @@ import textwrap
 import tokenize
 
 import tab_fun_dates
-import tab_fun_useful
 import tab_fun_maths
+import tab_fun_useful
 
 # A great cat of functions for column maths, using the Decimal versions...
 Panther = {
@@ -71,6 +71,9 @@ Panther = {
     'reversed': lambda x: ''.join(reversed(x)),
     'Decimal': decimal.Decimal,
     'randomd': lambda: decimal.Decimal(str(random.random())),
+    'caps': lambda x: str(x).capitalize(),
+    'lower': lambda x: str(x).lower(),
+    'upper': lambda x: str(x).upper(),
     '__builtins__': {},
 }
 
@@ -1092,6 +1095,7 @@ class Table:
             'mean': (lambda a: statistics.mean(a) if a else 'NA', as_decimal),
             'any': (builtins.any, as_decimal),
             'first': (lambda a: a[0] if a else '-', str),
+            'string': (lambda a: a[0] if a else '-', str),
             'last': (lambda a: a[-1] if a else '-', str),
         }
 
