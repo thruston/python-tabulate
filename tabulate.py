@@ -56,6 +56,7 @@ Panther = {
     'pi': tab_fun_maths.PI,
     'tau': tab_fun_maths.TAU,
     'hypot': tab_fun_maths.pyth_add,
+    'factors': tab_fun_maths.factors,
     'all': tab_fun_useful.t_all,
     'any': tab_fun_useful.t_any,
     'max': tab_fun_useful.t_max,

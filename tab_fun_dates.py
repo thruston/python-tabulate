@@ -24,10 +24,12 @@ def parse_date(sss):
     '2001-01-01'
     >>> parse_date("6/7/95").isoformat()
     '1995-07-06'
-    >>> parse_date(datetime.date(2022, 11, 22).strftime("%A")).isoformat()
-    '2022-11-22'
     >>> parse_date("2022-W47-2").isoformat()
     '2022-11-22'
+    >>> parse_date("Fri 1st Apr 2022").isoformat()
+    '2022-04-01'
+    >>> parse_date("Sat 19th Mar 2022").isoformat()
+    '2022-03-19'
     '''
     try:
         if 0 < sss < 900000:
@@ -46,7 +48,9 @@ def parse_date(sss):
             return datetime.datetime.strptime(f'{year}-W{week}-{iso_dow}',"%G-W%V-%u").date()
 
     for fmt in ('%Y-%m-%d', '%Y%m%d', '%d %B %Y', '%d %b %Y', '%G-W%V-%u', '%d-%b-%Y',
-                '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%B %d, %Y', '%c', '%x'):
+                '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%B %d, %Y',
+                '%a %dth %b %Y', '%a %dst %b %Y', '%a %dnd %b %Y', '%a %drd %b %Y', 
+                '%c', '%x'):
         try:
             return datetime.datetime.strptime(str(sss), fmt).date()
         except ValueError:
