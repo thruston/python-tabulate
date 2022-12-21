@@ -2,7 +2,7 @@
 '''Tabulate
 
 A module/script to line up text tables.
-Toby Thurston -- 10 Sep 2021
+Toby Thurston -- 21 Dec 2022
 '''
 
 import argparse
@@ -26,7 +26,14 @@ import tab_fun_dates
 import tab_fun_maths
 import tab_fun_useful
 
-# A great cat of functions for column maths, using the Decimal versions...
+# Panther is a "big cat" of functions for column maths, using the Decimal
+# versions.  This is used to limit the scope of the `eval` function when
+# evaluating expressions in DSL options.  So if you are calculating a new
+# column value with arr, or sorting on a calculated value etc, you can only use
+# the functions in this dictionary.  The idea is that the keys are what you the
+# user types and the values are the names of actual functions, either built in
+# or provided by the helper modules.
+
 Panther = {
     'abs': builtins.abs,
     'bool': builtins.bool,
@@ -352,16 +359,23 @@ def looks_like_formula(expression):
 
 
 def compile_as_decimal(expr):
-    '''This function takes as expression give as an argument to
+    '''This function takes as expression given as an argument to
     one of the verbs like arr or filter or sort or tap, and compiles
     it so that we can execute it more efficiently.
-    Two little bits of syntactic sugar are applied to the expression:
-    First we make all tokens that look like floats (NUMBER and
-    contains '.') into Decimals, so that we avoid the normal FP accuracy &
-    rounding issues.  Second we translate '?' into a (decimal) random number.
 
-    There are two bits of syntax sugar to help when calling tab from Vi, to avoid
-    the need to escape ! and % you can write <> for != and ' mod ' for %.
+    Several bits of syntactic sugar are applied to the expression, just by editing it:
+
+    - allow <> for != (easier to write on the Vi command line
+    - allow mod for % (ditto)
+    - allow a++b as dyadic equivalent of hypot(a,b)
+    - allow = for == in comparisons (checkout the negative look behind in the regex)
+
+    Then we tokenize and
+    - make all tokens that look like floats (NUMBER and contains '.') into
+      Decimals, so that we avoid the normal FP accuracy & rounding issues.
+    - translate '?' into a (decimal) random number.
+
+    Finally we untokenize the expression and compile it with the compile BIF.
 
     '''
     clean_expression = expr.replace('<>', '!=')
@@ -386,7 +400,7 @@ def compile_as_decimal(expr):
         return (False, '?! tokens ' + expr)
 
     try:
-        cc = compile(tokenize.untokenize(out), "<string>", 'eval')
+        cc = compile(tokenize.untokenize(out), '<string>', 'eval')
     except (SyntaxError, ValueError):
         return (False, '?! syntax ' + expr)
     else:
@@ -395,6 +409,9 @@ def compile_as_decimal(expr):
 
 def _replace_values(failed_expression, known_variables):
     '''replace the variables that we know about in the expression
+    This is used when an eval fails.  The idea is that we replace the value
+    with the expression that did not work.  This is often helpful for
+    title rows.
 
     >>> _replace_values('sin(a)', {'a': 'angle'})
     'sin(angle)'

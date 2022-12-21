@@ -45,11 +45,12 @@ def parse_date(sss):
     else:
         if 1 <= iso_dow <= 7:
             year, week = datetime.datetime.today().strftime("%G-%V").split("-")
-            return datetime.datetime.strptime(f'{year}-W{week}-{iso_dow}',"%G-W%V-%u").date()
+            return datetime.datetime.strptime(f'{year}-W{week}-{iso_dow}', "%G-W%V-%u").date()
 
     for fmt in ('%Y-%m-%d', '%Y%m%d', '%d %B %Y', '%d %b %Y', '%G-W%V-%u', '%d-%b-%Y',
                 '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%B %d, %Y',
                 '%a %dth %b %Y', '%a %dst %b %Y', '%a %dnd %b %Y', '%a %drd %b %Y', 
+                '%m/%d/%Y',
                 '%c', '%x'):
         try:
             return datetime.datetime.strptime(str(sss), fmt).date()

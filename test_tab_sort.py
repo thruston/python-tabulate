@@ -33,7 +33,6 @@ Saturday   0.62  0.02
 Sunday     0.34  0.25
 '''.strip()
 
-
     def test_filter(self):
         "Select matching rows"
         self.tab.parse_lines(self.rain.splitlines())
