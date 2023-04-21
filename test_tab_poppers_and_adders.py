@@ -2,6 +2,7 @@
 "Tests for tabulate"
 
 import unittest
+
 import tabulate
 
 

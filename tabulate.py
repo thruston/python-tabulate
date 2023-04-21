@@ -2,7 +2,7 @@
 '''Tabulate
 
 A module/script to line up text tables.
-Toby Thurston -- 10 Sep 2021
+Toby Thurston -- 21 Dec 2022
 '''
 
 import argparse
@@ -23,10 +23,17 @@ import textwrap
 import tokenize
 
 import tab_fun_dates
-import tab_fun_useful
 import tab_fun_maths
+import tab_fun_useful
 
-# A great cat of functions for column maths, using the Decimal versions...
+# Panther is a "big cat" of functions for column maths, using the Decimal
+# versions.  This is used to limit the scope of the `eval` function when
+# evaluating expressions in DSL options.  So if you are calculating a new
+# column value with arr, or sorting on a calculated value etc, you can only use
+# the functions in this dictionary.  The idea is that the keys are what you the
+# user types and the values are the names of actual functions, either built in
+# or provided by the helper modules.
+
 Panther = {
     'abs': builtins.abs,
     'bool': builtins.bool,
@@ -56,6 +63,7 @@ Panther = {
     'pi': tab_fun_maths.PI,
     'tau': tab_fun_maths.TAU,
     'hypot': tab_fun_maths.pyth_add,
+    'factors': tab_fun_maths.factors,
     'all': tab_fun_useful.t_all,
     'any': tab_fun_useful.t_any,
     'max': tab_fun_useful.t_max,
@@ -71,6 +79,9 @@ Panther = {
     'reversed': lambda x: ''.join(reversed(x)),
     'Decimal': decimal.Decimal,
     'randomd': lambda: decimal.Decimal(str(random.random())),
+    'caps': lambda x: str(x).capitalize(),
+    'lower': lambda x: str(x).lower(),
+    'upper': lambda x: str(x).upper(),
     '__builtins__': {},
 }
 
@@ -119,6 +130,15 @@ def as_numeric_tuple(x, backwards=False):
 
     >>> as_numeric_tuple("1.12 GB")
     (1202590842.88, '1.12 GB')
+
+    >>> as_numeric_tuple("8:56.2")
+    (536.2, '8:56.2')
+
+    >>> as_numeric_tuple("13:34:20")
+    (48860.0, '13:34:20')
+
+    >>> as_numeric_tuple("Monday") < as_numeric_tuple("Friday")
+    True
     '''
 
     alpha, omega = -1e12, 1e12
@@ -139,6 +159,15 @@ def as_numeric_tuple(x, backwards=False):
         return (int(tab_fun_dates.parse_date(x).strftime("%s")), x)
     except ValueError:
         pass
+
+    # is this a time?
+    m = re.match(r'(\d+):([0-5]\d):([0-5]\d(\.\d+)?)', x)
+    if m is not None:
+        return (int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3)), x)
+
+    m = re.match(r'(\d+):([0-5]\d(\.\d+)?)', x)
+    if m is not None:
+        return (int(m.group(1)) * 60 + float(m.group(2)), x)
 
     # pad trailing numbers with zeros
     # Make A1, A2, A10 etc sortable...
@@ -311,6 +340,8 @@ def looks_like_sequence(numbers):
 def looks_like_formula(expression):
     '''Is this a formula?
 
+    >>> looks_like_formula('')
+    False
     >>> looks_like_formula('Abc')
     False
     >>> looks_like_formula('-1')
@@ -330,16 +361,23 @@ def looks_like_formula(expression):
 
 
 def compile_as_decimal(expr):
-    '''This function takes as expression give as an argument to
+    '''This function takes as expression given as an argument to
     one of the verbs like arr or filter or sort or tap, and compiles
     it so that we can execute it more efficiently.
-    Two little bits of syntactic sugar are applied to the expression:
-    First we make all tokens that look like floats (NUMBER and
-    contains '.') into Decimals, so that we avoid the normal FP accuracy &
-    rounding issues.  Second we translate '?' into a (decimal) random number.
 
-    There are two bits of syntax sugar to help when calling tab from Vi, to avoid
-    the need to escape ! and % you can write <> for != and ' mod ' for %.
+    Several bits of syntactic sugar are applied to the expression, just by editing it:
+
+    - allow <> for != (easier to write on the Vi command line
+    - allow mod for % (ditto)
+    - allow a++b as dyadic equivalent of hypot(a,b)
+    - allow = for == in comparisons (checkout the negative look behind in the regex)
+
+    Then we tokenize and
+    - make all tokens that look like floats (NUMBER and contains '.') into
+      Decimals, so that we avoid the normal FP accuracy & rounding issues.
+    - translate '?' into a (decimal) random number.
+
+    Finally we untokenize the expression and compile it with the compile BIF.
 
     '''
     clean_expression = expr.replace('<>', '!=')
@@ -364,7 +402,7 @@ def compile_as_decimal(expr):
         return (False, '?! tokens ' + expr)
 
     try:
-        cc = compile(tokenize.untokenize(out), "<string>", 'eval')
+        cc = compile(tokenize.untokenize(out), '<string>', 'eval')
     except (SyntaxError, ValueError):
         return (False, '?! syntax ' + expr)
     else:
@@ -373,6 +411,9 @@ def compile_as_decimal(expr):
 
 def _replace_values(failed_expression, known_variables):
     '''replace the variables that we know about in the expression
+    This is used when an eval fails.  The idea is that we replace the value
+    with the expression that did not work.  This is often helpful for
+    title rows.
 
     >>> _replace_values('sin(a)', {'a': 'angle'})
     'sin(angle)'
@@ -408,11 +449,10 @@ def quantile(ordered_data, p):
     Decimal('1')
     >>> quantile([1,2,3,4,5], 1)
     Decimal('5')
+    >>> quantile([1,2,3,4,5], 2)
     '''
     n = len(ordered_data)
-    try:
-        assert 0 <= p <= 1
-    except AssertionError:
+    if not 0 <= p <= 1:
         return None
 
     if p == 1:
@@ -1078,6 +1118,7 @@ class Table:
             'mean': (lambda a: statistics.mean(a) if a else 'NA', as_decimal),
             'any': (builtins.any, as_decimal),
             'first': (lambda a: a[0] if a else '-', str),
+            'string': (lambda a: a[0] if a else '-', str),
             'last': (lambda a: a[-1] if a else '-', str),
         }
 
@@ -1302,6 +1343,7 @@ class Table:
 
                 # and note the line number
                 values['row_number'] += 1
+                values['row_total'] = sum(as_decimal(x) for x in r)
 
                 new_row = []
                 for compiled_code, literal_code in desiderata:
@@ -1324,7 +1366,6 @@ class Table:
     def _fancy_col_index(self, col_spec):
         '''Find me an index, returns index + T/F to say if letter was upper case
         '''
-        assert col_spec
 
         flag = False
         if col_spec in string.ascii_uppercase:
@@ -1342,7 +1383,6 @@ class Table:
 
         if c >= self.cols:
             c = self.cols - 1
-        assert 0 <= c < self.cols
         return (c, flag)
 
     def _sort_rows_by_col(self, col_spec=None):
@@ -1369,6 +1409,7 @@ class Table:
 
         if looks_like_formula(col_spec):
             self.do(f"arr ({col_spec})~ sort a arr -a")
+
         else:
             try:
                 i = int(col_spec)

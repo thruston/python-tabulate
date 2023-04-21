@@ -66,12 +66,14 @@ def t_min(*args):
     '''
     return t_apply(args, fun=min)
 
+
 def t_minp(*args):
     '''
     >>> t_minp(0,1,5)
     1
     '''
     return min(x for x in args if x)
+
 
 def t_max(*args):
     '''

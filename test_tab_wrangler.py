@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import unittest
+
 import tabulate
 
 
@@ -99,6 +100,14 @@ West    2200  2500  1990  2600
 
         self.tab.parse_lines(sales.splitlines())
         self.tab.do("pivot mean")
+        self.assertEqual(str(self.tab), summer)
+
+        self.tab.parse_lines(sales.splitlines())
+        self.tab.do("pivot first")
+        self.assertEqual(str(self.tab), summer)
+
+        self.tab.parse_lines(sales.splitlines())
+        self.tab.do("pivot string")
         self.assertEqual(str(self.tab), summer)
 
         self.tab.parse_lines(sales.splitlines())

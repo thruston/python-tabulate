@@ -1,5 +1,6 @@
-import unittest
 import doctest
+import unittest
+
 import tabulate
 
 

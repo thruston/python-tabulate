@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import unittest
+
 import tabulate
 
 
@@ -9,7 +10,7 @@ class TestTableSort(unittest.TestCase):
     def setUp(self):
         self.tab = tabulate.Table()
         self.rain = '''
-Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
+Date        Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 ------------------------------------------------------------------------
 2019-12-30     1  0.0  0.2  0.0  0.0  1.2  0.0   0.0    1.4  Dry
 2020-01-06     2  0.5  0.0  0.0  6.4  0.0  0.1   1.7    8.7  Damp
@@ -39,7 +40,7 @@ Sunday     0.34  0.25
         self.assertEqual(str(self.tab), self.rain)
         self.tab.do('sort j')
         expected = '''
-Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
+Date        Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 ------------------------------------------------------------------------
 2019-12-30     1  0.0  0.2  0.0  0.0  1.2  0.0   0.0    1.4  Dry
 2020-01-20     4  0.0  0.0  0.0  0.0  0.0  0.1   2.3    2.4  Dry
@@ -54,7 +55,7 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
         self.assertEqual(str(self.tab), expected)
         self.tab.do('sort -len(z)')
         expected = '''
-Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
+Date        Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 ------------------------------------------------------------------------
 2020-02-24     9  6.1  0.5  0.1  8.6  5.9  7.1   0.2   28.5  Monsoon
 2020-02-10     7  5.5  0.0  0.5  6.6  0.0  4.9  15.6   33.1  Monsoon
@@ -69,7 +70,7 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
         self.assertEqual(str(self.tab), expected)
         self.tab.do('sort B')
         expected = '''
-Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
+Date        Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 ------------------------------------------------------------------------
 2020-02-24     9  6.1  0.5  0.1  8.6  5.9  7.1   0.2   28.5  Monsoon
 2020-02-17     8  0.2  3.3  1.0  3.8  0.0  0.5   1.0    9.8  Damp
@@ -89,7 +90,7 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 
         self.tab.do('sort @z')  # automatic pop and push of header
         expected = '''
-Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
+Date        Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 ------------------------------------------------------------------------
 2020-02-17     8  0.2  3.3  1.0  3.8  0.0  0.5   1.0    9.8  Damp
 2020-01-06     2  0.5  0.0  0.0  6.4  0.0  0.1   1.7    8.7  Damp
@@ -105,7 +106,7 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 
         self.tab.do('dup 0 uniq')
         expected = '''
-Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
+Date        Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 ------------------------------------------------------------------------
 2020-02-17     8  0.2  3.3  1.0  3.8  0.0  0.5   1.0    9.8  Damp
 2020-01-06     2  0.5  0.0  0.0  6.4  0.0  0.1   1.7    8.7  Damp
@@ -122,7 +123,7 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
         self.tab.do('uniq ?')
         expected = '''
 ?! colspec ?
-Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
+Date        Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 ------------------------------------------------------------------------
 2020-02-17     8  0.2  3.3  1.0  3.8  0.0  0.5   1.0    9.8  Damp
 2020-01-06     2  0.5  0.0  0.0  6.4  0.0  0.1   1.7    8.7  Damp
@@ -138,7 +139,7 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 
         self.tab.do('uniq z')
         expected = '''
-Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
+Date        Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 ------------------------------------------------------------------------
 2020-02-17     8  0.2  3.3  1.0  3.8  0.0  0.5   1.0    9.8  Damp
 2020-01-20     4  0.0  0.0  0.0  0.0  0.0  0.1   2.3    2.4  Dry
@@ -150,7 +151,7 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 
         self.tab.do('sort 1')
         expected = '''
-Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
+Date        Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 ------------------------------------------------------------------------
 2020-01-20     4  0.0  0.0  0.0  0.0  0.0  0.1   2.3    2.4  Dry
 2020-01-27     5  8.4  2.1  0.0  0.5  1.0  0.0   7.1   19.1  Wet
@@ -162,3 +163,30 @@ Monday      Week  Mon  Tue  Wed  Thu  Fri  Sat   Sun  Total  Description
 
         self.tab.do('uniq @z')
         self.assertEqual(str(self.tab), expected)
+
+        self.tab.clear()
+        self.tab.parse_lines(self.diary.splitlines())
+        self.assertEqual(str(self.tab), self.diary)
+
+        self.tab.do('sort c')
+        self.assertEqual(str(self.tab), '''
+Saturday   0.62  0.02
+Tuesday    0.41  0.14
+Wednesday  0.91  0.17
+Sunday     0.34  0.25
+Friday     0.94  0.28
+Monday     0.38  0.52
+Thursday   0.22  0.94
+'''.strip())
+
+        self.tab.do('sort')
+        self.assertEqual(str(self.tab), '''
+Monday     0.38  0.52
+Tuesday    0.41  0.14
+Wednesday  0.91  0.17
+Thursday   0.22  0.94
+Friday     0.94  0.28
+Saturday   0.62  0.02
+Sunday     0.34  0.25
+'''.strip())
+
