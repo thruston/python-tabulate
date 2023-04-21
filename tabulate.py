@@ -247,9 +247,11 @@ def siggy(s, n):
     'Text'
     >>> siggy('0', 10)
     '0'
+    >>> siggy('True', 1)
+    'True'
     '''
     flag, number = is_as_number(s)
-    if not flag:
+    if not flag or type(number) is bool:
         return s
     if number.is_zero():
         return '0'
