@@ -1021,6 +1021,9 @@ class Table:
         except (ValueError, TypeError):
             groups = 2
 
+        if groups < 2:  # catch bad input
+            return
+
         rows_per_group = math.ceil(len(self.data) / groups)
 
         old_data = self.data.copy()
@@ -1038,12 +1041,23 @@ class Table:
 
         self.extras.clear()
 
-    def _splitme(self, seq, parts):
-        if parts > 0:
-            size = math.ceil(len(seq) / parts)
-            yield seq[:size]
-            if parts > 1:
-                yield from self._splitme(seq[size:], parts - 1)
+    def _splitme(self, r, p):
+        '''Splits a range object r into p pieces
+        each of which is a smaller range object.
+
+        So (for example):
+           _splitme(range(0, 9), 3) will first yield: range(0, 3)
+         and then call
+             _splitme(range(3, 9), 2) which will yield: range(3, 6)
+          and call
+               _splitme(range(6, 9), 1) which will yield: range(6, 9)
+           and then make no further recursive calls because p is not > 1
+
+        '''
+        size = math.ceil(len(r) / p)
+        yield r[:size]
+        if p > 1:
+            yield from self._splitme(r[size:], p - 1)
 
     def _unrapper(self, n):
         '''It's not a wrap'''
@@ -1051,6 +1065,9 @@ class Table:
             groups = int(n)
         except (ValueError, TypeError):
             groups = 2
+
+        if groups < 2:  # catch bad user input -- groups=1 would be a no-op
+            return
 
         old_data = self.data.copy()
         old_cols = self.cols

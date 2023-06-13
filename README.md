@@ -1239,8 +1239,15 @@ while `wrap 3` gives
     East  Q2  1100  West  Q1  2200  West  Q4  2600
     East  Q3  1500  West  Q2  2500
 
-`unwrap` does the opposite - the option is the number of columns you want in the new output, and defaults
-to half the number of columns in the input.
+The option for `wrap` should be a positive number greater than 1; it defaults to 2,
+which means split the rows into two blocks and put them beside each other.
+
+`unwrap` does the opposite - it splits the columns into blocks and puts them
+after each other as rows.  The option for `unwrap` should also be a positive number
+greater than 1, and it also defaults to 2, which means split the columns into two blocks
+and put the right hand block under the left hand block.
+
+In both cases numbers less than 2 are ignored.
 
 
 
