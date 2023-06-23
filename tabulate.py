@@ -1368,6 +1368,8 @@ class Table:
                         new_value = eval(compiled_code, Panther, values)
                         if isinstance(new_value, tuple):
                             new_row.extend(new_value)
+                        elif isinstance(new_value, str) and len(new_value) > 42:  # unwanted string multiplication...
+                            new_row.append(_replace_values(literal_code, values))
                         else:
                             new_row.append(new_value)
                     except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation):

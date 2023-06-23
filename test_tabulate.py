@@ -185,6 +185,20 @@ class TestTable(unittest.TestCase):
 2  6  10  14
 4  8  12  16
 ''')
+        self.tab.do("wrap -1")  # should be a no-op
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
+1  5   9  13
+3  7  11  15
+2  6  10  14
+4  8  12  16
+''')
+        self.tab.do("unwrap -1")  # should be a no-op
+        self.assertEqual("\n" + str(self.tab) + "\n", '''
+1  5   9  13
+3  7  11  15
+2  6  10  14
+4  8  12  16
+''')
         self.tab.do("wrap")
         self.assertEqual(str(self.tab), '''
 1  5   9  13  2  6  10  14
