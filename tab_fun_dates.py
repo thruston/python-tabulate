@@ -49,7 +49,7 @@ def parse_date(sss):
 
     for fmt in ('%Y-%m-%d', '%Y%m%d', '%d %B %Y', '%d %b %Y', '%G-W%V-%u', '%d-%b-%Y',
                 '%d %b %y', '%d %B %y', '%d/%m/%Y', '%d/%m/%y', '%B %d, %Y',
-                '%a %dth %b %Y', '%a %dst %b %Y', '%a %dnd %b %Y', '%a %drd %b %Y', 
+                '%A %d %B %Y', '%a %dth %b %Y', '%a %dst %b %Y', '%a %dnd %b %Y', '%a %drd %b %Y', 
                 '%m/%d/%Y',
                 '%c', '%x'):
         try:
@@ -153,9 +153,9 @@ def date(ordinal=0):
     if abs(ordinal) < 1000:
         dt = datetime.date.today() + datetime.timedelta(days=ordinal)
     elif ordinal > 100000000000:  # about 5000 AD as an epoch, so assume epoch ms
-        dt = datetime.datetime.utcfromtimestamp(ordinal / 1000)
+        dt = datetime.datetime.fromtimestamp(ordinal / 1000, datetime.UTC)
     elif ordinal > datetime.date.max.toordinal():  # > max date, so assume epoch seconds
-        dt = datetime.datetime.utcfromtimestamp(ordinal)
+        dt = datetime.datetime.fromtimestamp(ordinal, datetime.UTC)
     else:
         try:
             dt = datetime.date.fromordinal(ordinal)

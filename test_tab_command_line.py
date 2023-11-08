@@ -22,6 +22,7 @@ class TestTableScript(unittest.TestCase):
         cp = subprocess.run(cmd, stdout=subprocess.PIPE)
         self.assertEqual(cp.returncode, 0)
         self.assertEqual(cp.stdout.decode('utf-8'), '''
+# Don't change this file!
 x      Price      Val
 ---------------------
 A        180   14.420
