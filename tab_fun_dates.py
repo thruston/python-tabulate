@@ -129,7 +129,7 @@ def date(ordinal=0):
     >>> date(3652059)
     '9999-12-31'
     >>> date(3652060)
-    '1970-02-12T06:27:40'
+    '1970-02-12T07:27:40'
     >>> date(100000000000)
     '5138-11-16T09:46:40'
     >>> date(100000000001)
@@ -153,9 +153,9 @@ def date(ordinal=0):
     if abs(ordinal) < 1000:
         dt = datetime.date.today() + datetime.timedelta(days=ordinal)
     elif ordinal > 100000000000:  # about 5000 AD as an epoch, so assume epoch ms
-        dt = datetime.datetime.fromtimestamp(ordinal / 1000, datetime.UTC)
+        dt = datetime.datetime.fromtimestamp(ordinal / 1000)
     elif ordinal > datetime.date.max.toordinal():  # > max date, so assume epoch seconds
-        dt = datetime.datetime.fromtimestamp(ordinal, datetime.UTC)
+        dt = datetime.datetime.fromtimestamp(ordinal)
     else:
         try:
             dt = datetime.date.fromordinal(ordinal)
