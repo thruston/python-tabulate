@@ -26,12 +26,12 @@ import tab_fun_dates
 import tab_fun_maths
 import tab_fun_useful
 
-# Panther is a "big cat" of functions for column maths, using the Decimal
+# Panther is a big cat of functions for column maths, using the Decimal
 # versions.  This is used to limit the scope of the `eval` function when
 # evaluating expressions in DSL options.  So if you are calculating a new
 # column value with arr, or sorting on a calculated value etc, you can only use
 # the functions in this dictionary.  The idea is that the keys are what you the
-# user types and the values are the names of actual functions, either built in
+# user types and the values are the names of actual functions, either built-in
 # or provided by the helper modules.
 
 Panther = {
@@ -280,12 +280,12 @@ def siggy(s, n):
     'True'
     '''
     flag, number = is_as_number(s)
-    if not flag or type(number) is bool:
+    if not flag or isinstance(number, bool):
         return s
     if number.is_zero():
         return '0'
     figs = n - math.floor(abs(number).log10()) - 1
-    return '{:f}'.format(round(number, figs))
+    return f'{round(number, figs):f}'
 
 
 def rounders(s, n):
@@ -330,11 +330,11 @@ def looks_like_sequence(numbers):
         delta = numbers[0] - numbers[1]
     except IndexError:
         return False
-    else:
-        n = len(numbers)
-        return n > 2 and delta != 0 \
-            and all(x == int(x) for x in numbers) \
-            and all(delta == numbers[x - 1] - numbers[x] for x in range(2, n))
+
+    n = len(numbers)
+    return n > 2 and delta != 0 \
+        and all(x == int(x) for x in numbers) \
+        and all(delta == numbers[x - 1] - numbers[x] for x in range(2, n))
 
 
 def looks_like_formula(expression):
@@ -351,13 +351,13 @@ def looks_like_formula(expression):
     '''
     if all(x in string.ascii_letters for x in expression):
         return False
+
     try:
         int(expression)
     except (TypeError, ValueError):
-        pass
-    else:
-        return False
-    return True
+        return True
+
+    return False
 
 
 def compile_as_decimal(expr):
@@ -405,8 +405,8 @@ def compile_as_decimal(expr):
         cc = compile(tokenize.untokenize(out), '<string>', 'eval')
     except (SyntaxError, ValueError):
         return (False, '?! syntax ' + expr)
-    else:
-        return (True, cc)
+
+    return (True, cc)
 
 
 def _replace_values(failed_expression, known_variables):
@@ -852,8 +852,7 @@ class Table:
                 i, _ = self._fancy_col_index(c)
                 if i is None:
                     continue
-                else:
-                    random.shuffle(self.data[i])
+                random.shuffle(self.data[i])
             self.data = list(map(list, zip(*self.data)))
 
         if header is not None:
