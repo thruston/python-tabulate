@@ -904,7 +904,7 @@ class Table:
             for i, cell in enumerate(row):
                 values['col_number'] = i + 1
                 values['col_total'] = col_totals[i]
-                flag, values['x'] = is_as_number(cell)
+                cell_is_a_number, values['x'] = is_as_number(cell)
                 try:
                     new_value = eval(cc, Panther, values)
                 except Exception:
@@ -912,8 +912,11 @@ class Table:
                 else:
                     if isinstance(new_value, tuple):
                         new_row.extend(new_value)
-                    elif not flag and new_value.count(cell) > 2:
+                    elif not cell_is_a_number and f"{new_value}".count(cell) > 2:
                         # this was probably 'string'*9 or similar
+                        new_row.append(cell)
+                    elif not cell_is_a_number and f"{new_value}" == "0":
+                        # this was probably a title row or col...
                         new_row.append(cell)
                     else:
                         new_row.append(new_value)

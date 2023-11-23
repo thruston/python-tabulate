@@ -1199,6 +1199,16 @@ You can calculate the "expected" values, such as you might use in a chi-squared 
     First       27.4    27.6
     Second      64.6    65.4
 
+Or perhaps the differences from the expected values, with 
+`tap x-col_total*row_total/total dp 1`
+
+    Category  Type A  Type B
+    ------------------------
+    First        6.6    -6.6
+    Second      -6.6     6.6
+
+(which probably *should* sum to zero).
+
 ### uniq - filter out duplicated rows
 
     uniq [a|b|c|...]
