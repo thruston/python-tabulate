@@ -525,7 +525,7 @@ class Table:
         self.stack = []  # used to cache popped items
         self.operations = {
             'add': self._append_reduction,
-            'arr': self._arrange_columns,
+            'arr': self._rearrange_columns,
             'ditto': self._copy_down,
             'dp': self._fix_decimal_places,
             'dup': self._duplicate_item,
@@ -1292,29 +1292,43 @@ class Table:
 
         return out
 
-    def _arrange_columns(self, perm):
-        '''Arrange the columns of the table
+    def _rearrange_columns(self, perm):
+        '''Re-arrange the columns -- first handle the stack then do the work
         '''
+
+        # empty perm is a no-op
         if not perm:
             return
 
-        # also re-arrange anything on the stack...
+        # include the stack rows in the data
         stack_rows = len(self.stack)
         self.data.extend(self.stack)
         self.stack.clear()
 
-        # deletions...
-        if perm[0] == '-':
-            if '(' not in perm:
-                delenda = list(ord(x) - ord('a') for x in self._get_expr_list(perm[1:]))
+        # do the work
+        self._calculate_data(perm)
+        self.cols = len(self.data[0])
+
+        # restore the stack
+        for _ in range(stack_rows):
+            self.stack.append(self.pop())
+        return
+
+    def _calculate_data(self, raw_perm):
+        '''Do the work for "arr"
+        '''
+
+        # do deletions first
+        if raw_perm[0] == '-':
+            if all(c in string.ascii_lowercase for c in raw_perm[1:]):
+                delenda = list(ord(x) - ord('a') for x in self._get_expr_list(raw_perm))
                 self.data = list(list(x for i, x in enumerate(r) if i not in delenda) for r in self.data)
-                self.cols = len(self.data[0])
-            # move any stacked rows back to the stack
-            for _ in range(stack_rows):
-                self.stack.append(self.pop())
+            else:
+                self.messages.append("Only lowercase ASCII allowed after -")
             return
 
-        perm = self._get_expr_list(perm)
+        # fix up xyz etc and split up the perm into expressions
+        expressions = self._get_expr_list(raw_perm)
         identity = string.ascii_lowercase[:self.cols]
 
         def _get_value(row, c):
@@ -1322,67 +1336,65 @@ class Table:
             '''
             return str(random.random()) if c == '?' else row[ord(c) - ord('a')]
 
-        if all(x in identity + '?' for x in perm):
-            self.data = list(list(_get_value(r, x) for x in perm) for r in self.data)
-            self.cols = len(perm)  # perm can delete and/or add columns
+        # simple case of re-arrangement and/or random values
+        if all(len(x) == 1 and x in identity + '?' for x in expressions):
+            self.data = list(list(_get_value(r, x) for x in expressions) for r in self.data)
+            return
 
-        else:
-            # make it into a list tuples
-            desiderata = []
-            for x in perm:
-                ok, cc = compile_as_decimal(x)
-                if not ok:
-                    self.messages.append(cc)
-                    return
-                desiderata.append((cc, x))
+        # now we have to calculate at least one cell
+        desiderata = []
+        for x in expressions:
+            ok, cc = compile_as_decimal(x)
+            if not ok:
+                self.messages.append(cc)
+                return
+            desiderata.append((cc, x))
 
-            values = {
-                "rows": len(self.data),
-                "cols": self.cols,
-                "total": sum(as_decimal(x) for row in self.data for x in row),
-                "row_number": 0,
-            }
-            for k in identity:
-                values[k.upper()] = 0  # accumulators
+        values = {
+            "rows": len(self.data),
+            "cols": self.cols,
+            "total": sum(as_decimal(x) for row in self.data for x in row),
+            "row_number": 0,
+        }
+        for k in identity:
+            values[k.upper()] = 0  # accumulators
 
-            old_data = self.data.copy()
-            self.data.clear()
-            self.cols = 0
+        old_data = self.data.copy()
+        self.data.clear()
+        self.cols = 0
 
-            for r in old_data:
-                for k, v in zip(identity, r):
-                    flag, values[k] = is_as_number(v)
-                    if flag:
-                        values[k.upper()] += values[k]
+        for r in old_data:
+            for k, v in zip(identity, r):
+                flag, values[k] = is_as_number(v)
+                if flag:
+                    values[k.upper()] += values[k]
 
-                # allow xyz to refer to cells counted from the end...
-                for j, k in zip("zyxw", reversed(identity)):
-                    values[j] = values[k]
-                    values[j.upper()] = values[k.upper()]
+            # allow xyz to refer to cells counted from the end...
+            # you need this here to allow for xyz in expressions like (y/z)
+            for j, k in zip("zyxw", reversed(identity)):
+                values[j] = values[k]
+                values[j.upper()] = values[k.upper()]
 
-                # and note the line number
-                values['row_number'] += 1
-                values['row_total'] = sum(as_decimal(x) for x in r)
+            # and note the line number
+            values['row_number'] += 1
+            values['row_total'] = sum(as_decimal(x) for x in r)
 
-                new_row = []
-                for compiled_code, literal_code in desiderata:
-                    try:
-                        new_value = eval(compiled_code, Panther, values)
-                        if isinstance(new_value, tuple):
-                            new_row.extend(new_value)
-                        elif isinstance(new_value, str) and len(new_value) > 42:  # unwanted string multiplication...
-                            new_row.append(_replace_values(literal_code, values))
-                        else:
-                            new_row.append(new_value)
-                    except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation):
+            new_row = []
+            for compiled_code, literal_code in desiderata:
+                try:
+                    new_value = eval(compiled_code, Panther, values)
+                    if isinstance(new_value, tuple):
+                        new_row.extend(new_value)
+                    elif isinstance(new_value, str) and '*' in literal_code and len(new_value) > 1000:
+                        # unwanted string multiplication...
                         new_row.append(_replace_values(literal_code, values))
-                    except ZeroDivisionError:
-                        new_row.append("-")
-                self.append(new_row)
-
-        # move any stacked rows back to the stack
-        for _ in range(stack_rows):
-            self.stack.append(self.pop())
+                    else:
+                        new_row.append(new_value)
+                except (ValueError, TypeError, NameError, AttributeError, decimal.InvalidOperation):
+                    new_row.append(_replace_values(literal_code, values))
+                except ZeroDivisionError:
+                    new_row.append("-")
+            self.append(new_row)
 
     def _fancy_col_index(self, col_spec):
         '''Find me an index, returns index + T/F to say if letter was upper case
