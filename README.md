@@ -382,9 +382,11 @@ simple manipulation of a few values, and therefore tabulate tries quite hard to
 prevent you accidentally loading the `sys` module and deleting your disk. Only
 the following names of functions are allowed in a calculation.
 
-- maths functions: abs cos cosd divmod exp hypot log log10 pow round sin sind sqrt tan tand
+- maths functions: abs cos cosd divmod exp floor hypot log log10 pow round sin sind sqrt tan tand
 - number conversion: bool chr hex int oct ord str
 - maths constants: pi tau
+- string functions: caps lower upper reversed len - see below
+- date functions: base date dow epoch - see below
 - list functions: all any max min sorted sum
 
 The list functions are enhanced so you can call them with a tuple or a list of
@@ -438,6 +440,13 @@ the DSL `arr (lower(a))(upper(b))(caps(c)+caps(d))` gives you:
     juno     ARIL     HornCulicid
     krishna  PARCHED  DebouchMoutan
     lille    GOWD     MediusTanrec
+
+and `arr (reversed(a))bc(len(c))` would give you:
+
+    ybsorc   CRINES   HobbiesSola    11
+    onuj     ARIL     HornCulicid    11
+    anhsirk  PARCHED  DebouchMoutan  13
+    ellil    GOWD     MediusTanrec   12
 
 There are also some simple date routines included.
 

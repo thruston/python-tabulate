@@ -89,3 +89,13 @@ def t_sum(*args):
     2
     '''
     return t_apply(args, fun=sum)
+
+def length(s):
+    '''Length of strings *or* integers
+    >>> length("This")
+    4
+    >>> length(987613)
+    6
+
+    '''
+    return len(str(s))
