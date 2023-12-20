@@ -474,10 +474,10 @@ The command `arr a{dow(a)}` creates this
 
 Alternatively `arr a{base()-base(a)}` will produce the days from each date to today.
 
-    2011-01-17  3413
-    2011-02-23  3376
-    2011-03-19  3352
-    2011-07-05  3244
+    2011-01-17  4720
+    2011-02-23  4683
+    2011-03-19  4659
+    2011-07-05  4551
 
 And `arr a{date(base(a)+140)}` will add 20 weeks to each date
 
@@ -488,9 +488,9 @@ And `arr a{date(base(a)+140)}` will add 20 weeks to each date
 As a convenience, if the number given to `date()` is less than 1000, then it's
 assumed that you mean a delta on today rather than a day in the pre-Christian
 era.  So `date(70)` will produce the date in 10 weeks time, and `date(-91)`
-will give you the date three months ago, and so on.  `date()` produces today's
-date.  If the number you give date is large, it will be interpreted as epoch
-seconds, and if it is very large, epoch milliseconds.
+will give you the date three months ago, and so on. `date(0)` or just `date()`
+produces today's date.  If the number you give date is large, it will be
+interpreted as epoch seconds, and if it is very large, epoch milliseconds.
 
 Note: `base()` will actually recognize dates in several different (mainly ISO
 or British) forms as well as `yyyy-mm-dd`, as follows:
