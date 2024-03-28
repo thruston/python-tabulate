@@ -16,10 +16,11 @@ tap uniq unwrap unzip wrap xp zip
         '''.strip()
 
         self.verbs = '''
-Functions for arr: abs all any base bool caps chr cos cosd date divmod
-dow epoch exp factors floor format hex hms hr hypot int len log log10
-lower max min minp mins oct ord pi pow randomd reversed round secs sin
-sind sorted sqrt str sum tan tand tau time upper
+Functions for arr: abs all angle any base bool caps chr cos cosd date
+dir divmod dow epoch exp factors floor format hex hms hr hypot int len
+log log10 lower max mexp min minp mins mlog oct ord pi pow randomd
+reversed round secs sin sind sorted sqrt str sum tan tand tau time
+upper
         '''.strip()
 
     def test_help(self):

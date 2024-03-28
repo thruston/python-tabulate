@@ -128,6 +128,42 @@ def pyth_add(a, b):
     return (ONE * a * a + b * b).sqrt()
 
 
+def angle(a, b):
+    '''Like MP
+    >>> angle(4,3)
+    Decimal('36.8698976462')
+    '''
+    return degrees(decimal.Decimal(math.atan2(b, a)).quantize(one).normalize())
+
+
+def dir(t):
+    '''from MP
+    >>> dir(0)
+    (Decimal('1'), Decimal('0'))
+    >>> dir(45)
+    (Decimal('0.7071067812'), Decimal('0.7071067812'))
+    '''
+    return (cosd(t), sind(t))
+
+
+def mexp(x):
+    '''from MP = exp(x/256)
+    >>> mexp(0)
+    Decimal('1')
+    >>> mexp(256)
+    Decimal('2.71828182846')
+    '''
+    return (decimal.Decimal(x)/256).exp()
+
+
+def mlog(x):
+    ''' from MP = 256 log(x)
+    >>> mlog(10)
+    Decimal('589.461783805')
+    '''
+    return 256 * decimal.Decimal(x).ln()
+
+
 def decimal_to_hex(d):
     '''decimal to hexadecimal...
 

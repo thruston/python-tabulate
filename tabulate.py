@@ -54,6 +54,10 @@ Panther = {
     'lower': lambda x: str(x).lower(),
     'upper': lambda x: str(x).upper(),
     'randomd': lambda: decimal.Decimal(str(random.random())),
+    'mlog': tab_fun_maths.mlog,
+    'mexp': tab_fun_maths.mexp,
+    'angle': tab_fun_maths.angle,
+    'dir': tab_fun_maths.dir,
     'floor': math.floor,
     'time': tab_fun_dates.as_time,
     'base': tab_fun_dates.base,
@@ -263,7 +267,9 @@ def is_as_number(sss):
 def as_decimal(n, na_value=decimal.Decimal('0')):
     "Make this a decimal"
     try:
-        return decimal.Decimal(n)
+        return decimal.Decimal(n) + 0
+    except decimal.Overflow:
+        return na_value
     except decimal.InvalidOperation:
         return na_value
 
@@ -893,7 +899,7 @@ class Table:
             "total": sum(as_decimal(x) for row in self.data for x in row),
             "row_number": 0,
         }
-        col_totals = [sum(x[1] for x in self.column(i) if x[0]) for i in range(self.cols)]
+        col_totals = [sum(as_decimal(x[1]) for x in self.column(i) if x[0]) for i in range(self.cols)]
 
         old_rows = self.data[:]
         self.data.clear()
@@ -1530,7 +1536,7 @@ class Table:
             if all(flags):
                 analysis = statistical_summary(data)
             else:
-                analysis = counting_summary(data, 5)
+                analysis = counting_summary(data, 20)
 
             self.messages.append(f'# {label}: {analysis}')
 

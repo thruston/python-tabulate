@@ -37,7 +37,7 @@ you can just say `:Table add` to get this:
     E         4.533       85
     Total    15.549      354
 
-Tabulate also lets you transpose your table (to get this...)
+Tabulate also lets you transpose your table, `:Table xp`, to get this...
 
     event         A      B      C      D      E
     eruption  3.600  1.800  3.333  2.283  4.533
@@ -54,7 +54,7 @@ Vim just so I could tidy it up with `tabulate`.  So I have re-written the origin
 Perl version of tabulate as a Python module that can be imported, and used to
 tidy up a list of lists of data for printing directly as part of a script.
 
-Toby Thurston -- 1 Oct 2022
+Toby Thurston -- 28 Mar 2024
 
 ## Usage and set up
 
@@ -207,8 +207,9 @@ reinserted in the right places on output.
 If you do `help`, then tabulate will print "Try one of these:" followed by a list of
 all the defined verbs.  Like this:
 
-    Try one of these: add arr ditto dp filter gen group help label make nospace
-    pivot pop push roll rule sf shuffle sort tap uniq unwrap unzip wrap xp zip
+    Try one of these: add arr ditto dp dup filter gen group help label
+    levels make noblanks nospace pivot pop push roll rule sf shuffle sort
+    tap uniq unwrap unzip wrap xp zip
 
 The following thematic tables summarize the ones you are likely to use most.
 Then they are all described in more detail below, in alphabetical order.
@@ -1208,7 +1209,7 @@ You can calculate the "expected" values, such as you might use in a chi-squared 
     First       27.4    27.6
     Second      64.6    65.4
 
-Or perhaps the differences from the expected values, with 
+Or perhaps the differences from the expected values, with
 `tap x-col_total*row_total/total dp 1`
 
     Category  Type A  Type B
